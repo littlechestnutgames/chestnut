@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+from lexer import lex
+from parser import Parser
+from evaluator import Evaluator
+
+import sys
+
+if __name__ == "__main__":
+    file = sys.argv[len(sys.argv)-1] if ".nut" in sys.argv[len(sys.argv)-1] else None
+    if file:
+        with open(file) as hello:
+            tokens = lex("".join(hello.readlines()))
+            parser = Parser(tokens)
+            ast = parser.parse_program()
+            evaluator = Evaluator()
+            for node in ast:
+                evaluator.evaluate(node)
+    else:
+        print("Nothing to evaluate")
