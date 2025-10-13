@@ -1,27 +1,62 @@
-from parser import (
-    AnonymousFnExpressionNode,
-    AssignStatementNode,
-    BinaryOperationNode,
-    CallStatementNode,
-    CaseStatementNode,
-    ConstantStatementNode,
-    ExpressionStatementNode,
-    FnStatementNode,
-    IndexAccessNode,
-    IndexAssignNode,
-    LetStatementNode,
-    ListLiteralNode,
-    IfStatementNode,
-    IterateStatementNode,
-    UnaryOperationNode,
-    UntilStatementNode,
-    UseExpressionNode,
-    PrintStatementNode,
-    ReturnStatementNode,
-    ShadowStatementNode
-)
-from lexer import Token
+from parser import *
+from chestnut_type import *
+from error import *
+from lexer import *
 from math import floor
+import copy
+import os
+
+class StructNode:
+    def __init__(self, definition):
+        self.definition = definition
+
+    def constructor(self):
+        name = self.definition.identifier.data
+        properties = self.definition.properties
+        struct_class = type(name, (object,), {
+            "__repr__": lambda self: name + "(" + str(properties) + ")",
+            "gettype": lambda self: name
+        })
+        for property in properties:
+            setattr(struct_class, property.identifier.data, None)
+        struct_instance = struct_class()
+        return struct_instance
+
+class StructMethodCall:
+    def __init__(self, instance, func_object):
+        self.instance = instance
+        self.func_object = func_object
+
+class NativeFunction:
+    def __init__(self, identifier, params):
+        self.identifier = identifier
+        self.params = params
+
+    def reconcile_parameters(self, evaluator, call_parameters):
+        name = self.identifier
+        required_count = 0
+        has_variadic = False
+        for param in self.params:
+            if param.default_value is None and not param.variadic:
+                required_count += 1
+            if param.variadic:
+                has_variadic = True
+
+        if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(self.params)):
+            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
+
+        evaluated_args = [evaluator.evaluate(param) for param in call_parameters]
+
+        values = {}
+        arg_index = 0
+        for param in self.params:
+            param_name = param.name.data
+            if arg_index < len(evaluated_args):
+                values[param_name] = evaluated_args[arg_index]
+            elif param.default_value is not None:
+                values[param_name] = evaluator.evaluate(param.default_value)
+            arg_index += 1
+        return values
 
 class Function:
     def __init__(self, statement, scopes):
@@ -31,6 +66,7 @@ class Function:
     def reconcile_parameters(self, evaluator, call_parameters):
         statement = self.statement
         name = None
+        struct_identifier = None
         if isinstance(statement, FnStatementNode):
             name = statement.name.data
         elif isinstance(statement, AnonymousFnExpressionNode):
@@ -45,7 +81,7 @@ class Function:
                 has_variadic = True
 
         if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(statement.parameters)):
-            raise Exception(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
+            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
 
         evaluated_args = [evaluator.evaluate(param) for param in call_parameters]
 
@@ -65,20 +101,82 @@ class Function:
 
         return values
     def __repr__(self):
-        return f"Function(<{self.statement}>, <{self.scopes}>)"
+        return f"{self.statement}"
 
 class AnonymousFunction(Function):
     def __init__(self, statement, scopes, name=None):
         super().__init__(statement, scopes)
         self.name = name
 
+class SpreadArgs:
+    def __init__(self, args):
+        self.args = args
+    def __repr__(self):
+        return f"SpreadArgs(<{self.args}>)"
+
 class ReturnValue(BaseException):
     def __init__(self, value):
         self.value = value
 
+class BasicControlFlow(BaseException):
+    def __init__(self, ast_node):
+        self.ast_node = ast_node
+
+    def gettype(self):
+        return "BasicControlFlow"
+
+    def __repr__(self):
+        return f"BasicControlFlow(<{self.ast_node}>)"
+
+class BreakLoop(BasicControlFlow):
+    def gettype(self):
+        return "BreakLoop"
+
+class ContinueLoop(BasicControlFlow):
+    def gettype(self):
+        return "Continue"
+
 class Evaluator:
+    def get_core_spec(self):
+        from bridge import py_bridge as core
+        mods = [ x for x in dir(core) if x.startswith("__internal_") ]
+        import inspect
+        core_spec = {}
+        for mod in mods:
+            core_spec[mod] = {}
+            args = inspect.getfullargspec(core.__dict__[mod]).args
+            varargs = inspect.getfullargspec(core.__dict__[mod]).varargs
+            if args:
+                core_spec[mod]["args"] = args
+            if varargs:
+                core_spec[mod]["varargs"] = varargs
+        return core_spec
+    def get_local_script(self, script_name):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        return f"{dir_path}{os.sep}{script_name}"
+
+    def eval_library(self, path):
+        with open(self.get_local_script(path)) as new_import:
+            tokens = lex("".join(new_import.readlines()))
+            parser = Parser(tokens)
+            ast = parser.parse_program()
+            for node in ast:
+                self.evaluate(node)
+
     def __init__(self):
+        core_spec = self.get_core_spec()
+        native_funcs = {}
         self.scopes = [{}]
+        for k, v in core_spec.items():
+            func_name = Token("Identifier", k, None, None)
+            params = []
+            if "args" in v:
+                for arg in v["args"]:
+                    params.append(FnParameter(Token("Identifier", arg, None, None), "Any", None, False))
+            if "varargs" in v:
+                params.append(FnParameter(Token("Identifier", v["varargs"], None, None), "Any", None, True))
+            self.scopes[0][k] = NativeFunction(func_name, params)
+        self.eval_library("lib/core.nuts")
 
     def push_scope(self, scope={}):
         self.scopes.append({})
@@ -90,7 +188,9 @@ class Evaluator:
             raise Exception("Cannot pop the global scope")
 
     def find_first_scope_containing(self, var_name):
-        for scope in reversed(self.scopes):
+        found_scope = None
+        for i in range(len(self.scopes) - 1, -1, -1):
+            scope = self.scopes[i]
             if var_name in scope:
                 return scope
         return None
@@ -99,12 +199,16 @@ class Evaluator:
         return self.exists_in_current_scope(var_name) or self.exists_in_parent_scope(var_name)
 
     def exists_in_current_scope(self, var_name):
-        return var_name in self.scopes[-1]
+        return var_name in self.scopes[-1] and not "call boundary" in self.scopes[-1]
 
     def exists_in_parent_scope(self, var_name):
         for scope in reversed(self.scopes[:-1]):
+            if "call boundary" in scope:
+                break
             if var_name in scope:
                 return True
+        if var_name in self.scopes[0]:
+            return True
         return False
 
     def current_scope(self):
@@ -114,36 +218,128 @@ class Evaluator:
         return self.exists_in_any_scope(f"constant {label}")
 
     def evaluate(self, node):
-        if isinstance(node, PrintStatementNode):
-            node_data = self.evaluate(node.expression)
-            print(node_data)
-        elif isinstance(node, Token) and node.label == "Null":
+        if isinstance(node, StructFnStatementNode):
+            struct_name = node.target_struct.paramtype.data
+            method_name = node.name.data
+            scope_key = f"{struct_name} {method_name}"
+            func_object = Function(node, self.scopes)
+            if self.exists_in_any_scope(scope_key):
+                raise RuntimeError(f"{method_name} for struct {struct_name} already exists", node)
+            self.current_scope()[scope_key] = func_object
+
+            return 1
+        elif isinstance(node, ChestnutNull):
             return None
-        elif isinstance(node, Token) and node.label == "Hex":
-            return hex(node.data)
-        elif isinstance(node, Token) and node.label == "Binary":
-            return bin(node.data)
-        elif isinstance(node, Token) and node.label == "Octal":
-            return oct(node.data)
-        elif isinstance(node, Token) and node.label in ["Integer", "Boolean", "Float", "String"]:
-            return node.data
+        elif isinstance(node, ChestnutInteger) and node.token_matches("Hex"):
+            return hex(node.value)
+        elif isinstance(node, ChestnutInteger) and node.token_matches("Binary"):
+            return bin(node.value)
+        elif isinstance(node, ChestnutInteger) and node.token_matches("Octal"):
+            return oct(node.value)
+        elif isinstance(node, ChestnutInteger):
+            return node.value
+        elif isinstance(node, ChestnutBoolean):
+            return node.value
+        elif isinstance(node, ChestnutFloat):
+            return node.value
+        elif isinstance(node, ChestnutString):
+            return node.value
+        elif isinstance(node, ChestnutType) and node.token.label in ["ChestnutInteger", "ChestnutBoolean", "ChestnutFloat", "ChestnutString"]:
+            return node.value
+        elif isinstance(node, ImportStatementNode):
+            import_path = f"{os.getcwd()}{os.sep}{node.location.data}"
+            with open(import_path) as new_import:
+                tokens = lex("".join(new_import.readlines()))
+                parser = Parser(tokens)
+                ast = parser.parse_program()
+                for node in ast:
+                    self.evaluate(node)
+        elif isinstance(node, StructDefinitionNode):
+            label = node.identifier.data
+            scope = self.find_first_scope_containing(label)
+            if not scope is None:
+                raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
+            self.current_scope()[label] = StructNode(node)
+        elif isinstance(node, PropertyAssignmentNode):
+            target_object = self.evaluate(node.identifier)
+            if target_object is None:
+                raise RuntimeException("Attempt to access property on null", node.identifier)
+            property = node.property_identifier.data
+
+            if not hasattr(target_object, property):
+                raise RuntimeException("Target has no attribute {property}", node.property_identifier)
+
+            op = node.op 
+            if op.label == "Assignment":
+                setattr(target_object, property, self.evaluate(node.value_expression))
+            elif op.label == "Addassign":
+                setattr(target_object, property, getattr(target_object, property) + self.evaluate(node.value_expression))
+            elif op.label == "Subassign":
+                setattr(target_object, property, getattr(target_object, property) - self.evaluate(node.value_expression))
+            elif op.label == "Divassign":
+                setattr(target_object, property, getattr(target_object, property) / self.evaluate(node.value_expression))
+            elif op.label == "Mulassign":
+                setattr(target_object, property, getattr(target_object, property) * self.evaluate(node.value_expression))
+            return 1
+        elif isinstance(node, PropertyAccessNode):
+            target_object = self.evaluate(node.identifier)
+            if target_object is None:
+                raise RuntimeException(f"Attempt to access property on null object at line...", node)
+            property_name = node.property_identifier.data
+            if hasattr(target_object, "gettype"):
+                scope_key = f"{target_object.gettype()} {node.property_identifier.data}"
+                scope = self.find_first_scope_containing(scope_key)
+                if scope is not None:
+                    func_object = scope[scope_key]
+                    return StructMethodCall(target_object, func_object)
+            return getattr(target_object, property_name)
         elif isinstance(node, ListLiteralNode):
             elems = []
             for elem in node.elements:
                 elems.append(self.evaluate(elem))
             return elems
-        elif isinstance(node, IndexAccessNode):
+        elif isinstance(node, TupleLiteralNode):
+            elems = []
+            for elem in node.elements:
+                elems.append(self.evaluate(elem))
+            return tuple(elems)
+        elif isinstance(node, IndexAssignNode):
+            target = self.evaluate(node.identifier)
+            if isinstance(target, tuple):
+                raise RuntimeException("Illegal assingment, tuples are immutable", node.identifier)
+            if not isinstance(target, list):
+                raise RuntimeException("Index access attempted on non-list", node.identifier)
             index = self.evaluate(node.index)
-            label = node.target.data
-            scope = self.find_first_scope_containing(label)
-            if scope is None:
-                raise Exception(f"Illegal index access in undefined identifier `{label}` at line {node.target.line}, column {node.target.column}")
-            value = scope[label]
             if index == -1:
-                index = len(value)-1
-            if index > len(value)-1 or index < -1:
+                index = len(target) - 1
+            if index < -1:
+                raise RuntimeException("List bounds exceeded in assignment", node.identifier)
+            if index > len(target) - 1:
+                raise RuntimeException("List bounds exceeded in assignment", node.identifier)
+            op = node.op
+
+            if node.op.label == "Assignment":
+                target[index] = self.evaluate(node.value)
+            elif node.op.label == "Addassign":
+                target[index]+= self.evaluate(node.value)
+            elif node.op.label == "Subassign":
+                target[index] -= self.evaluate(node.value)
+            elif node.op.label == "Divassign":
+                target[index] /= self.evaluate(node.value)
+            elif node.op.label == "Mulassign":
+                target[index] *= self.evaluate(node.value)
+            return 1
+
+        elif isinstance(node, IndexAccessNode):
+            target_value = self.evaluate(node.target)
+            index = self.evaluate(node.index)
+            if not isinstance(target_value, list) and not isinstance(target_value, tuple) and not isinstance(target_value, str):
+                raise Exception(f"Index access attempted on non-array type {target_value}")
+            if index == -1:
+                index = len(target_value)-1
+            if index < 0 or index >= len(target_value):
                 raise Exception(f"Index out of bounds")
-            return value[index]
+            return target_value[index]
 
         elif isinstance(node, ExpressionStatementNode):
             return self.evaluate(node.expression)
@@ -153,47 +349,68 @@ class Evaluator:
                 return_value = self.evaluate(node.expression)
             raise ReturnValue(return_value)
         elif isinstance(node, ConstantStatementNode):
-            label = node.label.data
-
-            if self.constant_exists(label):
-                raise Exception(f"Cannot redeclare constant `{label}` at line {node.label.line}, column {node.label.column}")
-
-            if self.exists_in_any_scope(label):
-                raise Exception(f"`{label}` is already declared in this scope at line {node.label.line}, column {node.label.column}")
+            labels = node.label
+            if not isinstance(node.label, list):
+                labels = list(node.label)
+            for l in labels:
+                if self.constant_exists(l.data):
+                    raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
+                if self.exists_in_any_scope(l.data):
+                    raise RuntimeException(f"`{l.data}` is already declared in this scope", l)
 
             expression = self.evaluate(node.expression)
+            if not isinstance(expression, tuple):
+                expression = [expression]
 
-            self.current_scope()[f"constant {label}"] = expression
+            i = 0
+            while i < len(labels):
+                self.current_scope()[f"constant {labels[i].data}"] = expression[i]
+                i = i + 1
 
             return 1
 
         elif isinstance(node, LetStatementNode):
-            label = node.label.data
+            labels = node.label
+            if not isinstance(node.label, list):
+                labels = [node.label]
 
-            if self.constant_exists(label):
-                raise Exception(f"Cannot redeclare constant `{label}` at line {node.label.line}, column {node.label.column}")
+            for l in labels:
+                if self.constant_exists(l.data):
+                    raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
 
-            if self.exists_in_any_scope(label):
-                raise Exception(f"Cannot redeclare {label} in this scope at line {node.label.line}, column {node.label.column}")
+                if self.exists_in_any_scope(l.data):
+                    raise RuntimeException(f"Cannot redeclare {l.data} in this scope", l)
 
             expression = self.evaluate(node.expression)
+            if not isinstance(expression, tuple):
+                expression = [expression]
 
-            self.current_scope()[label] = expression
+            i = 0
+            while i < len(labels):
+                self.current_scope()[labels[i].data] = expression[i]
+                i = i + 1
 
             return 1
 
         elif isinstance(node, ShadowStatementNode):
-            label = node.label.data
+            labels = node.label
+            if not isinstance(node.label, list):
+                labels = [node.label]
+            for l in labels:
+                if self.constant_exists(l.data):
+                    raise Exception(f"Cannot shadow constant `{l.data}`", l)
 
-            if self.constant_exists(label):
-                raise Exception(f"Cannot shadow constant `{label}` at line {node.label.line}, column {node.label.column}")
-
-            if not self.exists_in_any_scope(label):
-                raise Exception(f"{label} is not declared in any scope at line {node.label.line}, column {node.label.column}")
+                if not self.exists_in_any_scope(l.data):
+                    raise Exception(f"{l.data} is not declared in any scope", l)
 
             expression = self.evaluate(node.expression)
+            if not isinstance(expression, tuple):
+                expression = [expression]
 
-            self.current_scope()[label] = expression
+            i = 0
+            while i < len(labels):
+                self.current_scope()[labels[i].data] = expression[i]
+                i = i + 1
 
             return 1
 
@@ -211,59 +428,106 @@ class Evaluator:
             return AnonymousFunction(node, self.scopes)
 
         elif isinstance(node, CallStatementNode):
-            identifier = node.identifier.data
-
-            if not self.exists_in_any_scope(identifier) and not self.exists_in_any_scope(f"constant {identifier}"):
-                # The function was found neither in non-constant or constant storage.
-                raise Exception(f"Call to undefined function `{identifier}`")
-
-            func_scope = self.find_first_scope_containing(identifier)
+            callable = self.evaluate(node.identifier)
+            first_scope = {"call boundary": True}
+            identifier = None
             func = None
-            # Check if the scope was found and assign from the function inside.
-            if func_scope:
-                func = func_scope[identifier]
+            instance = None
+            if isinstance(callable, StructMethodCall):
+                instance = callable.instance
+                func = callable.func_object
+                identifier = func.statement.target_struct.name.data
+                scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
+                first_scope[identifier] = instance
+            if func is None:
+                if not self.exists_in_any_scope(node.identifier.data) and not self.exists_in_any_scope(f"constant {node.identifier.data}"):
+                    # The function was found neither in non-constant or constant storage.
+                    raise Exception(f"Call to undefined function `{node.identifier.data}`")
 
-            if func_scope is None:
-                # Non-constant lookup failed. Look for it as a constant.
-                func_scope = self.find_first_scope_containing(f"constant {identifier}")
+                identifier = node.identifier.data
+                func_scope = self.find_first_scope_containing(identifier)
+                # Check if the scope was found and assign from the function inside.
+                if func_scope:
+                    func = func_scope[identifier]
 
                 if func_scope is None:
-                    # Scope changed and now there is no identifier present.
-                    raise Exception(f"Call to undefined function {identifier}")
+                    # Non-constant lookup failed. Look for it as a constant.
+                    func_scope = self.find_first_scope_containing(f"constant {identifier}")
 
-                # We found a constant function, save the function reference.
-                func = func_scope["constant " + identifier]
+                    if func_scope is None:
+                        # Scope changed and now there is no identifier present.
+                        raise Exception(f"Call to undefined function {identifier}")
 
-            if not isinstance(func, Function) and not isinstance(func, AnonymousFunction):
+                    # We found a constant function, save the function reference.
+                    func = func_scope["constant " + identifier]
+
+            if isinstance(func, StructNode):
+                return func.constructor()
+
+            if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, NativeFunction):
                 # Block function calls to other stored data.
                 raise Exception(f"Call to non-function `{identifier}` at line {node.identifier.line}, column {node.identifier.column}")
+            if isinstance(func, NativeFunction):
+                params = []
+                try:
+                    reconciled_values = func.reconcile_parameters(self, node.params)
+                except RuntimeException as e:
+                    raise RuntimeException(e.message, node.identifier)
+
+                final_args = []
+                for k in reconciled_values:
+                    value = reconciled_values[k]
+                    if isinstance(value, SpreadArgs):
+                        for arg in value.args:
+                            final_args.append(arg)
+                    else:
+                       final_args.append(value)
+                from bridge import py_bridge as core
+                
+                if not hasattr(core,func.identifier.data):
+                    raise InternalException(f"{func.identifier.data} does not exist in the core built-ins", node)
+
+                result = core.__dict__[func.identifier.data](
+                    *final_args
+                )
+
+                raise ReturnValue(result)
 
             fn = func.statement
 
             original_scopes_length = len(self.scopes)
 
-            # Push scope clones into the scope stack.
-            for scope in func.scopes:
-                self.push_scope(scope)
-
-                # Push our function's local scope onto the scope stack.
-                self.push_scope()
-
-                # Process parameters
+            self.scopes.append(first_scope)
+            for scope in func.scopes[:]:
+                s = copy.deepcopy(scope)
+                self.push_scope(s) 
+            self.push_scope()
+            params = []
+            try:
                 params = func.reconcile_parameters(self, node.params)
-                for p in func.statement.parameters:
-                    self.current_scope()[p.name.data] = params[p.name.data]
-                for s in func.statement.statements:
-                    try:
-                        self.evaluate(s)
-                    except ReturnValue as val:
-                        return val
-                # Return to our origin scopes count.
-                while len(self.scopes) > original_scopes_length:
-                    self.pop_scope()
+            except RuntimeException as e:
+                raise RuntimeException(e.message, node.identifier)
+            for p in func.statement.parameters:
+                self.current_scope()[p.name.data] = params[p.name.data]
+                
+            for s in func.statement.statements:
+                try:
+                    self.evaluate(s)
+                except ReturnValue as val:
+                    while len(self.scopes) > original_scopes_length:
+                        self.pop_scope()
+                    return val.value
+            while len(self.scopes) > original_scopes_length:
+                self.pop_scope()
             return False
 
-        elif isinstance(node, Token) and node .label == "Identifier":
+        elif isinstance(node, BreakStatementNode):
+            raise BreakLoop(node)
+
+        elif isinstance(node, ContinueStatementNode):
+            raise ContinueLoop(node)
+
+        elif isinstance(node, Token) and node.label == "Identifier":
             label = node.data
 
             if self.constant_exists(label):
@@ -290,7 +554,7 @@ class Evaluator:
                     return
             if node.else_block:
                 self.push_scope()
-                for statement in node.else_block:
+                for statement in node.else_block.block_statements:
                     self.evaluate(statement)
                 self.pop_scope()
             return
@@ -351,20 +615,69 @@ class Evaluator:
             subject = self.evaluate(node.subject)
             identifier = node.identifier
             statements = node.statements
-            parent_scope = self.current_scope();
+            root_loop_scope = self.current_scope()
+            root_loop_scope["loop index"] = 0
             for elem in subject:
                 self.push_scope()
                 self.current_scope()[identifier.data] = elem
-                for statement in statements:
-                    self.evaluate(statement)
+                try:
+                    for statement in statements:
+                        self.evaluate(statement)
+                except BreakLoop:
+                    self.pop_scope()
+                    break
+                except ContinueLoop:
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    self.pop_scope()
+                    continue
                 self.pop_scope()
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            del root_loop_scope["loop index"]
+
+
+        elif isinstance(node, WhileStatementNode):
+            root_loop_scope = self.current_scope()
+            self.current_scope()["loop index"] = 0
+            while self.evaluate(node.condition):
+                self.push_scope()
+                try:
+                    for statement in node.statements:
+                        self.evaluate(statement)
+                except BreakLoop:
+                    self.pop_scope()
+                    break
+                except ContinueLoop:
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    self.pop_scope()
+                    continue
+                self.pop_scope()
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            del root_loop_scope["loop index"]
 
         elif isinstance(node, UntilStatementNode):
+            root_loop_scope = self.current_scope()
+            self.current_scope()["loop index"] = 0
             while not self.evaluate(node.condition):
                 self.push_scope()
-                for statement in node.statements:
-                    self.evaluate(statement)
+                try:
+                    for statement in node.statements:
+                        self.evaluate(statement)
+                except BreakLoop:
+                    self.pop_scope()
+                    break
+                except ContinueLoop:
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    self.pop_scope()
+                    continue
                 self.pop_scope()
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            del root_loop_scope["loop index"]
+
+        elif isinstance(node, LoopindexExpressionNode):
+            if not self.exists_in_any_scope("loop index"):
+                raise Exception(f"`loop_index` keyword must be used inside a loop")
+            scope = self.find_first_scope_containing("loop index")
+            return scope["loop index"]
 
         elif isinstance(node, UseExpressionNode):
             if not node.condition is None:
@@ -400,14 +713,26 @@ class Evaluator:
                     value = left and right
                 case "Or":
                     value = left or right
-                case "Nand":
-                    value = not (left and right)
-                case "Xor":
-                    value = (left and not right) or (not left and right)
-                case "Xnor":
-                    value = (left and right) or (not left and not right)
-                case "Nor":
-                    value = not left and not right
+                case "BitwiseAnd":
+                    value = left & right
+                case "BitwiseOr":
+                    value = left | right
+                case "BitwiseNand":
+                    value = ~(left & right)
+                case "BitwiseXor":
+                    value = left ^ right
+                case "BitwiseNor":
+                    value = ~(left | right)
+                case "BitwiseXnor":
+                    value = ~(left ^ right)
+                case "BitwiseShiftLeft":
+                    value = left << right
+                case "BitwiseShiftRight":
+                    value = left >> right
+                case "BitwiseRotateRight":
+                    raise InternalException("Bitwise right rotate is not implemented yet")
+                case "BitwiseRotateLeft":
+                    raise InternalException("Bitwise left rotate is not implemented yet")
                 case "Addition":
                     if isinstance(left, str) or isinstance(right, str):
                         value = str(left) + str(right)
@@ -417,7 +742,7 @@ class Evaluator:
                     value = left - right
                 case "Division":
                     if right == 0:
-                        raise SyntaxError(f"Division by 0.")
+                        raise ValueException(f"Division by 0", node.right.token)
                     value = left / right
                 case "Multiplication":
                     value = left * right
@@ -429,13 +754,38 @@ class Evaluator:
             return value
         elif isinstance(node, UnaryOperationNode):
             op = node.op
+            if op.label == "Spread":
+                return SpreadArgs(self.evaluate(node.right))
+            # Outer code here
+            if op.label == "Outer":
+                levels = 1
+                ref = node.right
+                while isinstance(ref, UnaryOperationNode) and ref.op.label == "Outer":
+                    levels = levels + 1
+                    ref = ref.right
+                if not isinstance(ref, Token) and hasattr(ref, "label") and not ref.label == "Identifier":
+                    raise RuntimeException("Expected identifer after outer", ref)
+
+                identifier = None
+                if isinstance(ref, LoopindexExpressionNode):
+                    identifier = "loop index"
+                else:
+                    identifier = ref.data
+                for scope in reversed(self.scopes[:]):
+                    if identifier in scope and levels > 0:
+                        levels = levels - 1
+                    elif identifier in scope:
+                        return scope[identifier]
+                return ChestnutNull(Token("Null", "null", 0, 0))
+
             right = self.evaluate(node.right)
 
             if op.label == "Subtraction":
                 return -right
             elif op.label == "Not":
                 return not right
-            raise SyntaxError(f"Unexpected {op.label} operation '{op.data}' at line {op.line}, column {op.column}")
+            elif op.label == "BitwiseNot":
+                return ~right
+            raise RuntimeException(f"Unexpected {op.label} operation '{op.data}'", op)
         else:
-            raise TypeError(f"Can't evaluate unknown node type {type(node)}")
-
+            raise RuntimeException(f"Can't evaluate unknown node type {type(node)}")

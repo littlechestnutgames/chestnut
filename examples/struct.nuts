@@ -1,0 +1,18 @@
+struct Org
+    name : String
+    org : Org
+endstruct
+
+fn (o : Org) get_name() returns String
+    return o.name
+endfn
+fn (o : Org) set_name(name : String)
+    o.name = name
+endfn
+
+let n = Org()
+n.name = "Property setting example."
+print(n.get_name())
+
+n.set_name("The property is set.")
+print(n.get_name())

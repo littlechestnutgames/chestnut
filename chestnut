@@ -3,18 +3,30 @@
 from lexer import lex
 from parser import Parser
 from evaluator import Evaluator
+from analyzer import Analyzer
 
 import sys
 
 if __name__ == "__main__":
-    file = sys.argv[len(sys.argv)-1] if ".nut" in sys.argv[len(sys.argv)-1] else None
+    file = sys.argv[len(sys.argv)-1] if ".nuts" in sys.argv[len(sys.argv)-1] else None
     if file:
         with open(file) as hello:
+            # Lexing
             tokens = lex("".join(hello.readlines()))
+
+            # Parsing
             parser = Parser(tokens)
             ast = parser.parse_program()
+
+            # Semantic analysis
+            analyzer = Analyzer()
+            for node in ast:
+                analyzer.analyze(node)
+
+            # Evaluation.
             evaluator = Evaluator()
             for node in ast:
                 evaluator.evaluate(node)
+
     else:
         print("Nothing to evaluate")

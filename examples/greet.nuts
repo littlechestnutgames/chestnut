@@ -1,0 +1,27 @@
+fn greet()
+    print("Enter one name per line as many times as you like, then a blank line.")
+    let names = []
+    let str = ""
+    let running = true
+    while running repeat
+        let name = readline()
+        if name == "" then
+            running = false
+        else
+            push(names, name)
+        endif
+    endwhile
+    while length(names) > 0 repeat
+        if str != "" then
+            str += ", "
+        endif
+        if length(names) == 1 then
+            str += "and "
+        endif
+        let n = shift(names)
+        str = str + n
+    endwhile
+    print("Hello " + str)
+endfn
+
+greet()

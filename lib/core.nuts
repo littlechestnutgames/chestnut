@@ -1,0 +1,81 @@
+struct Error
+    message : String
+endstruct
+
+fn (err : Error) getError() returns String
+    return err.message
+endfn
+
+fn error(message : String) returns Error
+    let e = Error()
+    e.message = message
+    return e
+endfn
+
+fn xor(left : Boolean, right : Boolean) returns Boolean
+    return (left or right) and not (left and right)
+endfn
+
+fn nand(left : Boolean, right : Boolean) returns Boolean
+    return not (left and right)
+endfn
+
+fn nor(left : Boolean, right : Boolean) returns Boolean
+    return not left and not right
+endfn
+
+fn xnor(left : Boolean, right : Boolean) returns Boolean
+    return (left and right) or (not left and not right)
+endfn
+
+fn push(l : List, item : Any)
+    insert(l, item, length(l))
+endfn
+
+fn unshift(l : List, item : Any)
+    insert(l, item, 0)
+endfn
+
+fn pop(l : List) returns (Any, Error)
+    if length(l) == 0 then
+        return (null, error("Attempt to pop an empty list"))
+    endif
+    return (remove(l, length(l)-1), null)
+endfn
+
+fn shift(l : List) returns (Any, Error)
+    if length(l) == 0 then
+        return (null, error("Attempt to shift an empty list"))
+    endif
+    return (remove(l, 0), null)
+endfn
+
+fn reverse_string(s : String) returns String
+    let i = length(s)-1
+    let str = ""
+    until i < 0 repeat
+        str += s[i]
+        i -= 1
+    enduntil
+    return str
+endfn
+
+fn print(variadic a : Any)
+    __internal_print__(spread a)
+endfn
+
+fn length(a : List) returns Integer
+    return __internal_length__(a)
+endfn
+
+fn insert(l : List, a : Any, i : Integer)
+    return __internal_insert__(l, a, i)
+endfn
+
+fn readline() returns String
+    return __internal_readline__()
+endfn
+
+fn remove(l : List, i : Integer) returns Any
+    return __internal_remove__(l, i)
+endfn

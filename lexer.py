@@ -1,6 +1,127 @@
+from error import *
 from collections import namedtuple
 
-Token = namedtuple("Token", ["label", "data", "line", "column"])
+class TokenType:
+    def __init__(self, name, sequence, default_value=None):
+        self.name = name
+        self.sequence = sequence
+        self.default_value = default_value
+
+token_types = [
+    # 10 character sequences
+    TokenType("Enditerate", "enditerate"),
+    TokenType("Loopindex", "loop_index"),
+
+    # 9
+    TokenType("Endstruct", "endstruct"),
+    TokenType("Otherwise", "otherwise"),
+    TokenType("Nomangle", "no-mangle"),
+
+    # 8 character sequences
+    TokenType("Constant", "constant"),
+    TokenType("Continue", "continue"),
+    TokenType("Enduntil", "enduntil"),
+    TokenType("Endwhile", "endwhile"),
+    TokenType("Variadic", "variadic"),
+
+    # 7 character sequences
+    TokenType("Endcase", "endcase"),
+    TokenType("Iterate", "iterate"),
+    TokenType("Returns", "returns"),
+
+    # 6 character sequences
+    TokenType("Import", "import"),
+    TokenType("Repeat", "repeat"),
+    TokenType("Return", "return"),
+    TokenType("Shadow", "shadow"),
+    TokenType("Spread", "spread"),
+    TokenType("Struct", "struct"),
+    TokenType("Unless", "unless"),
+
+    # 5 character sequences
+    TokenType("Boolean", "false", False),
+    TokenType("Break", "break"),
+    TokenType("Endfn", "endfn"),
+    TokenType("Endif", "endif"),
+    TokenType("Outer", "outer"),
+    TokenType("Until", "until"),
+    TokenType("While", "while"),
+
+    # 4 character sequences
+    TokenType("Boolean", "true", True),
+    TokenType("Case", "case"),
+    TokenType("Elif", "elif"),
+    TokenType("Else", "else"),
+    TokenType("Over", "over"),
+    TokenType("Then", "then"),
+    TokenType("When", "when"),
+    TokenType("With", "with"),
+
+    # 3 character sequences
+    TokenType("BitwiseRotateLeft", "<<<"),
+    TokenType("BitwiseRotateRight", ">>>"),
+    TokenType("And", "and"),
+    TokenType("Let", "let"),
+    TokenType("Not", "not"),
+    TokenType("Null", "null"),
+    TokenType("Use", "use"),
+    
+    # 2 character sequences
+    TokenType("Addassign", "+="),
+    TokenType("And", "&&"),
+    TokenType("BitwiseNand", "~&"),
+    TokenType("BitwiseNor", "~|"),
+    TokenType("BitwiseShiftLeft", "<<"),
+    TokenType("BitwiseShiftRight", ">>"),
+    TokenType("BitwiseXnor", "~^"),
+    TokenType("Divassign", "/="),
+    TokenType("Eq", "=="),
+    TokenType("Exponent", "**"),
+    TokenType("Fn", "fn"),
+    TokenType("Gt", ">"),
+    TokenType("Gte", ">="),
+    TokenType("If", "if"),
+    TokenType("Lte", "<="),
+    TokenType("Modulo", "%"),
+    TokenType("Mulassign", "*="),
+    TokenType("Neq", "!="),
+    TokenType("Or", "or"),
+    TokenType("Or", "||"),
+    TokenType("Subassign", "-="),
+
+    # 1 character sequences
+    TokenType("BitwiseAnd", "&"),
+    TokenType("Assignment", "="),
+    TokenType("Addition", "+"),
+    TokenType("BitwiseNot", "~"),
+    TokenType("BitwiseOr", "|"),
+    TokenType("BitwiseXor", "^"),
+    TokenType("Colon", ":"),
+    TokenType("Comma", ","),
+    TokenType("Division", "/"),
+    TokenType("LBrace", "["),
+    TokenType("LParen", "("),
+    TokenType("Lt", "<"),
+    TokenType("Multiplication", "*"),
+    TokenType("Not", "!"),
+    TokenType("Period", "."),
+    TokenType("RBrace", "]"),
+    TokenType("RParen", ")"),
+    TokenType("Subtraction", "-")
+]
+
+class Token:
+    def __init__(self, label, data, line, column):
+        self.label = label
+        self.data = data
+        self.line = line
+        self.column = column
+
+    def get_line_and_column(self):
+        return f"line {self.line}, column {self.column}"
+
+    def __repr__(self):
+        return f"Token({self.label}, {self.data}, {self.line}, {self.column})"
 
 class LexerState:
     def __init__(self):
@@ -40,210 +161,28 @@ def lex(input):
             else:
                 state.advance_column()
             continue
-        elif input[state.pos:state.pos+4] == "null":
-            yield Token("Null", "null", start_line, start_column)
-            state.advance_column(4)
+        found_token = None
 
-        # Comparison operators.
-        elif input[state.pos:state.pos+2] == "==":
-            yield Token("Eq", "==", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos:state.pos+2] == "!=":
-            yield Token("Neq", "!=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos:state.pos+2] == "<=":
-            yield Token("Lte", "<=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos] == "<":
-            yield Token("Lt", "<", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos:state.pos+2] == ">=":
-            yield Token("Gte", ">=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos] == ">":
-            yield Token("Gt", ">", start_line, start_column)
-            state.advance_column()
-
-        # Ands and Ors and other bits and bobs.
-        elif is_token_match(input, state.pos, "nand"):
-            yield Token("Nand", "nand", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "and"):
-            yield Token("And", "and", start_line, start_column)
-            state.advance_column(3)
-        elif is_token_match(input, state.pos, "xnor"):
-            yield Token("Xnor", "xnor", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "xor"):
-            yield Token("Xor", "xor", start_line, start_column)
-            state.advance_column(3)
-        elif is_token_match(input, state.pos, "nor"):
-            yield Token("Nor", "nor", start_line, start_column)
-            state.advance_column(3)
-        elif is_token_match(input, state.pos, "not"):
-            yield Token("Not", "not", start_line, start_column)
-            state.advance_column(3)
-        elif input[state.pos] == "!":
-            yield Token("Not", "!", start_line, start_column)
-            state.advance_column()
-        elif is_token_match(input, state.pos, "or"):
-            yield Token("Or", "or", start_line, start_column)
-            state.advance_column(2)
-
-        # Assignment
-        elif input[state.pos:state.pos+2] == "+=":
-            yield Token("Addassign", "+=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos:state.pos+2] == "-=":
-            yield Token("Subassign", "-=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos:state.pos+2] == "*=":
-            yield Token("Mulassign", "*=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos:state.pos+2] == "/=":
-            yield Token("Divassign", "/=", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos] == "=":
-            yield Token("Assignment", "=", start_line, start_column)
-            state.advance_column()
-
-        # Mathematics
-        elif input[state.pos] == "-" or input[state.pos] == "−":
-            yield Token("Subtraction", "-", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == "+":
-            yield Token("Addition", "+", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == "/" or input[state.pos] == "÷":
-            yield Token("Division", "/", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos:state.pos+2] == "**":
-            yield Token("Exponent", "**", start_line, start_column)
-            state.advance_column(2)
-        elif input[state.pos] == "*" or input[state.pos] == "∗":
-            yield Token("Multiplication", "*", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == "%":
-            yield Token("Modulo", "%", start_line, start_column)
-            state.advance_column()
-
-        # Keywords
-        elif is_token_match(input, state.pos, "let"):
-            yield Token("Let", "let", start_line, start_column)
-            state.advance_column(3)
-        elif is_token_match(input, state.pos, "shadow"):
-            yield Token("Shadow", "shadow", start_line, start_column)
-            state.advance_column(6)
-        elif is_token_match(input, state.pos, "constant"):
-            yield Token("Constant", "constant", start_line, start_column)
-            state.advance_column(8)
-        elif is_token_match(input, state.pos, "print"):
-            yield Token("Print", "print", start_line, start_column)
-            state.advance_column(5)
-        elif is_token_match(input, state.pos, "spread"):
-            yield Token("Spread", "spread", start_line, start_column)
-            state.advance_column(6)
-
-        ## Conditionals
-        elif is_token_match(input, state.pos, "use"):
-            yield Token("Use", "use", start_line, start_column)
-            state.advance_column(3)
-        elif is_token_match(input, state.pos, "over"):
-            yield Token("Over", "over", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "unless"):
-            yield Token("Unless", "unless", start_line, start_column)
-            state.advance_column(6)
-        elif is_token_match(input, state.pos, "endif"):
-            yield Token("Endif", "endif", start_line, start_column)
-            state.advance_column(5)
-        elif is_token_match(input, state.pos, "elif"):
-            yield Token("Elif", "elif", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "if"):
-            yield Token("If", "if", start_line, start_column)
-            state.advance_column(2)
-        elif is_token_match(input, state.pos, "then"):
-            yield Token("Then", "then", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "else"):
-            yield Token("Else", "else", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "endcase"):
-            yield Token("Endcase", "endcase", start_line, start_column)
-            state.advance_column(7)
-        elif is_token_match(input, state.pos, "case"):
-            yield Token("Case", "case", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "when"):
-            yield Token("When", "when", start_line, start_column)
-            state.advance_column(4)
-        elif is_token_match(input, state.pos, "otherwise"):
-            yield Token("Otherwise", "otherwise", start_line, start_column)
-            state.advance_column(9)
-
-        ## Iterators
-        elif is_token_match(input, state.pos, "enduntil"):
-            yield Token("Enduntil", "enduntil", start_line, start_column)
-            state.advance_column(8)
-        elif is_token_match(input, state.pos, "until"):
-            yield Token("Until", "until", start_line, start_column)
-            state.advance_column(5)
-        elif is_token_match(input, state.pos, "repeat"):
-            yield Token("Repeat", "repeat", start_line, start_column)
-            state.advance_column(6)
-        elif is_token_match(input, state.pos, "enditerate"):
-            yield Token("Enditerate", "enditerate", start_line, start_column)
-            state.advance_column(10)
-        elif is_token_match(input, state.pos, "iterate"):
-            yield Token("Iterate", "iterate", start_line, start_column)
-            state.advance_column(7)
-        elif is_token_match(input, state.pos, "with"):
-            yield Token("With", "with", start_line, start_column)
-            state.advance_column(4)
-
-        ## Functions
-        elif is_token_match(input, state.pos, "endfn"):
-            yield Token("Endfn", "endfn", start_line, start_column)
-            state.advance_column(5)
-        elif is_token_match(input, state.pos, "fn"):
-            yield Token("Fn", "fn", start_line, start_column)
-            state.advance_column(2)
-        elif is_token_match(input, state.pos, "returns"):
-            yield Token("Returns", "returns", start_line, start_column)
-            state.advance_column(7)
-        elif is_token_match(input, state.pos, "return"):
-            yield Token("Return", "return", start_line, start_column)
-            state.advance_column(6)
-        elif is_token_match(input, state.pos, "variadic"):
-            yield Token("Variadic", "variadic", start_line, start_column)
-            state.advance_column(8)
-        elif is_token_match(input, state.pos, "false"):
-            yield Token("Boolean", False, start_line, start_column)
-            state.advance_column(5)
-        elif is_token_match(input, state.pos, "true"):
-            yield Token("Boolean", True, start_line, start_column)
-            state.advance_column(4)
-
-        ## Delimiters
-        elif input[state.pos] == "(":
-            yield Token("LParen", "(", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == ")":
-            yield Token("RParen", ")", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == "[":
-            yield Token("LBrace", "[", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == "]":
-            yield Token("RBrace", "]", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == ":":
-            yield Token("Colon", ":", start_line, start_column)
-            state.advance_column()
-        elif input[state.pos] == ",":
-            yield Token("Comma", ",", start_line, start_column)
-            state.advance_column()
+        # Simple token types
+        for token_type in token_types:
+            if len(token_type.sequence) == 1:
+                if input[state.pos] == token_type.sequence:
+                    value = token_type.sequence
+                    if token_type.default_value is not None:
+                        value = token_type.default_value
+                    found_token = Token(token_type.name, value, start_line, start_column)
+                    state.advance_column()
+                    break
+            else:
+                if is_token_match(input, state.pos, token_type.sequence):
+                    value = token_type.sequence
+                    if token_type.default_value is not None:
+                        value = token_type.default_value
+                    found_token = Token(token_type.name, value, start_line, start_column)
+                    state.advance_column(len(token_type.sequence))
+                    break
+        if found_token:
+            yield found_token
 
         # Comments
         elif input[state.pos:state.pos+3] == "###":
@@ -254,7 +193,7 @@ def lex(input):
                 else:
                     state.advance_column()
             if state.pos + 2 >= len(input):
-                raise ValueError(f"Unterminated multiline comment at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Unterminated multiline comment", line=start_line, column=start_column)
             state.advance_column(3)
             continue
 
@@ -273,7 +212,7 @@ def lex(input):
                 else:
                     state.advance_column()
             if state.pos >= len(input) or input[state.pos] != '"':
-                raise ValueError(f"Unterminated string at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Unterminated string", line=start_line, column=start_column)
             else:
                 yield Token("String", t, start_line, start_column)
             state.advance_column()
@@ -287,7 +226,7 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0x":
-                raise ValueError(f"Unterminated hex digit at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Unterminated hex digit", line=start_line, column=start_column)
             yield Token("Hex", int(num, 16), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0o":
             num = input[state.pos:state.pos+2]
@@ -297,7 +236,7 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0o":
-                raise ValueError(f"Unterminated octal digit at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Unterminated octal digit", line=start_line, column=start_column)
             yield Token("Octal", int(num, 8), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0b":
             num = input[state.pos:state.pos+2]
@@ -307,17 +246,17 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0b":
-                raise ValueError(f"Unterminated binary digit at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Unterminated binary digit", line=start_line, column=start_column)
             yield Token("Binary", int(num, 2), start_line, start_column)
         # Numbers
-        elif input[state.pos].isnumeric() or input[state.pos] == '.':
+        elif input[state.pos].isnumeric():
             num = input[state.pos]
             state.advance_column()
             while state.pos < len(input) and (input[state.pos].isnumeric() or input[state.pos] == '.'):
                 num += input[state.pos]
                 state.advance_column()
             if num.count('.') > 1:
-                raise ValueError(f"Invalid floating point number detected at line {start_line}, column {start_column}")
+                raise SyntaxException(f"Invalid floating point number detected", line=start_line, column=start_column)
             elif num.count('.') == 1:
                 yield Token("Float", float(num), start_line, start_column)
             else:
@@ -351,6 +290,11 @@ def is_token_match(input, pos, expect):
 
 
 def is_identifier(c):
-    symbol_blacklist = ["=", "+", "-", "/", "*", "%", "^", "(", ")", "[", "]", ",", ":", "!", "<", ">", "#", '"']
+    symbol_blacklist = [
+        ".", "=", "+", "-", "/",
+        "*", "%", "^", "(", ")",
+        "[", "]", ",", ":", "!",
+        "<", ">", "#", '"', "~",
+        "|" ]
     return not c.isspace() and c not in symbol_blacklist
 

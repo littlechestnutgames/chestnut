@@ -1,0 +1,13 @@
+fn count_down (n : Integer)
+    let parent_val = n * 10
+    print("Call (" + n + "): Parent val is " + parent_val)
+    if n > 0 then
+        shadow parent_val = n * 100 
+        print("Call (" + n + "): SHADOWED val is " + parent_val)
+        print("Call (" + n + "): Outer val is " + outer parent_val)
+        count_down(n - 1)
+    endif
+endfn
+
+count_down(3)
+print(pop)

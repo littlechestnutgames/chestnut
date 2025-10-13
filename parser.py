@@ -1,3 +1,6 @@
+from error import *
+from chestnut_type import *
+
 class UnaryOperationNode:
     def __init__(self, op, right):
         self.op = op
@@ -14,32 +17,55 @@ class BinaryOperationNode:
         return f"BinaryOperationNode(<{self.left}>, <{self.op}>, <{self.right}>)"
 
 class ConstantStatementNode:
-    def __init__(self, label, expression):
+    def __init__(self, label, expression, explicit_type=None):
         self.label = label
         self.expression = expression
+        self.explicit_type = None
     
     def __repr__(self):
         return f"ConstantStatementNode(<{self.label}>, <{self.expression}>)"
 
+class SimpleTokenStatement:
+    def __init__(self, token):
+        self.token = token
+
+    def gettype(self):
+        return "SimpleTokenStatement"
+
+    def __repr__(self):
+        return f"{self.gettype()}(<{self.token}>)"
+
+class BreakStatementNode(SimpleTokenStatement):
+    def gettype(self):
+        return "BreakStatementNode"
+
+class ContinueStatementNode(SimpleTokenStatement):
+    def gettype(self):
+        return "ContinueStatementNode"
+
 class LetStatementNode:
-    def __init__(self, label, expression):
+    def __init__(self, label, expression, explicit_type=None):
         self.label = label
         self.expression = expression
+        self.explicit_type = explicit_type
     
     def __repr__(self):
         return f"LetStatementNode(<{self.label}>, <{self.expression}>)"
 
 class ShadowStatementNode:
-    def __init__(self, label, expression):
+    def __init__(self, label, expression, explicit_type=None):
         self.label = label
         self.expression = expression
+        self.explicit_type = explicit_type
 
-class PrintStatementNode:
-    def __init__(self, expression):
-        self.expression = expression
-        
+class LoopindexExpressionNode():
     def __repr__(self):
-        return f"PrintStatementNode<{self.expression}>"
+        return "LoopindexExpressionNode"
+
+class ImportStatementNode:
+    def __init__(self, token, location):
+        self.token = token
+        self.location = location
 
 class IfStatementNode:
     def __init__(self, condition_expression, block_statements, elif_blocks, else_block):
@@ -67,21 +93,23 @@ class ElseStatementNode:
         return f"ElseStatementNode(<{self.block_statements}>)"
 
 class FnStatementNode:
-    def __init__(self, name, parameters, statements):
+    def __init__(self, name, parameters, statements, no_mangle=False):
         self.name = name
         self.parameters = parameters
         self.statements = statements
+        self.no_mangle = no_mangle # Mangle functions by default.
 
     def __repr__(self):
-        return f"FnStatementNode(<{self.name}>, <{self.parameters}>, <{self.statements}>)"
+        return f"FnStatementNode(<{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
 
 class AnonymousFnExpressionNode:
-    def __init__(self, parameters, statements):
+    def __init__(self, parameters, statements, no_mangle=False):
         self.parameters = parameters
         self.statements = statements
+        self.no_mangle = no_mangle
 
     def __repr__(self):
-        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>)"
+        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
 
 class FnParameter:
     def __init__(self, name, paramtype, default_value=None, variadic=False):
@@ -92,6 +120,17 @@ class FnParameter:
 
     def __repr__(self):
         return f"FnParameter(<{self.name}>, <{self.paramtype}>, <{self.default_value}>, <{self.variadic}>)"
+
+class StructFnStatementNode:
+    def __init__(self, target_struct, name, parameters, statements, no_mangle=False):
+        self.target_struct = target_struct
+        self.name = name
+        self.parameters = parameters
+        self.statements = statements
+        self.no_mangle = no_mangle
+
+    def __repr__(self):
+        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
 
 class CaseStatementNode:
     def __init__(self, subject, when_blocks, otherwise):
@@ -125,6 +164,14 @@ class UntilStatementNode:
     def __repr__(self):
         return f"UntilStatementNode(<{self.condition}>, <{self.statements}>)"
 
+class WhileStatementNode:
+    def __init__(self, condition, statements):
+        self.condition = condition
+        self.statements = statements
+
+    def __repr__(self):
+        return f"WhileStatementNode(<{self.condition}>, <{self.statements}>)"
+
 class IterateStatementNode:
     def __init__(self, subject, identifier, statements):
         self.subject = subject
@@ -139,6 +186,12 @@ class ListLiteralNode:
         self.elements = elements
     def __repr__(self):
         return f"ListLiteralNode({self.elements})"
+
+class TupleLiteralNode:
+    def __init__(self, elements):
+        self.elements = elements
+    def __repr__(self):
+        return f"TupleLiteralNode({self.elements})"
 
 class IndexAccessNode:
     def __init__(self, target, index):
@@ -197,6 +250,40 @@ class ExpressionStatementNode():
     def __repr__(self):
         return f"ExpressionStatementNode(<{self.expression}>)"
 
+class StructDefinitionNode():
+    def __init__(self, identifier, properties):
+        self.identifier = identifier
+        self.properties = properties
+
+    def __repr__(self):
+        return f"StructDefinitionNode(<{self.identifier}>, <{self.properties}>)"
+
+class StructPropertyNode():
+    def __init__(self, identifier, value_type):
+        self.identifier = identifier
+        self.value_type = value_type
+
+    def __repr__(self):
+        return f"StructPropertyNode(<{self.identifier}>, <{self.value_type}>)"
+
+class PropertyAccessNode():
+    def __init__(self, identifier, property_identifier):
+        self.identifier = identifier
+        self.property_identifier = property_identifier
+
+    def __repr__(self):
+        return f"PropertyAccessNode(<{self.identifier}>, <{self.property_identifier}>)"
+
+class PropertyAssignmentNode():
+    def __init__(self, identifier, property_identifier, op, value_expression):
+        self.identifier = identifier
+        self.property_identifier = property_identifier
+        self.op = op
+        self.value_expression = value_expression
+
+    def __repr__(self):
+        return f"PropertyAssignmentNode(<{self.identifier}>, <{self.property_identifier}>, <{self.op}>, <{self.value_expression}>)"
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = iter(tokens)
@@ -229,20 +316,28 @@ class Parser:
         token = self.peek()
         if token and token.label in ["Let", "Shadow", "Constant"]:
             return self.parse_let_statement()
-        elif token and token.label == "Print":
-            return self.parse_print_statement()
+        elif token and token.label == "Struct":
+            return self.parse_struct_definition()
+        elif token and token.label == "Import":
+            return self.parse_import_statement()
         elif token and token.label == "If":
             return self.parse_if_statement()
         elif token and token.label == "Fn":
             return self.parse_fn_statement()
         elif token and token.label == "Case":
             return self.parse_case_statement()
+        elif token and token.label == "While":
+            return self.parse_while_statement()
         elif token and token.label == "Until":
             return self.parse_until_statement()
         elif token and token.label == "Iterate":
             return self.parse_iterate_statement()
         elif token and token.label == "Return":
             return self.parse_return_statement()
+        elif token and token.label == "Break":
+            return BreakStatementNode(self.consume())
+        elif token and token.label == "Continue":
+            return ContinueStatementNode(self.consume())
         elif self.check_label("Identifier") and self.peek_next().label in [
                 "Assignment", "Addassign", "Subassign", 
                 "Mulassign", "Divassign"
@@ -253,39 +348,77 @@ class Parser:
 
     def parse_let_statement(self):
         let_token = self.consume()
+        name_token = None
+        explicit_type = None
+        if self.check_next_label("Comma"):
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Missing identifier after start of tuple in let", self.peek())
+            name_token = [self.consume()]
+            while self.check_label("Comma"):
+                self.consume() # Consume ,
+                if not self.check_label("Identifier"):
+                    raise SyntaxException("Missing identifier in tuple assignment via let", self.peek())
+                name_token.append(self.consume())
+        else:
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Expected identifier in let statement", self.peek())
+            name_token = self.consume()
+            if self.check_label("Colon"):
+                # Explicitly typed variable
+                colon = self.consume()
 
-        name_token = self.consume()
-        if not name_token or name_token.label != "Identifier":
-            raise SyntaxError(f"Expected identifier after 'let', got {name_token.label}")
+                if not self.check_label("Identifier"):
+                    raise SyntaxException(f"Expected type identifier after colon in let statement", self.peek())
+                type_identifier = self.consume()
 
         assignment_token = self.consume()
         if not assignment_token or assignment_token.label != "Assignment":
-            raise SyntaxError(f"Expected '=' after identifier {name_token.data} in let statement")
+            raise SyntaxException(f"Expected '=' after identifier {name_token.data} in let statement", self.peek())
 
         expression = self.parse_expression()
 
         if let_token.label == "Shadow":
-            return ShadowStatementNode(name_token, expression)
+            return ShadowStatementNode(name_token, expression, explicit_type)
         elif let_token.label == "Constant":
-            return ConstantStatementNode(name_token, expression)
-        return LetStatementNode(name_token, expression)
+            return ConstantStatementNode(name_token, expression, explicit_type)
+        return LetStatementNode(name_token, expression, explicit_type)
 
-    def parse_print_statement(self):
+    def parse_struct_definition(self):
+        self.consume()
+        if not self.check_label("Identifier"):
+            raise SyntaxException(f"Expected identifier after struct", self.peek())
+        identifier = self.consume()
+
+        properties = []
+        while not self.check_label("Endstruct"):
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"Expected identifier for property, got {self.peek().label}", self.peek())
+            property_identifier = self.consume()
+
+            if not self.check_label("Colon"):
+                raise SyntaxException(f"Expected colon and identifer after property name, got {self.peek().label}", self.peek())
+            self.consume()
+
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"Expected identifier for property, got {self.peek().label}", self.peek())
+
+            type_identifier = self.consume()
+
+            properties.append(StructPropertyNode(property_identifier, type_identifier))
+        if not self.check_label("Endstruct"):
+            raise SyntaxException(f"Expected endstruct after struct definition", self.peek())
+
         self.consume()
 
-        if not self.check_label("LParen"):
-            raise SyntaxError(f"Expected '(' in print statement at {self.get_line_and_column()}")
-        
-        self.consume()
+        return StructDefinitionNode(identifier, properties)
 
-        expression = self.parse_expression()
+    def parse_import_statement(self):
+        keyword = self.consume()
+        if not self.check_label("String"):
+            raise SyntaxException("Expected string after import", self.peek())
+        location = self.consume()
 
-        if not self.check_label("RParen"):
-            raise SyntaxError(f"Expected ')' in print statement at {self.get_line_and_column()}")
-        
-        self.consume()
-
-        return PrintStatementNode(expression)
+        return ImportStatementNode(keyword, location)
 
     def parse_if_statement(self):
         # Consume the if
@@ -294,7 +427,7 @@ class Parser:
         condition_expression = self.parse_expression()
 
         if self.peek() and self.peek().label != "Then":
-            raise SyntaxError("`then` missing after condition in if statement")
+            raise SyntaxException("`then` missing after condition in if statement", self.peek())
 
         # Consume then.
         self.consume()
@@ -304,7 +437,7 @@ class Parser:
             if_statements.append(self.parse_statement())
 
         if self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
-            raise SyntaxError("Expected elif, else, or endif after if statement")
+            raise SyntaxException("Expected elif, else, or endif after if statement", self.peek())
 
         elif_blocks = []
         while self.peek() and self.peek().label == 'Elif':
@@ -314,7 +447,7 @@ class Parser:
             condition_expression = self.parse_expression()
 
             if self.peek() and self.peek().label != "Then":
-                raise SyntaxError("`then` missing after condition in elif statement")
+                raise SyntaxException("`then` missing after condition in elif statement", self.peek())
 
             # Consume then
             self.consume()
@@ -326,7 +459,7 @@ class Parser:
             elif_blocks.append(ElifStatementNode(condition_expression, elif_statements))
 
         if self.peek() and not self.peek().label in ['Else', 'Endif']:
-            raise SyntaxError("Expected else or endifin if statement")
+            raise SyntaxException("Expected else or endifin if statement", self.peek())
 
         else_block = None
         if self.peek() and self.peek().label == "Else":
@@ -340,96 +473,144 @@ class Parser:
             else_block = ElseStatementNode(else_statements)
 
         if self.peek() and self.peek().label != "Endif":
-            raise SyntaxError("Expected endif in if statement")
+            raise SyntaxException("Expected endif in if statement", self.peek())
 
         # Consume endif
         self.consume()
 
         return IfStatementNode(condition_expression, if_statements, elif_blocks, else_block)
 
+    def pull_params(self):
+        self.consume() # Consume the (
+        params = []
+
+        if self.check_label("RParen"): # Empty params list.
+            self.consume()
+            return params
+
+        variadic_encountered = False
+        optional_encountered = False
+        variadic = False
+        default_value = None
+
+        if self.check_label("Variadic"):
+            self.consume()
+            variadic = True
+            variadic_encountered = True
+
+        # Parse parameter identifier
+        if not self.check_label("Identifier"):
+            print(self.peek())
+            raise SyntaxException("Expected identifier in function parameters", self.peek())
+        identifier = self.consume() # Consume identifier
+
+        # Parse type delimiter
+        if not self.check_label("Colon"):
+            raise SyntaxException("Expected colon after parameter identifier", self.peek())
+        self.consume()
+
+        # Parse type identifier
+        if not self.check_label("Identifier"):
+            raise SyntaxException("Expected type identifier in function parameters", self.peek())
+        param_type = self.consume()
+
+        # Check if we need to parse default value assignment
+        if self.check_label("Assignment"):
+            self.consume() # Consume =
+            optional_encountered = True
+            default_value = self.parse_expression()
+        params.append(FnParameter(identifier, param_type, default_value, variadic))
+
+        while self.check_label("Comma"):
+            # Reset
+            variadic = False
+            default_value = None
+            identifier = None
+            param_type = None
+
+            self.consume() # Consume ,
+
+            if self.check_label("Variadic"):
+                self.consume()
+                variadic = True
+                variadic_encountered = True
+
+            # Variadic parameter received prior to this.
+            if variadic_encountered and not variadic:
+                raise SyntaxException("Variadic parameters must appear as the last parameter", self.peek())
+
+            # Parse parameter identifier
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Expected identifier in function parameters", self.peek())
+            identifier = self.consume() # Consume identifier
+
+            # Parse type delimiter
+            if not self.check_label("Colon"):
+                raise SyntaxException("Expected colon after parameter identifier", self.peek())
+            self.consume()
+
+            # Parse type identifier
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Expected type identifier in function parameters", self.peek())
+            param_type = self.consume()
+
+            # Check if we need to parse default value assignment
+            if self.check_label("Assignment"):
+                if variadic:
+                    raise SyntaxException("Variadic parameters may not have default values", self.peek())
+                self.consume() # Consume =
+                optional_encountered = True
+                default_value = self.parse_expression()
+            else:
+                # Did we see an optional argument before this required argument?
+                if optional_encountered:
+                    raise SyntaxException("Optional parameters must appear after required parameters", self.peek())
+            params.append(FnParameter(identifier, param_type, default_value, variadic))
+        if not self.check_label("RParen"):
+            raise SyntaxException("Expected ')' after parameter list", self.peek())
+        self.consume() # Consume )
+        return params
+
     def parse_fn_statement(self):
         # Consume fn token
         self.consume()
+        
+        struct_params = None
+        if self.check_label("LParen"):
+            struct_params = self.pull_params()
 
-        if self.peek() and self.peek().label != "Identifier":
-            raise SyntaxError(f"Identifier expected after fn, got {self.peek().label}")
+        name = None
+        if self.check_label("Identifier"):
+            name = self.consume()
 
-        name = self.consume()
+        fn_params = struct_params
+        if self.check_label("LParen"):
+            fn_params = self.pull_params()
 
-        if self.peek() and self.peek().label != "LParen":
-            raise SyntaxError(f"Expected '(' after fn, got {self.peek().label}")
-
-        self.consume()
-
-        parameters = []
-        variadic_encountered = False
-        optional_encountered = False
-        while self.peek() and self.peek().label != "RParen":
-            if self.peek() and self.peek().label == "Comma":
-                self.consume()
-                if self.peek().label == "RParen":
-                    raise SyntaxError("Expected parameter in fn, got ')'")
-
-            # Have we seen variadic before this parameter? Reject it.
-            if variadic_encountered:
-                raise SyntaxError("A variadic parameter must be the last parameter.")
-
-            variadic = False
-            if self.peek() and self.peek().label == "Variadic":
-                variadic_encountered = True
-                variadic = True
-                self.consume() # Consume variadic
-
-            if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected identifier in fn, got {self.peek().label}")
-
-            param = self.consume() # Consume parameter label.
-
-            if self.peek() and self.peek().label != "Colon":
-                raise SyntaxError(f"Expected ':' after identifier in fn, got {self.peek().label}")
-
-            self.consume() # Consume colon.
-
-            if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected type identifier in param {param.data}, got {self.peek().label}")
-
-            paramtype = self.consume()
-
-            default_value = None
-            # Default value parsing.
-            if not self.check_label("Assignment") and optional_encountered and not variadic:
-                raise SyntaxError(f"Required parameter received after optional parameter at line {param.line}, column {param.column}")
-
-            if variadic and self.peek() and self.peek().label == "Assignment":
-                raise SyntaxError(f"Variadic parameters cannot have default values, at line {param.line}, column {param.column}")
-
-            if self.peek() and self.peek().label == "Assignment":
-                self.consume() # Consume the =
-                default_value = self.parse_expression()
-                optional_encountered = True
-            parameters.append(FnParameter(param, paramtype, default_value, variadic))
-
-        if self.peek() and self.peek().label != "RParen":
-            raise SyntaxError(f"Expected ')' after fn parameters, got {self.peek().label}")
-
-        # Consume )
-        self.consume()
+        if struct_params is not None and struct_params != fn_params:
+            if len(struct_params) > 1:
+                raise SyntaxException("Struct methods should only contain one identifier with type", struct_params[1])
+            if struct_params[0].variadic:
+                raise SyntaxException("A struct method parameter cannot be variadic", struct_params[0])
+            if struct_params[0].default_value is not None:
+                raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
 
         return_types = []
         if self.peek() and self.peek().label == "Returns":
-            self.consume()
+            self.consume() # Consume Returns
 
             if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected type identifier(s), got {self.peek().label}")
+                raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
 
             if self.peek() and self.peek().label == "LParen":
+                self.consume() # Consume LParen
                 # Multiple return types.
                 while self.peek() and self.peek().label != "RParen":
                     if self.peek() and self.peek().label == "Comma":
                         self.consume()
 
                     if self.peek() and self.peek().label != "Identifier":
-                        raise SyntaxError(f"Expected type identifier, got {self.peek().label}")
+                        raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
                     return_types.append(self.consume())
 
                 self.consume() # Consume RParen
@@ -437,18 +618,24 @@ class Parser:
                 return_types.append(self.consume())
 
         statements = []
+
         while self.peek() and self.peek().label != "Endfn":
             statements.append(self.parse_statement())
+
         if not self.peek():
-            raise SyntaxError(f"Unexpected end of input, expected endfn for fn {name.data}")
-        self.consume()
+            raise SyntaxException(f"Unexpected end of input, expected endfn for fn {name.data}", self.peek())
+        self.consume() # Consume Endfn
 
-        return FnStatementNode(name, parameters, statements)
-    
-    def get_line_and_column(self):
-        return f"line {self.peek().line}, column {self.peek().column}"
-    
+        if struct_params is not None and struct_params != fn_params:
+            if name is None:
+                raise SyntaxException("Expected function identifier for struct method", struct_params)
+            return StructFnStatementNode(struct_params[0], name, fn_params, statements)
 
+        if name is None:
+            raise SyntaxException("Validly defined anonymous function not associated to label will be unrefencable", self.peek())
+
+        return FnStatementNode(name, fn_params, statements)
+    
     def parse_case_statement(self):
         self.consume()
 
@@ -478,19 +665,40 @@ class Parser:
                 statements.append(self.parse_statement())
             otherwise = OtherwiseStatementNode(statements)
         if not self.check_label("Endcase"):
-            raise SyntaxError(f"Unexpected {self.peek().label}, expected endcase at {self.get_line_and_column()}")
+            raise SyntaxException(f"Unexpected {self.peek().label}, expected endcase", self.peek())
         
         self.consume()
 
         return CaseStatementNode(subject, when_blocks, otherwise)
     
+    def parse_while_statement(self):
+        self.consume()
+
+        condition = self.parse_expression()
+
+        if self.peek() and self.peek().label != "Repeat":
+            raise SyntaxException("Expected repeat after condition in until statement", self.peek())
+
+        self.consume()
+
+        statements = []
+        while self.peek() and self.peek().label != "Endwhile":
+            statements.append(self.parse_statement())
+        
+        if self.peek() and self.peek().label != "Endwhile":
+            raise SyntaxException("Unexpected end of input, unterminated while block", self.peek())
+        
+        self.consume()
+
+        return WhileStatementNode(condition, statements)
+
     def parse_until_statement(self):
         self.consume()
 
         condition = self.parse_expression()
 
         if self.peek() and self.peek().label != "Repeat":
-            raise SyntaxError("Expected repeat after condition in until statement")
+            raise SyntaxException("Expected repeat after condition in until statement", self.peek())
 
         self.consume()
 
@@ -499,7 +707,7 @@ class Parser:
             statements.append(self.parse_statement())
         
         if self.peek() and self.peek().label != "Enduntil":
-            raise SyntaxError("Unexpected end of input, unterminated until block")
+            raise SyntaxException("Unexpected end of input, unterminated until block", self.peek())
         
         self.consume()
 
@@ -520,11 +728,11 @@ class Parser:
         subject = self.parse_expression()
 
         if not self.check_label("With"):
-            raise SyntaxError("Expected keyword with in iterate block")
+            raise SyntaxException("Expected keyword with in iterate block", self.peek())
         self.consume() # consume with.
 
         if not self.check_label("Identifier"):
-            raise SyntaxError(f"Expected identifier after with, got {self.peek().label}")
+            raise SyntaxException(f"Expected identifier after with, got {self.peek().label}", self.peek())
         
         identifier = self.consume()
         statements = []
@@ -532,12 +740,12 @@ class Parser:
             statements.append(self.parse_statement())
 
         if not self.check_label("Enditerate"):
-            raise SyntaxError("Unexpected end of input, iterate block missing enditerate")
+            raise SyntaxException("Unexpected end of input, iterate block missing enditerate", self.peek())
         self.consume()
         return IterateStatementNode(subject, identifier, statements)
     
     def parse_return_statement(self):
-        self.consume()
+        self.consume() # Consume return
         return ReturnStatementNode(self.parse_expression())
 
     def parse_assignment_statement(self):
@@ -548,7 +756,7 @@ class Parser:
     
     def parse_expression(self):
         return self.parse_ternary()
-    
+ 
     def parse_ternary(self):
         if self.check_label("Use"):
             return self.parse_use_expression()
@@ -564,7 +772,7 @@ class Parser:
             val1 = self.parse_logical_ors()
 
         if not self.check_label("Over"):
-            raise SyntaxError(f"Expected 'over' in use expression at {self.get_line_and_column()}")
+            raise SyntaxException(f"Expected 'over' in use expression", self.peek())
         
         self.consume() # Consume Over
 
@@ -598,10 +806,10 @@ class Parser:
         return next_fn()
 
     def parse_logical_ors(self):
-        return self.parse_binary_operation(self.parse_logical_ands, ['Or', 'Nor', 'Xor', 'Xnor'])
+        return self.parse_binary_operation(self.parse_logical_ands, ['Or', 'BitwiseOr', 'BitwiseNor', 'BitwiseXor', 'BitwiseXnor', 'BitwiseShiftLeft', 'BitwiseShiftRight', 'BitwiseRotateLeft', 'BitwiseRotateRight'])
 
     def parse_logical_ands(self):
-        return self.parse_binary_operation(self.parse_relational, ['And', 'Nand'])
+        return self.parse_binary_operation(self.parse_relational, ['And', "BitwiseAnd", "BitwiseNand"])
 
     def parse_relational(self):
         return self.parse_binary_operation(self.parse_additive, ["Gte", "Gt", "Eq", "Neq", "Lte", "Lt"])
@@ -613,28 +821,34 @@ class Parser:
         return self.parse_binary_operation(self.parse_exponentiation, ['Multiplication', 'Division', 'Modulo'])
 
     def parse_exponentiation(self):
-        left = self.parse_unary_spread()
+        left = self.parse_unary_outer()
         if self.peek() and self.peek().label == "Exponent":
             op = self.consume()
             right = self.parse_exponentiation()
             return BinaryOperationNode(left, op, right)
         return left
 
+    def parse_unary_outer(self):
+        return self.parse_unary_operation(self.parse_unary_spread, "Outer")
+
     def parse_unary_spread(self):
         return self.parse_unary_operation(self.parse_unary_not, "Spread")
 
     def parse_unary_not(self):
-        return self.parse_unary_operation(self.parse_unary_negative, "Not")
+        return self.parse_unary_operation(self.parse_unary_bitwisenot, "Not")
+    
+    def parse_unary_bitwisenot(self):
+        return self.parse_unary_operation(self.parse_unary_negative, "BitwiseNot")
 
     def parse_unary_negative(self):
-        return self.parse_unary_operation(self.parse_primary, "Subtraction")
+        return self.parse_unary_operation(self.parse_postfix_expression, "Subtraction")
 
     def parse_fn_expression(self):
         # Consume fn token
         self.consume()
 
         if self.peek() and self.peek().label != "LParen":
-            raise SyntaxError(f"Expected '(' after fn, got {self.peek().label}")
+            raise SyntaxException(f"Expected '(' after fn, got {self.peek().label}", self.peek())
 
         self.consume()
 
@@ -644,11 +858,11 @@ class Parser:
             if self.peek() and self.peek().label == "Comma":
                 self.consume()
                 if self.peek().label == "RParen":
-                    raise SyntaxError("Expected parameter in fn, got ')'")
+                    raise SyntaxException("Expected parameter in fn, got ')'", self.peek())
 
             # Have we seen variadic before this parameter? Reject it.
             if variadic_encountered:
-                raise SyntaxError("A variadic parameter must be the last parameter.")
+                raise SyntaxException("A variadic parameter must be the last parameter.", self.peek())
 
             variadic = False
             if self.peek() and self.peek().label == "Variadic":
@@ -657,17 +871,17 @@ class Parser:
                 self.consume() # Consume variadic
 
             if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected identifier in fn, got {self.peek().label}")
+                raise SyntaxException(f"Expected identifier in fn, got {self.peek().label}", self.peek())
 
             param = self.consume()
 
             if self.peek() and self.peek().label != "Colon":
-                raise SyntaxError(f"Expected ':' after identifier in fn, got {self.peek().label}")
+                raise SyntaxException(f"Expected ':' after identifier in fn, got {self.peek().label}", self.peek())
 
             self.consume() # Consume colon.
 
             if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected type identifier in param {param.data}, got {self.peek().label}")
+                raise SyntaxException(f"Expected type identifier in param {param.data}, got {self.peek().label}", self.peek())
 
             paramtype = self.consume()
 
@@ -680,7 +894,7 @@ class Parser:
             parameters.append(FnParameter(param, paramtype, default_value, variadic))
 
         if self.peek() and self.peek().label != "RParen":
-            raise SyntaxError(f"Expected ')' after fn parameters, got {self.peek().label}")
+            raise SyntaxException(f"Expected ')' after fn parameters, got {self.peek().label}", self.peek())
 
         # Consume )
         self.consume()
@@ -690,7 +904,7 @@ class Parser:
             self.consume()
 
             if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
-                raise SyntaxError(f"Expected type identifier(s), got {self.peek().label}")
+                raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
 
             if self.peek() and self.peek().label == "LParen":
                 # Multiple return types.
@@ -699,7 +913,7 @@ class Parser:
                         self.consume()
 
                     if self.peek() and self.peek().label != "Identifier":
-                        raise SyntaxError(f"Expected type identifier, got {self.peek().label}")
+                        raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
                     return_types.append(self.consume())
 
                 self.consume() # Consume RParen
@@ -710,28 +924,43 @@ class Parser:
         while self.peek() and self.peek().label != "Endfn":
             statements.append(self.parse_statement())
         if not self.peek():
-            raise SyntaxError(f"Unexpected end of input, expected endfn at {self.get_line_and_column()}")
+            raise SyntaxException(f"Unexpected end of input, expected endfn", self.peek())
         self.consume()
 
         return AnonymousFnExpressionNode(parameters, statements)
+
+    def parse_tuple_literal(self):
+        elements = []
+        if self.check_label("RParen"):
+            return TupleLiteralNode(tuple(elements))
+        elements.append(self.parse_expression())
+        while self.check_label("Comma"):
+            self.consume()
+            if self.check_label("RParen"):
+                raise SyntaxException(f"Unexpected trailing comma in tuple", self.peek())
+            elements.append(self.parse_expression())
+        if not self.check_label("RParen"):
+            raise SyntaxException(f"Expected ')' at the end of a tuple, got {self.peek().label}", self.peek())
+        self.consume()
+        return TupleLiteralNode(tuple(elements))
 
     def parse_list_literal(self):
         self.consume() # Consume the left brace.
 
         elements = []
-        
         if self.check_label("RBrace"):
+            self.consume()
             return ListLiteralNode(elements)
 
         elements.append(self.parse_expression())
         while self.check_label("Comma"):
             self.consume()
             if self.check_label("RBrace"):
-                raise SyntaxError(f"Unexpected trailing comma in list at {self.get_line_and_column()}")
+                raise SyntaxException(f"Unexpected trailing comma in list", self.peek())
             elements.append(self.parse_expression())
 
         if not self.check_label("RBrace"):
-            raise SyntaxError(f"Expect ']' at the end of a list literal, got {self.peek().label} at {self.get_line_and_column()}")
+            raise SyntaxException(f"Expect ']' at the end of a list literal, got {self.peek().label}", self.peek())
 
         self.consume() # Consume the right brace.
         return ListLiteralNode(elements)
@@ -742,7 +971,7 @@ class Parser:
         index = self.parse_expression()
 
         if not self.check_label("RBrace"):
-            raise SyntaxError(f"Expected ']' at the end of index access expression, got {self.peek().label} at {self.get_line_and_column()}")
+            raise SyntaxException(f"Expected ']' at the end of index access expression, got {self.peek().label}", self.peek())
 
         self.consume() # Consume ]
 
@@ -753,19 +982,110 @@ class Parser:
 
         return IndexAccessNode(target, index)
 
+    def parse_property_access(self, identifier):
+        self.consume() # Consume period
+
+        if not self.check_label("Identifier"):
+            raise SyntaxException(f"Expected identifier after period for property access", self.peek())
+
+        property_identifier = self.consume() # Consume property label.
+
+        if not self.check_labels(["Assignment", "Addassign", "Subassign", "Divassign", "Mulassign"]):
+            return PropertyAccessNode(identifier, property_identifier)
+
+        op = self.consume() # Consume operator
+
+        value_expression = self.parse_expression()
+
+        return PropertyAssignmentNode(identifier, property_identifier, op, value_expression)
+
+    def parse_loopindex(self):
+        self.consume() # `Consume the Loopindex
+        return LoopindexExpressionNode()
+
+    def parse_readline(self):
+        self.consume()
+        if not self.check_label("LParen"):
+            raise SyntaxException(f"Expected '(' in readline call, get {self.peek().label}", self.peek())
+        self.consume()
+        if not self.check_label("RParen"):
+            raise SyntaxException(f"Expected '(' in readline call, get {self.peek().label}", self.peek())
+        self.consume()
+        return ReadlineExpressionNode()
+
+    def parse_postfix_expression(self):
+        left = self.parse_primary()
+     
+        while self.check_labels(["LBrace", "Period", "LParen"]):
+            if self.check_label("LBrace"):
+                left = self.parse_index_access(left)
+            elif self.check_label("Period"):
+                left = self.parse_property_access(left)
+            elif self.check_label("LParen"):
+                self.consume() # Consume (
+                params = []
+                if self.check_label("RParen"):
+                    self.consume() # Consume )
+                    left = CallStatementNode(left, params)
+                    continue
+                params.append(self.parse_expression()) # Consume first
+                while self.check_label("Comma"):
+                    self.consume() # Consume ,
+                    if self.check_label("RParen"):
+                        raise SyntaxExpression("Expected identifier after comma in call", self.peek())
+                    params.append(self.parse_expression())
+                if not self.check_label("RParen"):
+                    raise SyntaxExpression("Expected ')' in inline function call", self.peek())
+                self.consume() # Consume ')'
+                left = CallStatementNode(left, params)
+                continue
+        
+        return left
+
+    def parse_paren_expression(self):
+        self.consume() # Consume (
+        if self.check_label("RParen"):
+            self.consume()
+            return TupleLiteralNode(tuple([]))
+        first_expression = self.parse_expression()
+        if self.check_label("Comma"):
+            expressions = [first_expression]
+            while self.check_label("Comma"):
+                self.consume()
+                if self.check_label("RParen"):
+                    raise SyntaxException("Expected identifer in tuple after comma, got ')'", self.peek())
+                expressions.append(self.parse_expression())
+            if not self.check_label("RParen"):
+                raise SyntaxException("Expected ')' at the end of a tuple", self.peek())
+            self.consume() # Consume )
+            return TupleLiteralNode(tuple(expressions))
+        else:
+            if self.check_label('RParen'):
+                self.consume() # Consume )
+                return first_expression
+            else:
+                raise SyntaxException(f"Expected right parenthesis, got {self.peek().label}", self.peek())
+
     def parse_primary(self):
         token = self.peek()
 
-        if token and token.label in ["Boolean", "Integer", "Float", "String", "Binary", "Hex", "Octal", "Null"]:
-            return self.consume()
-        
+        if self.check_label("Boolean"):
+            return ChestnutBoolean(self.consume())
+        elif self.check_labels(["Integer", "Binary", "Hex", "Octal"]):
+            return ChestnutInteger(self.consume())
+        elif self.check_label("Float"):
+            return ChestnutFloat(self.consume())
+        elif self.check_label("String"):
+            return ChestnutString(self.consume())
+        elif self.check_label("Null"):
+            return ChestnutNull(self.consume())
+
         elif token and token.label == "Fn":
             return self.parse_fn_expression()
-
-        if token and token.label == "Identifier":
+        elif token and token.label == "Loopindex":
+            return self.parse_loopindex()
+        elif self.check_label("Identifier"):
             identifier = self.consume()
-            if self.check_label("LBrace"):
-                return self.parse_index_access(identifier)
 
             if self.check_label("LParen"):
                 self.consume()
@@ -774,10 +1094,10 @@ class Parser:
                     if self.check_label("Comma"):
                         self.consume()
                         if not self.peek() or self.check_label("RParen"):
-                            raise SyntaxError(f"Expected identifier after comma in function call to {identifier.data}")
+                            raise SyntaxException(f"Expected identifier after comma in function call to {identifier.data}", self.peek())
                     params.append(self.parse_expression())
                 if not self.check_label("RParen"):
-                    raise SyntaxError(f"Unexpected end of input parsing arguments in {identifier.data}")
+                    raise SyntaxException(f"Unexpected end of input parsing arguments in {identifier.data}", self.peek())
                 self.consume()
 
                 return CallStatementNode(identifier, params)
@@ -785,14 +1105,7 @@ class Parser:
                 return identifier
         elif self.check_label("LBrace"):
             return self.parse_list_literal()
-        elif token and token.label == 'LParen':
-            self.consume()
-            expression_node = self.parse_expression()
-
-            if self.peek() and self.peek().label == 'RParen':
-                self.consume()
-                return expression_node
-            else:
-                raise SyntaxError(f"Expected right parenthesis, got {self.peek().label}")
+        elif self.check_label('LParen'):
+            return self.parse_paren_expression()
         else:
-            raise SyntaxError(f"Unexpected token {token.label} at {self.get_line_and_column()}")
+            raise SyntaxException(f"Unexpected token {token.label}", self.peek())
