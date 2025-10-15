@@ -1,14 +1,14 @@
-###
+print("Iterate loop:")
 let a = ["One", "Two", "Three"]
 iterate a with item
     iterate a with item2
         print("Items: " + item + " " + item2)
         print("Outer: " + outer loop_index)
 	print("Inner: " + loop_index)
-	print("Grandpa?: " + outer outer loop_index)
     enditerate
 enditerate
 
+print("While loop:")
 while loop_index < 2 repeat
     while loop_index < 2 repeat
          print("Outer " + outer loop_index)
@@ -16,20 +16,11 @@ while loop_index < 2 repeat
     endwhile
 endwhile
 
+print("Until Loop")
 until loop_index > 1 repeat
-    while loop_index > 1 repeat
+    until loop_index > 1 repeat
          print("Outer " + outer loop_index)
          print("Inner " + loop_index)
-    endwhile
+    enduntil
 enduntil
 
-print("Hi")
-### 
-until loop_index > 1 repeat
-    print("From outer " + loop_index) 
-    while loop_index < 1 repeat
-         print("Outer from inner" + outer loop_index)
-         print("Inner from inner" + loop_index)
-         print("Outer outer from inner", outer outer loop_index)
-    endwhile
-enduntil

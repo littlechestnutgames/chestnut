@@ -77,6 +77,8 @@ class ChestnutString(ChestnutType):
 class ChestnutNull(ChestnutType):
     def isnull(self):
         return True
+    def __str__(self):
+        return "null"
 
 class ChestnutBoolean(ChestnutType):
     def isbool(self):

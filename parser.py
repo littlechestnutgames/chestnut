@@ -93,23 +93,28 @@ class ElseStatementNode:
         return f"ElseStatementNode(<{self.block_statements}>)"
 
 class FnStatementNode:
-    def __init__(self, name, parameters, statements, no_mangle=False):
+    def __init__(self, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
         self.name = name
         self.parameters = parameters
         self.statements = statements
+        self.return_types = return_types
+        self.brings = brings
         self.no_mangle = no_mangle # Mangle functions by default.
 
     def __repr__(self):
-        return f"FnStatementNode(<{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
+        return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings}\n\tNo-Mangle:{self.no_mangle}>)"
+
 
 class AnonymousFnExpressionNode:
-    def __init__(self, parameters, statements, no_mangle=False):
+    def __init__(self, parameters, statements, return_types=None, brings=[], no_mangle=False):
         self.parameters = parameters
         self.statements = statements
+        self.return_types = return_types
+        self.brings = brings
         self.no_mangle = no_mangle
 
     def __repr__(self):
-        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
+        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
 
 class FnParameter:
     def __init__(self, name, paramtype, default_value=None, variadic=False):
@@ -122,15 +127,17 @@ class FnParameter:
         return f"FnParameter(<{self.name}>, <{self.paramtype}>, <{self.default_value}>, <{self.variadic}>)"
 
 class StructFnStatementNode:
-    def __init__(self, target_struct, name, parameters, statements, no_mangle=False):
+    def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
         self.target_struct = target_struct
         self.name = name
         self.parameters = parameters
         self.statements = statements
+        self.return_types = return_types
+        self.brings = brings
         self.no_mangle = no_mangle
 
     def __repr__(self):
-        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.no_mangle}>)"
+        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
 
 class CaseStatementNode:
     def __init__(self, subject, when_blocks, otherwise):
@@ -571,6 +578,50 @@ class Parser:
         self.consume() # Consume )
         return params
 
+    def parse_brings(self):
+        brings = []
+        if self.check_label("Brings"):
+            self.consume() # Consume Brings
+            if not self.check_label("LParen"):
+                raise SyntaxException("Expected '(' after brings token", self.peek())
+            self.consume() # Consume (
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Expected identifier in brings", self.peek())
+            brings.append(self.consume())
+            while self.check_label("Comma"):
+                self.consume() # Consume ,
+                if not self.check_label("Identifier"):
+                    raise SyntaxException("Expected identifier in brings", self.peek())
+                brings.append(self.consume())
+            if not self.check_label("RParen"):
+                raise SyntaxException("Expected ')' after brings identifiers", self.peek())
+            self.consume() # Consume )
+        return brings
+
+    def parse_returns(self):
+        return_types = []
+        if self.peek() and self.peek().label == "Returns":
+            self.consume() # Consume Returns
+
+            if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
+                raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
+
+            if self.peek() and self.peek().label == "LParen":
+                self.consume() # Consume LParen
+                # Multiple return types.
+                while self.peek() and self.peek().label != "RParen":
+                    if self.peek() and self.peek().label == "Comma":
+                        self.consume()
+
+                    if self.peek() and self.peek().label != "Identifier":
+                        raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
+                    return_types.append(self.consume())
+
+                self.consume() # Consume RParen
+            else:
+                return_types.append(self.consume())
+        return return_types
+
     def parse_fn_statement(self):
         # Consume fn token
         self.consume()
@@ -595,27 +646,8 @@ class Parser:
             if struct_params[0].default_value is not None:
                 raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
 
-        return_types = []
-        if self.peek() and self.peek().label == "Returns":
-            self.consume() # Consume Returns
-
-            if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
-                raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
-
-            if self.peek() and self.peek().label == "LParen":
-                self.consume() # Consume LParen
-                # Multiple return types.
-                while self.peek() and self.peek().label != "RParen":
-                    if self.peek() and self.peek().label == "Comma":
-                        self.consume()
-
-                    if self.peek() and self.peek().label != "Identifier":
-                        raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
-                    return_types.append(self.consume())
-
-                self.consume() # Consume RParen
-            else:
-                return_types.append(self.consume())
+        brings = self.parse_brings()
+        return_types = self.parse_returns()
 
         statements = []
 
@@ -629,12 +661,12 @@ class Parser:
         if struct_params is not None and struct_params != fn_params:
             if name is None:
                 raise SyntaxException("Expected function identifier for struct method", struct_params)
-            return StructFnStatementNode(struct_params[0], name, fn_params, statements)
+            return StructFnStatementNode(struct_params[0], name, fn_params, statements, return_types, brings)
 
         if name is None:
             raise SyntaxException("Validly defined anonymous function not associated to label will be unrefencable", self.peek())
 
-        return FnStatementNode(name, fn_params, statements)
+        return FnStatementNode(name, fn_params, statements, return_types, brings)
     
     def parse_case_statement(self):
         self.consume()
@@ -850,75 +882,11 @@ class Parser:
         if self.peek() and self.peek().label != "LParen":
             raise SyntaxException(f"Expected '(' after fn, got {self.peek().label}", self.peek())
 
-        self.consume()
+        parameters = self.pull_params()
 
-        parameters = []
-        variadic_encountered = False
-        while self.peek() and self.peek().label != "RParen":
-            if self.peek() and self.peek().label == "Comma":
-                self.consume()
-                if self.peek().label == "RParen":
-                    raise SyntaxException("Expected parameter in fn, got ')'", self.peek())
+        brings = self.parse_brings()
 
-            # Have we seen variadic before this parameter? Reject it.
-            if variadic_encountered:
-                raise SyntaxException("A variadic parameter must be the last parameter.", self.peek())
-
-            variadic = False
-            if self.peek() and self.peek().label == "Variadic":
-                variadic_encountered = True
-                variadic = True
-                self.consume() # Consume variadic
-
-            if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxException(f"Expected identifier in fn, got {self.peek().label}", self.peek())
-
-            param = self.consume()
-
-            if self.peek() and self.peek().label != "Colon":
-                raise SyntaxException(f"Expected ':' after identifier in fn, got {self.peek().label}", self.peek())
-
-            self.consume() # Consume colon.
-
-            if self.peek() and self.peek().label != "Identifier":
-                raise SyntaxException(f"Expected type identifier in param {param.data}, got {self.peek().label}", self.peek())
-
-            paramtype = self.consume()
-
-            default_value = None
-            # Default value parsing.
-            if self.peek() and self.peek().label == "Assign":
-                self.consume()
-
-                default_value = self.parse_expression()
-            parameters.append(FnParameter(param, paramtype, default_value, variadic))
-
-        if self.peek() and self.peek().label != "RParen":
-            raise SyntaxException(f"Expected ')' after fn parameters, got {self.peek().label}", self.peek())
-
-        # Consume )
-        self.consume()
-
-        return_types = []
-        if self.peek() and self.peek().label == "Returns":
-            self.consume()
-
-            if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
-                raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
-
-            if self.peek() and self.peek().label == "LParen":
-                # Multiple return types.
-                while self.peek() and self.peek().label != "RParen":
-                    if self.peek() and self.peek().label == "Comma":
-                        self.consume()
-
-                    if self.peek() and self.peek().label != "Identifier":
-                        raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
-                    return_types.append(self.consume())
-
-                self.consume() # Consume RParen
-            else:
-                return_types.append(self.consume())
+        return_types = self.parse_returns()
 
         statements = []
         while self.peek() and self.peek().label != "Endfn":
@@ -927,7 +895,7 @@ class Parser:
             raise SyntaxException(f"Unexpected end of input, expected endfn", self.peek())
         self.consume()
 
-        return AnonymousFnExpressionNode(parameters, statements)
+        return AnonymousFnExpressionNode(parameters, statements, return_types, brings)
 
     def parse_tuple_literal(self):
         elements = []

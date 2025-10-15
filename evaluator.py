@@ -6,6 +6,46 @@ from math import floor
 import copy
 import os
 
+class BringVariable:
+    def __init__(self, scope, var_name):
+        self.scope = scope
+        self.var_name = var_name
+
+    def __getitem__(self, _):
+        return self.scope[self.var_name]
+
+    def __setitem__(self, _, value):
+        self.scope[self.var_name] = value
+
+    def __contains__(self, key):
+        return self.var_name == key
+
+    def __iadd__(self, value):
+        self.scope[self.var_name] += value
+        return self
+
+    def __isub__(self, value):
+        self.scope[self.var_name] -= value
+        return self
+
+    def __imul__(self, value):
+        self.scope[self.var_name] *= value
+        return self
+
+    def __itruediv__(self, value):
+        self.scope[self.var_name] /= value
+        return self
+
+    def __repr__(self):
+        return f"BringVariable({self.var_name})"
+
+    def __str__(self):
+        value = self.scope[self.var_name]
+        if isinstance(value, BringVariable):
+            return f"<{value.var_name}> (BringVariable)"
+
+        return str(self.scope[self.var_name])
+
 class StructNode:
     def __init__(self, definition):
         self.definition = definition
@@ -59,9 +99,9 @@ class NativeFunction:
         return values
 
 class Function:
-    def __init__(self, statement, scopes):
+    def __init__(self, statement, parent_scopes=None):
         self.statement = statement
-        self.scopes = scopes[:]
+        self.scopes = parent_scopes if parent_scopes is not None else []
 
     def reconcile_parameters(self, evaluator, call_parameters):
         statement = self.statement
@@ -104,8 +144,8 @@ class Function:
         return f"{self.statement}"
 
 class AnonymousFunction(Function):
-    def __init__(self, statement, scopes, name=None):
-        super().__init__(statement, scopes)
+    def __init__(self, statement, name=None, parent_scopes=None):
+        super().__init__(statement, parent_scopes)
         self.name = name
 
 class SpreadArgs:
@@ -161,6 +201,7 @@ class Evaluator:
             parser = Parser(tokens)
             ast = parser.parse_program()
             for node in ast:
+                setattr(node, "Chestnut-bridge", True)
                 self.evaluate(node)
 
     def __init__(self):
@@ -222,7 +263,7 @@ class Evaluator:
             struct_name = node.target_struct.paramtype.data
             method_name = node.name.data
             scope_key = f"{struct_name} {method_name}"
-            func_object = Function(node, self.scopes)
+            func_object = Function(node)
             if self.exists_in_any_scope(scope_key):
                 raise RuntimeError(f"{method_name} for struct {struct_name} already exists", node)
             self.current_scope()[scope_key] = func_object
@@ -294,15 +335,9 @@ class Evaluator:
                     return StructMethodCall(target_object, func_object)
             return getattr(target_object, property_name)
         elif isinstance(node, ListLiteralNode):
-            elems = []
-            for elem in node.elements:
-                elems.append(self.evaluate(elem))
-            return elems
+            return [ self.evaluate(x) for x in node.elements ]
         elif isinstance(node, TupleLiteralNode):
-            elems = []
-            for elem in node.elements:
-                elems.append(self.evaluate(elem))
-            return tuple(elems)
+            return tuple([ self.evaluate(x) for x in node.elements ])
         elif isinstance(node, IndexAssignNode):
             target = self.evaluate(node.identifier)
             if isinstance(target, tuple):
@@ -321,7 +356,7 @@ class Evaluator:
             if node.op.label == "Assignment":
                 target[index] = self.evaluate(node.value)
             elif node.op.label == "Addassign":
-                target[index]+= self.evaluate(node.value)
+                target[index] += self.evaluate(node.value)
             elif node.op.label == "Subassign":
                 target[index] -= self.evaluate(node.value)
             elif node.op.label == "Divassign":
@@ -351,7 +386,7 @@ class Evaluator:
         elif isinstance(node, ConstantStatementNode):
             labels = node.label
             if not isinstance(node.label, list):
-                labels = list(node.label)
+                labels = [node.label]
             for l in labels:
                 if self.constant_exists(l.data):
                     raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
@@ -398,10 +433,13 @@ class Evaluator:
                 labels = [node.label]
             for l in labels:
                 if self.constant_exists(l.data):
-                    raise Exception(f"Cannot shadow constant `{l.data}`", l)
+                    raise RuntimeException(f"Cannot shadow constant `{l.data}`", l)
+
+                if self.exists_in_current_scope(l.data):
+                    raise RuntimeException(f"Cannot shadow {l.data} because is already declared in the same scope", l)
 
                 if not self.exists_in_any_scope(l.data):
-                    raise Exception(f"{l.data} is not declared in any scope", l)
+                    raise RuntimeException(f"{l.data} is not declared in any scope", l)
 
             expression = self.evaluate(node.expression)
             if not isinstance(expression, tuple):
@@ -415,7 +453,20 @@ class Evaluator:
             return 1
 
         elif isinstance(node, FnStatementNode):
-            func_object = Function(node, self.scopes)
+            captured_scopes = []
+
+            definition_scope = self.current_scope()
+            captured_scopes.append(definition_scope)
+
+            for bring in node.brings:
+                scope = self.find_first_scope_containing(bring.data)
+                if scope is None:
+                    raise RuntimeException(f"Variable {bring.data} in brings clause not found in any scope", node)
+
+                if scope not in captured_scopes:
+                    captured_scopes.append(scope)
+
+            func_object = Function(node, captured_scopes)
             if self.constant_exists(node.name.data):
                 raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
             if self.exists_in_any_scope(node.name.data):
@@ -425,11 +476,10 @@ class Evaluator:
             return 1
 
         elif isinstance(node, AnonymousFnExpressionNode):
-            return AnonymousFunction(node, self.scopes)
+            return AnonymousFunction(node)
 
         elif isinstance(node, CallStatementNode):
             callable = self.evaluate(node.identifier)
-            first_scope = {"call boundary": True}
             identifier = None
             func = None
             instance = None
@@ -495,13 +545,21 @@ class Evaluator:
 
             fn = func.statement
 
-            original_scopes_length = len(self.scopes)
+            base_stack_length = len(self.scopes)
 
-            self.scopes.append(first_scope)
-            for scope in func.scopes[:]:
-                s = copy.deepcopy(scope)
-                self.push_scope(s) 
-            self.push_scope()
+            # Push a call boundary before restoring the captured scopes.
+            # This call boundary will prevent scope from leaking from lower levels.
+            if hasattr(fn, "Chestnut-bridge"):
+                # Bridge functions like print don't get their own boundaries.
+                self.scopes.append({"Chestnut-bridge": True})
+            else:
+                self.scopes.append({"call boundary": True})
+
+            for scope_to_load in func.scopes:
+                self.scopes.append(scope_to_load)
+
+            self.push_scope() 
+
             params = []
             try:
                 params = func.reconcile_parameters(self, node.params)
@@ -514,10 +572,15 @@ class Evaluator:
                 try:
                     self.evaluate(s)
                 except ReturnValue as val:
-                    while len(self.scopes) > original_scopes_length:
+                    if isinstance(val.value, (Function, AnonymousFunction)):
+                        live_closure_scope = self.scopes.pop()
+                        val.value.scopes.append(live_closure_scope)
+
+                    while len(self.scopes) > base_stack_length:
                         self.pop_scope()
                     return val.value
-            while len(self.scopes) > original_scopes_length:
+
+            while len(self.scopes) > base_stack_length:
                 self.pop_scope()
             return False
 
@@ -535,8 +598,11 @@ class Evaluator:
             stored_scope = self.find_first_scope_containing(label)
             if stored_scope is None:
                 raise Exception(f"Couldn't find symbol {label} at line {node.line}, column {node.column}")
+            result = stored_scope[label]
+            if isinstance(result, BringVariable):
+                return result.__getitem__(None)
 
-            return stored_scope[label]
+            return result
 
         elif isinstance(node, IfStatementNode):
             if self.evaluate(node.condition_expression):
@@ -598,20 +664,24 @@ class Evaluator:
             op = node.op
 
             if op.label == "Assignment":
-                scope[label] = expression
+                if isinstance(scope[label], BringVariable):
+                    scope[label].__setitem__(None, expression)
+                else:
+                    scope[label] = expression
             elif op.label == "Addassign":
-                scope[label] = scope[label] + expression
+                scope[label] += expression
             elif op.label == "Subassign":
-                scope[label] = scope[label] - expression
+                scope[label] -= expression
             elif op.label == "Mulassign":
-                scope[label] = scope[label] * expression
+                scope[label] *= expression
             elif op.label == "Divassign":
-                scope[label] = scope[label] / expression
+                scope[label] /= expression
             else:
                 return 0
             return 1
 
         elif isinstance(node, IterateStatementNode):
+            self.push_scope()
             subject = self.evaluate(node.subject)
             identifier = node.identifier
             statements = node.statements
@@ -632,10 +702,12 @@ class Evaluator:
                     continue
                 self.pop_scope()
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            self.pop_scope()
             del root_loop_scope["loop index"]
 
 
         elif isinstance(node, WhileStatementNode):
+            self.push_scope()
             root_loop_scope = self.current_scope()
             self.current_scope()["loop index"] = 0
             while self.evaluate(node.condition):
@@ -652,9 +724,11 @@ class Evaluator:
                     continue
                 self.pop_scope()
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            self.pop_scope()
             del root_loop_scope["loop index"]
 
         elif isinstance(node, UntilStatementNode):
+            self.push_scope()
             root_loop_scope = self.current_scope()
             self.current_scope()["loop index"] = 0
             while not self.evaluate(node.condition):
@@ -671,12 +745,13 @@ class Evaluator:
                     continue
                 self.pop_scope()
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+            self.pop_scope()
             del root_loop_scope["loop index"]
 
         elif isinstance(node, LoopindexExpressionNode):
-            if not self.exists_in_any_scope("loop index"):
-                raise Exception(f"`loop_index` keyword must be used inside a loop")
             scope = self.find_first_scope_containing("loop index")
+            if scope is None:
+                raise Exception(f"`loop_index` keyword must be used inside a loop")
             return scope["loop index"]
 
         elif isinstance(node, UseExpressionNode):

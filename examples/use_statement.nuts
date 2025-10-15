@@ -1,0 +1,10 @@
+let a = use true over false
+print(a) # Should be true
+
+let b = null
+let c = use b over a
+print(c) # Should be true
+
+let d = 5
+let e = use 100 over d unless d > 10
+print(e) # Should be 100

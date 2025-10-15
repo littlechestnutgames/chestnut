@@ -10,4 +10,3 @@ fn count_down (n : Integer)
 endfn
 
 count_down(3)
-print(pop)

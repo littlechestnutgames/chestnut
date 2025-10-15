@@ -30,6 +30,7 @@ token_types = [
     TokenType("Returns", "returns"),
 
     # 6 character sequences
+    TokenType("Brings", "brings"),
     TokenType("Import", "import"),
     TokenType("Repeat", "repeat"),
     TokenType("Return", "return"),
