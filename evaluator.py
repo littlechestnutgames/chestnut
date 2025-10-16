@@ -489,6 +489,10 @@ class Evaluator:
                 identifier = func.statement.target_struct.name.data
                 scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
                 first_scope[identifier] = instance
+
+            if isinstance(node.identifier, AnonymousFnExpressionNode):
+                func = AnonymousFunction(node.identifier)
+
             if func is None:
                 if not self.exists_in_any_scope(node.identifier.data) and not self.exists_in_any_scope(f"constant {node.identifier.data}"):
                     # The function was found neither in non-constant or constant storage.

@@ -204,19 +204,82 @@ def lex(input):
 
         # Strings
         elif input[state.pos] == '"':
-            t = ""
-            state.advance_column()
-            while state.pos < len(input) and input[state.pos] != '"' or (input[state.pos-1] == '\\' and input[state.pos] == '"'):
-                t += input[state.pos]
-                if input[state.pos] == '\n':
+            state.advance_column() # move past the start quote
+            end_quote_pos = None
+            line_ends = 0
+
+            interpolation_depth = 0
+            is_escaped = False
+
+            # Find the end quote mark
+            for quo_ind, char in enumerate(input[state.pos:]):
+                if char == "{" and input[state.pos + quo_ind + 1] == "{":
+                    if not is_escaped:
+                        interpolation_depth = interpolation_depth + 1
+                if char == "}" and input[state.pos + quo_ind + 1] == "}":
+                    if not is_escaped and interpolation_depth > 0:
+                        interpolation_depth = interpolation_depth - 1
+                if char == '"' and not is_escaped and interpolation_depth == 0:
+                    end_quote_pos = quo_ind
+                    break
+                if char == "\n":
+                    line_ends = line_ends + 1
+                is_escaped = (char == '\\' and not is_escaped)
+
+            # no end quote.
+            if end_quote_pos is None:
+                raise SyntaxException("Unterminated string", line=start_line, column=start_column)
+
+            capstr = input[state.pos:state.pos+end_quote_pos]
+            if not "{{" in capstr:
+                # Normal string
+                yield Token("String", capstr, line=start_line, column=start_column)
+                for i in range(line_ends):
                     state.advance_line()
-                else:
-                    state.advance_column()
-            if state.pos >= len(input) or input[state.pos] != '"':
-                raise SyntaxException(f"Unterminated string", line=start_line, column=start_column)
+                state.advance_column(len(capstr) - line_ends + 1)
             else:
-                yield Token("String", t, start_line, start_column)
-            state.advance_column()
+                # String interpolation.
+                strpos = 0
+                t = ""
+                while strpos < len(capstr):
+                    if capstr[strpos:strpos + 2] == "{{":
+                        strtoken = Token("String", t, start_line, start_column)
+                        yield strtoken
+                        t = ""
+
+                        token = Token("Addition", "{{", start_line, start_column)
+                        yield token
+
+                        yield Token("LParen", "(", start_line, start_column)
+
+                        strpos = strpos + 2 # Move past {{
+                        while strpos < len(capstr) and capstr[strpos:strpos + 2] != "}}":
+                            t = t + capstr[strpos]
+                            strpos = strpos + 1
+
+                        if strpos == len(capstr) or capstr[strpos:strpos + 2] != "}}":
+                            raise SyntaxException("Unterminated string interpolation", line=start_line, column=start_column)
+
+                        expression = lex(t)
+                        t = ""
+                        for ex in expression:
+                            yield ex
+
+                        yield Token("RParen", ")", start_line, start_column)
+
+                        token = Token("Addition", "}}", start_line, start_column)
+                        yield token
+
+                        strpos = strpos + 2 # Move past }}
+                    else:
+                        t = t + capstr[strpos]
+                        strpos = strpos + 1
+                token = Token("String", t, start_line, start_column)
+                yield token
+
+                for i in range(line_ends):
+                    state.advance_line()
+                state.advance_column(len(capstr) - line_ends + 1)
 
         elif input[state.pos:state.pos+2] == "0x":
             num = input[state.pos:state.pos+2]
