@@ -1,13 +1,12 @@
 fn make_counter (start_value : Number) returns Function
-    let count = start_value # This is the variable that MUST be captured.
+    let count = start_value
 
     fn increment () brings (count) returns Integer
-        print(count)
         count += 1
         return count
     endfn
 
-    return increment # We are returning the inner function.
+    return increment
 endfn
 
 let counter_a = make_counter(10)
@@ -17,4 +16,4 @@ print(counter_a())
 print(counter_a())
 print(counter_a())
 print(counter_a())
-print(counter_a())
+print(counter_a()) # 17

@@ -1,12 +1,7 @@
 from error import *
 from collections import namedtuple
-
-class TokenType:
-    def __init__(self, name, sequence, default_value=None):
-        self.name = name
-        self.sequence = sequence
-        self.default_value = default_value
-
+from supporting import *
+from chestnut_type import *
 token_types = [
     # 10 character sequences
     TokenType("Enditerate", "enditerate"),
@@ -64,7 +59,7 @@ token_types = [
     TokenType("And", "and"),
     TokenType("Let", "let"),
     TokenType("Not", "not"),
-    TokenType("Null", "null"),
+    TokenType("Null", "null", None),
     TokenType("Use", "use"),
     
     # 2 character sequences
@@ -110,19 +105,6 @@ token_types = [
     TokenType("RParen", ")"),
     TokenType("Subtraction", "-")
 ]
-
-class Token:
-    def __init__(self, label, data, line, column):
-        self.label = label
-        self.data = data
-        self.line = line
-        self.column = column
-
-    def get_line_and_column(self):
-        return f"line {self.line}, column {self.column}"
-
-    def __repr__(self):
-        return f"Token({self.label}, {self.data}, {self.line}, {self.column})"
 
 class LexerState:
     def __init__(self):
@@ -170,7 +152,10 @@ def lex(input):
                 if input[state.pos] == token_type.sequence:
                     value = token_type.sequence
                     if token_type.default_value is not None:
-                        value = token_type.default_value
+                        if token_type.default_value == True or token_type.default_value == False:
+                            value = ChestnutBoolean(token_type.default_value)
+                        else:
+                            value = token_type.default_value
                     found_token = Token(token_type.name, value, start_line, start_column)
                     state.advance_column()
                     break
@@ -233,7 +218,7 @@ def lex(input):
             capstr = input[state.pos:state.pos+end_quote_pos]
             if not "{{" in capstr:
                 # Normal string
-                yield Token("String", capstr, line=start_line, column=start_column)
+                yield Token("String", ChestnutString(capstr), line=start_line, column=start_column)
                 for i in range(line_ends):
                     state.advance_line()
                 state.advance_column(len(capstr) - line_ends + 1)
@@ -243,7 +228,7 @@ def lex(input):
                 t = ""
                 while strpos < len(capstr):
                     if capstr[strpos:strpos + 2] == "{{":
-                        strtoken = Token("String", t, start_line, start_column)
+                        strtoken = Token("String", ChestnutString(t), start_line, start_column)
                         yield strtoken
                         t = ""
 
@@ -274,7 +259,7 @@ def lex(input):
                     else:
                         t = t + capstr[strpos]
                         strpos = strpos + 1
-                token = Token("String", t, start_line, start_column)
+                token = Token("String", ChestnutString(t), start_line, start_column)
                 yield token
 
                 for i in range(line_ends):
@@ -291,7 +276,7 @@ def lex(input):
                 state.advance_column()
             if num == "0x":
                 raise SyntaxException(f"Unterminated hex digit", line=start_line, column=start_column)
-            yield Token("Hex", int(num, 16), start_line, start_column)
+            yield Token("Hex", ChestnutInteger(int(num, 16)), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0o":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -301,7 +286,7 @@ def lex(input):
                 state.advance_column()
             if num == "0o":
                 raise SyntaxException(f"Unterminated octal digit", line=start_line, column=start_column)
-            yield Token("Octal", int(num, 8), start_line, start_column)
+            yield Token("Octal", ChestnutInteger(int(num, 8)), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0b":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -311,7 +296,7 @@ def lex(input):
                 state.advance_column()
             if num == "0b":
                 raise SyntaxException(f"Unterminated binary digit", line=start_line, column=start_column)
-            yield Token("Binary", int(num, 2), start_line, start_column)
+            yield Token("Binary", ChestnutInteger(int(num, 2)), start_line, start_column)
         # Numbers
         elif input[state.pos].isnumeric():
             num = input[state.pos]
@@ -322,9 +307,9 @@ def lex(input):
             if num.count('.') > 1:
                 raise SyntaxException(f"Invalid floating point number detected", line=start_line, column=start_column)
             elif num.count('.') == 1:
-                yield Token("Float", float(num), start_line, start_column)
+                yield Token("Float", ChestnutFloat(float(num)), start_line, start_column)
             else:
-                yield Token("Integer", int(num), start_line, start_column)
+                yield Token("Integer", ChestnutInteger(int(num)), start_line, start_column)
 
         # Identifiers
         else:

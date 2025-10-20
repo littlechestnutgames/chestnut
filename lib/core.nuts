@@ -79,3 +79,27 @@ endfn
 fn remove(l : List, i : Integer) returns Any
     return __internal_remove__(l, i)
 endfn
+
+struct Result
+    value : Any
+    error : Error
+endstruct
+
+fn new_result(value : Any, err: Any) returns Result
+    let result = Result()
+    result.value = value
+    result.error = err
+    return result
+endfn
+
+fn (result : Result) unwrap_or (default_value : Any) returns Any
+    return use result.value over default_value unless result.error != null
+endfn
+
+fn (result : Result) and_then (func : Function) returns Result
+    if result.error != null then
+        return result
+    endif
+    return func(result.value)
+endfn
+

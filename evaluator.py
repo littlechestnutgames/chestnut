@@ -1,7 +1,8 @@
 from parser import *
 from chestnut_type import *
 from error import *
-from lexer import *
+from supporting import *
+from lexer import lex
 from math import floor
 import copy
 import os
@@ -205,6 +206,7 @@ class Evaluator:
                 self.evaluate(node)
 
     def __init__(self):
+        self.calling_builtin = False
         core_spec = self.get_core_spec()
         native_funcs = {}
         self.scopes = [{}]
@@ -285,7 +287,7 @@ class Evaluator:
             return node.value
         elif isinstance(node, ChestnutString):
             return node.value
-        elif isinstance(node, ChestnutType) and node.token.label in ["ChestnutInteger", "ChestnutBoolean", "ChestnutFloat", "ChestnutString"]:
+        elif isinstance(node, ChestnutAny) and node.token.label in ["ChestnutInteger", "ChestnutBoolean", "ChestnutFloat", "ChestnutString"]:
             return node.value
         elif isinstance(node, ImportStatementNode):
             import_path = f"{os.getcwd()}{os.sep}{node.location.data}"
@@ -335,9 +337,9 @@ class Evaluator:
                     return StructMethodCall(target_object, func_object)
             return getattr(target_object, property_name)
         elif isinstance(node, ListLiteralNode):
-            return [ self.evaluate(x) for x in node.elements ]
+            return ChestnutList([ self.evaluate(x) for x in node.elements ])
         elif isinstance(node, TupleLiteralNode):
-            return tuple([ self.evaluate(x) for x in node.elements ])
+            return ChestnutTuple(tuple([ self.evaluate(x) for x in node.elements ]))
         elif isinstance(node, IndexAssignNode):
             target = self.evaluate(node.identifier)
             if isinstance(target, tuple):
@@ -385,7 +387,7 @@ class Evaluator:
             raise ReturnValue(return_value)
         elif isinstance(node, ConstantStatementNode):
             labels = node.label
-            if not isinstance(node.label, list):
+            if not isinstance(node.label, ChestnutTuple):
                 labels = [node.label]
             for l in labels:
                 if self.constant_exists(l.data):
@@ -394,7 +396,7 @@ class Evaluator:
                     raise RuntimeException(f"`{l.data}` is already declared in this scope", l)
 
             expression = self.evaluate(node.expression)
-            if not isinstance(expression, tuple):
+            if not isinstance(expression, ChestnutTuple):
                 expression = [expression]
 
             i = 0
@@ -406,18 +408,19 @@ class Evaluator:
 
         elif isinstance(node, LetStatementNode):
             labels = node.label
-            if not isinstance(node.label, list):
+            if not hasattr(node.label, "__iter__"):
                 labels = [node.label]
 
             for l in labels:
-                if self.constant_exists(l.data):
-                    raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
+                if not self.calling_builtin:
+                    if self.constant_exists(l.data):
+                        raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
 
-                if self.exists_in_any_scope(l.data):
-                    raise RuntimeException(f"Cannot redeclare {l.data} in this scope", l)
+                    if self.exists_in_any_scope(l.data):
+                        raise RuntimeException(f"Cannot redeclare {l.data} in this scope", l)
 
             expression = self.evaluate(node.expression)
-            if not isinstance(expression, tuple):
+            if not isinstance(expression, ChestnutTuple):
                 expression = [expression]
 
             i = 0
@@ -480,6 +483,7 @@ class Evaluator:
 
         elif isinstance(node, CallStatementNode):
             callable = self.evaluate(node.identifier)
+            self.calling_builtin = False
             identifier = None
             func = None
             instance = None
@@ -488,6 +492,7 @@ class Evaluator:
                 func = callable.func_object
                 identifier = func.statement.target_struct.name.data
                 scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
+                first_scope = self.find_first_scope_containing(scope_key)
                 first_scope[identifier] = instance
 
             if isinstance(node.identifier, AnonymousFnExpressionNode):
@@ -556,6 +561,7 @@ class Evaluator:
             if hasattr(fn, "Chestnut-bridge"):
                 # Bridge functions like print don't get their own boundaries.
                 self.scopes.append({"Chestnut-bridge": True})
+                self.calling_builtin = True
             else:
                 self.scopes.append({"call boundary": True})
 
@@ -690,7 +696,7 @@ class Evaluator:
             identifier = node.identifier
             statements = node.statements
             root_loop_scope = self.current_scope()
-            root_loop_scope["loop index"] = 0
+            root_loop_scope["loop index"] = ChestnutInteger(0)
             for elem in subject:
                 self.push_scope()
                 self.current_scope()[identifier.data] = elem
@@ -701,11 +707,11 @@ class Evaluator:
                     self.pop_scope()
                     break
                 except ContinueLoop:
-                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
                     self.pop_scope()
                     continue
                 self.pop_scope()
-                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
             self.pop_scope()
             del root_loop_scope["loop index"]
 
@@ -713,7 +719,7 @@ class Evaluator:
         elif isinstance(node, WhileStatementNode):
             self.push_scope()
             root_loop_scope = self.current_scope()
-            self.current_scope()["loop index"] = 0
+            self.current_scope()["loop index"] = ChestnutInteger(0)
             while self.evaluate(node.condition):
                 self.push_scope()
                 try:
@@ -723,18 +729,18 @@ class Evaluator:
                     self.pop_scope()
                     break
                 except ContinueLoop:
-                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
                     self.pop_scope()
                     continue
                 self.pop_scope()
-                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
             self.pop_scope()
             del root_loop_scope["loop index"]
 
         elif isinstance(node, UntilStatementNode):
             self.push_scope()
             root_loop_scope = self.current_scope()
-            self.current_scope()["loop index"] = 0
+            self.current_scope()["loop index"] = ChestnutInteger(0)
             while not self.evaluate(node.condition):
                 self.push_scope()
                 try:
@@ -744,11 +750,11 @@ class Evaluator:
                     self.pop_scope()
                     break
                 except ContinueLoop:
-                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                    root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
                     self.pop_scope()
                     continue
                 self.pop_scope()
-                root_loop_scope["loop index"] = root_loop_scope["loop index"] + 1
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
             self.pop_scope()
             del root_loop_scope["loop index"]
 

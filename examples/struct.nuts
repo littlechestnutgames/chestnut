@@ -1,18 +1,134 @@
-struct Org
+# Struct definition.
+struct Mineral
     name : String
-    org : Org
+    weight: Float
+    properties: List
 endstruct
 
-fn (o : Org) get_name() returns String
-    return o.name
-endfn
-fn (o : Org) set_name(name : String)
-    o.name = name
+struct MineralProperty
+    name : String
+    value: Any
+endstruct
+
+###
+We currently don't have constructors for structs that take arguments (WIP).
+###
+fn new_mineral(name : String = "No name given", weight : Float = 0.0, variadic properties : MineralProperty) returns Mineral
+    let m = Mineral()
+    m.name = name
+    m.weight = weight
+    m.properties = properties
+
+    return m
 endfn
 
-let n = Org()
-n.name = "Property setting example."
-print(n.get_name())
+fn new_property(name : String, value : Any) returns MineralProperty
+    let mp = MineralProperty()
+    mp.name = name
+    mp.value = value
 
-n.set_name("The property is set.")
-print(n.get_name())
+    return mp
+endfn
+
+fn (mineral : Mineral) get_property_value(name : String) returns (Any, Error)
+    iterate mineral.properties with property
+        if property.name == name then
+	    return (property.value, null)
+	endif
+    enditerate
+
+    return (null, error("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
+endfn
+
+fn (mineral : Mineral) get_property_value2(name : String) returns Result
+    iterate mineral.properties with property
+        if property.name == name then
+	    return new_result(property.value, null)
+	endif
+    enditerate
+
+    return new_result(null, error("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
+endfn
+# Create some minerals.
+let diamond = new_mineral(
+    "Diamond",
+    0.5,
+    new_property("Hardness", 10),
+    new_property("Refractive index", "Very High"),
+    new_property("Applications", "Industrial, jewelry")
+)
+
+let ruby = new_mineral(
+    "Ruby",
+    25.23,
+    new_property("Hardness", 9),
+    new_property("Refractive index", "High"),
+    new_property("Applications", "Jewelry, lasers")
+)
+
+let emerald = new_mineral(
+    "Emerald",
+    38.22,
+    new_property("Hardness", 7.5),
+    new_property("Refractive index", "Medium"),
+    new_property("Applications", "Jewelry")
+)
+
+let quartz = new_mineral(
+    "Quartz",
+    220.12,
+    new_property("Hardness", 7),
+    new_property("Refractive index", "Low"),
+    new_property("Applications", "Timepieces, glass, electronics")
+)
+
+let amethyst = new_mineral(
+    "Amethyst",
+    0.1,
+    new_property("Hardness", 7),
+    new_property("Refractive index", "Low"),
+    new_property("Applications", "Jewelry, decorative carvings")
+)
+
+let minerals = [diamond, ruby, emerald, quartz, amethyst]
+iterate minerals with mineral
+    let properties = ""
+    iterate mineral.properties with property
+        if properties != "" then
+	    properties += ", "
+	endif
+	if loop_index == length(mineral.properties) - 1 then
+	    properties += "and "
+	endif
+	properties += "{{ property.name }}: {{ property.value }}"
+    enditerate
+    let properties_display = use " with properties {{ properties }}" over "" unless properties == ""
+
+    print("{{ mineral.name }} has a weight of {{ mineral.weight }}{{ properties_display }}")
+enditerate
+
+push(
+    amethyst.properties,
+    new_property(
+        "Special",
+	fn (factor : Float) brings(amethyst) returns Float
+	    return factor * amethyst.weight
+	endfn
+    )
+)
+
+let amethyst_special, err = amethyst.get_property_value("Special")
+if err != null then
+    print(err.message)
+else
+    print(amethyst_special(8.0))
+endif
+
+let amethyst_spocial, err2 = amethyst.get_property_value("Spocial")
+if err2 != null then
+    print(err2.message)
+else
+    print(amethyst_spocial(8.0))
+endif
+
+let a = diamond.get_property_value2("Hardness").and_then(print)

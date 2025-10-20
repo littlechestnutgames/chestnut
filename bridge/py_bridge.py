@@ -1,15 +1,23 @@
+from chestnut_type import *
+from error import *
 def __internal_print__(*args):
     print(*args)
 
 def __internal_length__(a):
-    return len(a)
+    return ChestnutInteger(len(a))
 
 def __internal_readline__():
-    return input()
+    return ChestnutString(input())
 
 def __internal_insert__(l, a, i):
-    l.insert(i, a)
+    index = i
+    if isinstance(i, ChestnutInteger):
+        index = i.value
+    l.insert(index, a)
 
 def __internal_remove__(l, i):
-    return l.pop(i)
+    index = i
+    if isinstance(i, ChestnutInteger):
+        index = i.value
+    return l.pop(index)
 

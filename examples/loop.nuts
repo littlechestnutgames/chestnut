@@ -1,26 +1,26 @@
 print("Iterate loop:")
-let a = ["One", "Two", "Three"]
+let a = ["Zero", "One"]
 iterate a with item
     iterate a with item2
-        print("Items: " + item + " " + item2)
-        print("Outer: " + outer loop_index)
-	print("Inner: " + loop_index)
+        print("Items: {{ item }} {{ item2 }}")
+        print("Outer: {{ outer loop_index }}")
+	print("Inner: {{ loop_index }}")
     enditerate
 enditerate
 
 print("While loop:")
 while loop_index < 2 repeat
     while loop_index < 2 repeat
-         print("Outer " + outer loop_index)
-         print("Inner " + loop_index)
+         print("Outer {{ outer loop_index }}")
+         print("Inner {{ loop_index }}")
     endwhile
 endwhile
 
 print("Until Loop")
 until loop_index > 1 repeat
     until loop_index > 1 repeat
-         print("Outer " + outer loop_index)
-         print("Inner " + loop_index)
+         print("Outer {{ outer loop_index }}")
+         print("Inner {{ loop_index }}")
     enduntil
 enduntil
 

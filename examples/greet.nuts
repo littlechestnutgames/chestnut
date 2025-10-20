@@ -18,10 +18,13 @@ fn greet()
         if length(names) == 1 then
             str += "and "
         endif
-        let n = shift(names)
+        let n, err = shift(names)
+	if err != null then
+	    return (null, err)
+	endif
         str = str + n
     endwhile
-    print("Hello " + str)
+    print("Hello {{ str }}")
 endfn
 
 greet()

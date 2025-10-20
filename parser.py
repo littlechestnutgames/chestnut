@@ -1,4 +1,5 @@
 from error import *
+from supporting import *
 from chestnut_type import *
 
 class UnaryOperationNode:
@@ -570,7 +571,7 @@ class Parser:
                 default_value = self.parse_expression()
             else:
                 # Did we see an optional argument before this required argument?
-                if optional_encountered:
+                if optional_encountered and not variadic:
                     raise SyntaxException("Optional parameters must appear after required parameters", self.peek())
             params.append(FnParameter(identifier, param_type, default_value, variadic))
         if not self.check_label("RParen"):
