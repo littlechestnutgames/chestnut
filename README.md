@@ -1,228 +1,403 @@
-I am working on programming a new programming language called Chestnut.
+# Chestnut Reference
 
-Chestnut:
-* Is written in python.
-* Enforces lexical scoping strictly. Even if statements don't leak scope.
-* Want to make lumpy a general purpose programming language.
-* Want Chestnut to have an interpreter.
-* Want Chestnut to have a REPL.
-* Want Chestnut to have a compiler.
+## I. Core Design Philosophy
 
-Roadmap:
-1. [x] Write lexer
-2. [x] Write parser
-3. [ ] Write evaluator # Underway
-4. [ ] Write interpreter interface
-5. [ ] Write REPL
-6. [ ] Write codegen using LLVM lib
-7. [ ] Write compile functions.
-8. [ ] Produce bootstrapping compiler.
-9. [ ] Self-host by starting the list over from 1 in Chestnut.
+Chestnut is a general-purpose programming language that aims to be robust and prose-like.
 
-The lexer outputs tokens like {label: "LParen", data: "("} and {label: "Float", data: 3.14}
+* **Implementation:** Currently written in Python, but the future goal is **LLVM IR** and self-hosting.
+* **Parsing:** Chestnut uses a left-to-right, **recursive descent LL parser** to lex and parse tokens into an Abstract Syntax Tree.
+* **Whitespace:** It is not whitespace sensitive (aside from the newline at the end of a single line comment)
+* **Comments:**
+    * **Inline:** # Inline comments start with a hash sign.
+    * **Multi-line:** ### Multi-line comments start with three hash signs and end with three hash signs. ###
 
-For the below tokens, see the syntax section for usage for the tokens.
+## II. Variable declaration
 
-Tokens supposed are:
-* Null - The null
-* Eq - This is ==
-* Neq - This is !=
-* Lte - This is <=
-* Lt - This is <
-* Gte - This is >=
-* Gt - This is >
-* Nand - This is nand
-* And - This is and
-* Xnor - This is xnor
-* Xor - This is xor
-* Nor - This is nor
-* Not - This is both both not and !
-* Or - This is or
-* Addassign - This is +=
-* Subassign - This is -=
-* Mulassign - This is *=
-* Divassign - This is /=
-* Assignment - This is =
-* Negation - This is -
-* Addition - This is +
-* Division - This is /
-* Multiplication - This is *
-* Modulo - This is % and mod
-* Exponent - This is ^
-* Let - This is let
-* Print - This is print
-* Spread - This is spread
-* Use - This is use
-* Over - This is over
-* Unless - This is unless
-* Endif - This is endif
-* Elif - This is elif
-* If - This is if
-* Then - This is then
-* Else - This is else
-* Endcase - This is endcase
-* Case - This is case
-* When - This is when
-* Otherwise - This is otherwise
-* Enduntil - This is enduntil
-* Until - This is until
-* Repeat - This is repeat
-* Enditerate - This is enditerate
-* Iterate - This is iterate
-* With - This is with
-* Endfn - This is endfn
-* Fn - This is fn
-* Returns - This is retuns
-* Return - This is return
-* Variadic - This is variadic
-* Boolean - This is true or false
-* LParen - This is (
-* RParen - This is )
-* LBrace - This is [
-* RBrace - This is ]
-* Colon - This is :
-* Comma - This is ,
-* String - This is "like this"
-* Hex - This is like 0x0914
-* Octal - This is like 0o123
-* Binary - This is like 0b1010
-* Float - This is like 3.14
-* Integer - This is like 9184
-* Identifier - This is everything else.
+### let / shadow / constant
 
-The parser turns this token stream and produces an abstract syntax tree. I list of statements.
+Chestnut enforces strict lexical scoping, forcing developers to be clear and intentional with declaration.
 
-The AST nodes are:
-* UnaryOperationNode - Represents a unary operation such as not or negative numbers.
-* BinaryOperationNode - Represents a binary function such as addition and subtraction.
-* LetStatementNode - Represents a declaration and assignment of a variable.
-* PrintStatementNode - Represents a print statement.
-* IfStatementNode - Is the if block. Contains a condtion and all ElifStatementNodes and ElseStatementNode if present.
-* ElifStatementNode - These get nested inside the if.
-* ElseStatementNode - These get nesetd inside the if.
-* FnStatementNode - Defines a function with label.
-* AnonymousFnExpressionNode - Defines an anonymous function.
-* FnParameter - These go in FnStatementNodes and AnonymousFnExpressionNodes
-* CaseStatementNode - The state of a case statement. Contains a condition and all the when blocks and possibly an otherwise block.
-* WhenStatementNode - These go inside the case statements.
-* OtherwiseStatementNode - This goes inside the case statement.
-* UntilStatementNode - A loop construct.
-* IterateStatementNode - Another loop construct
-* ReturnStatementNode - The return statement of a function.
-* AssignStatementNode - Reassign variables
-* UseExpressionNode() - A default and ternary statement.
-* CallStatementNode - Represents a call made to a function.
-* ExpressionStatementNode - Expression wrapper.
-* ConstantStatementNode - Like let, but for constants.
-* ShadowStatementNode - Like let, but for shadowing ONLY.
-* ListLiteralNode - For lists.
-* IndexAccessNode - For conveying access to list items by index.
+| Keyword    | Purpose                                   | Rule                                                                   |
+| ---------- | ----------------------------------------- | ---------------------------------------------------------------------- |
+| `let`      | Standard variable declaration.            | Can't be used to shadow variables.                                     |
+| `shadow`   | Redeclaration of a non-constant variable. | **Must** be used to shadow an already declared, non-constant variable. |
+| `constant` | Declaration of a constant variable.       | **Cannot** be overwritten.                                             |
 
-Let expressions look like this:
-let a = "Test"
-let a : String = "Test"
-let a : Integer
-etc
+#### Usage:
 
-And (re)assignment expressions
-a = "Test"
-a = 1
-etc
+```
+# let syntax
+let my_var = "Hello, world!" # This variable doesn't have an explicit type.
+let my_var2 : String = "Hi!" # This variable has String type.
+let my_var = 1               # This is an illegal shadowing of my_var.
 
-If statements look like this
+# shadow syntax
+shadow my_var = 1            # This is an illegal shadowing. It took place in the same scope as declaration.
 if condition_expression then
-    # statements
-elif condition_expression then
-    # statements
+    shadow my_var = 1        # This sets my_var in this scope to 1 with an inferred type of Integer.
+    shadow my_var2 = false   # This sets my_var2 in this scope to false with an inferred type of Boolean.
+endif
+
+# constant syntax
+constant PI = 3.141519           # This sets PI to 3.141519 with an inferred type of Float
+```
+
+## Assignment Operators
+
+The usual operators are all here. The caveat is that they may not be used on undeclared variables.
+
+| Operator | Purpose                      | Example |
+| -------- | ---------------------------- | ------- |
+| =        | Simple assignment            |  a = 5  |
+| +=       | Add in-place assignment      | a += 5  |
+| -=       | Subtract in-place assignment | a -= 5  |
+| *=       | Multiply in-place assignment | a *= 5  |
+| /=       | Divide in-place assignment   | a /= 5  |
+
+## Mathematical Operators
+
+| Operator | Purpose                        | Example | Result |
+| -------- | ------------------------------ | ------- | ------ |
+| +        | Addition, String concatenation |  15 + 5 |     20 |
+| -        | Subtraction                    |  15 - 5 |     10 |
+| *        | Multiplication                 |  15 * 5 |     75 |
+| /        | Division                       |  15 / 5 |      3 |
+| %        | Modulo                         |  15 % 5 |      0 |
+| **       | Exponent                       | 15 ** 5 | 759375 |
+
+## Boolean Operators
+
+| Operator | Purpose               | Example    |
+| -------- | --------------------- | ---------- |
+| and      | Logical and           | a and b    |
+| &&       | Logical and           | a && b     |
+| or       | Logical or            | a || b     |
+| not      | Logical not           | not a      |
+| !        | Logical not           | !a         |
+| ==       | Equality              | a == b     |
+| !=       | Inequality            | a != b     |
+| <        | Less than             | a < b      |
+| <=       | Less than or equal    | a <= b     |
+| >        | Greater than          | a > b      |
+| >=       | Greater than or equal | a >= b     |
+| xor      | Logical xor function  | xor(a, b)  |
+| nand     | Logical nand function | nand(a, b) |
+| nor      | Logical nor function  | nor(a, b)  |
+| xnor     | Logical xnor function | xnor(a, b) |
+
+Those last four aren't infix to not have them confused with the bitwise operators, which I'll go into next.
+
+## Bitwise Operators
+
+| Operator | Purpose      | Example     | Result     |
+| -------- | ------------ | ----------- | ---------- |
+|  ~       | Not          |        ~0xa |        -11 |
+|  &       | And          |  0xa &  0x3 |          2 |
+| \|       | Or           | 0xa \|  0x3 |         11 |
+|  ^       | Xor          |  0xa ^  0x3 |          9 |
+| ~&       | Nand         | 0xa ~&  0x3 |         -3 |
+| ~\|      | Nor          | 0xa ~\| 0x3 |        -12 |
+| ~^       | Xnor         | 0xa ~^  0x3 |        -10 |
+| <<       | Shift left   | 0xa <<    3 |         80 |
+| >>       | Shift right  | 0xa >>    3 |          1 |
+| <<<      | Rotate left  | 0xa <<<   3 |         80 |
+| >>>      | Rotate right | 0xa >>>   3 | 1073741825 |
+
+* **Rotate left** and **rotate right** are not yet implemented.
+
+## Control Flow Statements
+
+### if / elif / else / endif
+
+if statements begin with `if` and end with `endif`. In between there are optional `elif` blocks and an optional `else` block as well.
+
+#### Usage
+
+```
+if condition_expression then
+    # Inside these blocks is an isolated scope.
+    # This is where your statements go.
+elif condition_expression2 then
+    # More statements
 else
-    # statements
+    # Even more statements
 endif
+```
 
-Case statements look like this
+### case / when / otherwise / endcase
+
+case statements start with `case` and end with `endcase`. In between are `when`, which can be grouped together and an optional `otherwise` block.
+
+#### Usage
+
+```
 case expression
-    when expression
-    when other_expression
-        # statements
-    otherwise
-        # statement
-endif
+when condition_expression
+    # Statements here
+when condition_expression2
+when condition_expression3
+    # Other statements here.
+otherwise
+    # Fall-though statements here.
+endcase
+```
 
-Until statements look like this
-until expression repeat
-    # statements
+### use / over / unless
+
+use statements serve **two** purposes.
+
+1. A **null** coalescing expression.
+2. A **ternary** statement.
+
+#### Usage
+
+```
+let a = null
+let b = 10
+
+# This is an example of null coalescing. c is equal to 10.
+let c = use a over b 
+
+# This is an example of a ternary. d is equal to null because b is greater than or equal to 10.
+let d = use a over b unless b >= 10 
+```
+
+## Looping
+
+### iterate / with / enditerate
+
+An **iterate** statement loops over a List, Tuple, or String type. The `with` keyword specifies the local reference.
+
+The following example also introduces the **continue** keyword, which skips the rest of the loop and goes to the next iteration.
+
+#### Usage
+
+```
+let my_numbers = [3, 2, 1]
+iterate my_numbers with number
+    print(number)
+enditerate
+
+let my_numbers2 = (1, 2, 3)
+iterate my_numbers2 with number
+    print(number)
+enditerate
+
+# An extremely simplistic lexer.
+let my_string = "let my_string = \"Hello, world\" "
+let tokens = []
+let collected = ""
+iterate my_string with chr
+    if chr == " " then
+        if collected == "let" then
+            push(tokens, ["let", collected])
+            collected = ""
+            continue
+        elif collected[0] == "\"" and collected[length(collected)-1] == "\"" then
+            push(tokens, ["string", collected])
+            collected = ""
+            continue
+        elif collected == "=" then
+            push(tokens, ["equals", collected])
+            collected = ""
+            continue
+        else
+            push(tokens, ["identifier", collected])
+            collected = ""
+            continue
+        endif
+    endif
+    collected += chr
+enditerate
+print(tokens[3]) # Prints "Hello, world"
+```
+### while
+
+The **while** loop is a fairly traditional construct where the statements in the block repeat until the condition is false.
+
+The following example also introduces the **break** keyword, which is used to break out of loops.
+
+#### Usage:
+
+```
+let i = 10
+while i > 0 repeat
+    print(i)
+    i -= 1
+endwhile
+
+while true repeat
+    print("Looping")
+    break
+endwhile
+```
+### until
+
+The **until** loop is the invert of the while loop, where it loops until a condition is true.
+
+The following example also introduces the **loop_index** keyword, as well as the **outer** unary as well as string interpolation.
+
+1. **loop_index** is an automatically allocated counter for loop iterations available as a convenience in every loop type.
+2. **outer** is a unary operator that allows you to fetch values from shadowed variables.
+    1. In this example, loop_index is implicitly shadowed by the inner loop.
+    2. To access the outer loop's loop_index inside the inner loop, we say `outer loop_index`.
+    3. This is stackable, so `outer outer loop_index` would theoretically fetch a reference to loop_index two definitions backward.
+    4. `outer` also works on other shadowed variables, not just `loop_index`.
+3. **String interpolation** is a feature of strings that allow you to embed values or expressions inside strings.
+    1. A string interpolation starts with `{{` and ends with `}}`.
+    2. Inside, you can do simple replacement such as "{{ a }}" or complicated things like calling functions! "This is {{ my_func() }}!"
+
+Without further adieu, the usage.
+
+#### Usage:
+
+```
+until loop_index == 1 repeat
+    until loop_index == 1 repeat
+        print("Outer loop_index: {{ outer loop_index }}, Inner loop_index: {{ loop_index }} ")
+    enduntil
 enduntil
+```
 
-Iterate statements look like this
-iterate expression with identifer
-    # statements
+## Structs
+
+What good is a language if you can't structure data with it easily? Chestnut uses structs.
+
+### Example
+
+```
+struct MineralProperty
+    name : String
+    value : Any
+endstruct
+
+struct Mineral
+    name : String
+    properties : List
+endstruct
+
+let diamond = Mineral()
+diamond.name = "Diamond"
+diamond.properties = []
+
+let diamond_hardness = MineralProperty()
+diamond_hardness.name = "Hardness"
+diamond_hardness.value = 10
+
+push(diamond.properties, diamond_hardness)
+
+print("{{ diamond.name }}: {{ diamond.properties[0].name }} - {{ diamond.properties[0].value }}") # Prints Diamond: Hardness - 10
+```
+
+## Functions
+
+All functions in Chestnut are first-class functions. When a function is defined, it copies a reference to the scope it was born into. And when functions move beyond the call boundaries they were defined in, they can be recaptured by the parent scope. This means that you can return functions defined inside functions and other cool stuff.
+
+In Chestnut, we have 3 functions.
+
+1. Named functions. These functions are defined with a label.
+2. Anonymous functions. These functions don't have a name, but can be assigned to a variable or called inline.
+3. Struct functions. These functions use the receiver pattern to operate on structs.
+
+### Examples
+
+```
+fn basic()
+    print("This is a super basic function. It takes no arguments.")
+endfn
+
+fn get_name_from_user(name : String)
+    print("This function takes an argument, name, which is \"{{ name }}\".")
+endfn
+
+# This function returns a value.
+fn add_float(a : Float, b : Float) returns Float
+    return a + b
+endfn
+
+# This function uses a default value.
+fn default_values(a : String, b : String = "None given")
+    print(a, b)
+endfn
+```
+
+These were all examples of named functions.
+
+Default values can be specific as the above example, but they cannot appear before a required argument or on a variadic.
+Variadic values allow the developer to use as many arguments of one type as they like for that parameter. Keep in mind, variadics can only appear once, as the last argument.
+
+### Example
+```
+fn greet(variadic names : String)
+    iterate names with name
+        print("Hello {{ name }}. ")
+    enditerate
+endfn
+greet("Chestnut", "User") # Prints Hello Chestnut. Hello User.
+```
+
+Anonymous functions are specified by leaving off the variable label. These are considered expressions, not fully statements, so they can be assigned or used directly after creation.
+
+### Example
+```
+let a = fn (variadic names : String)
+    iterate names with name
+        print("Hello {{ name }}. ")
+    enditerate
+endfn
+
+a()
+```
+
+Struct functions allow us to add methods to structs. Let's refer to the mineral code above and do something about that boilerplate.
+
+```
+fn new_mineral_type(name : String, value : Any) returns MineralType
+    let mt = MineralType()
+    mt.name = name
+    mt.value = value
+
+    return mt
+endfn
+
+fn new_mineral(name) returns Mineral
+     let m = Mineral()
+     m.name = name
+     m.properties = []
+
+     return m
+endfn
+
+# This next one is where the receiver pattern comes into play.
+fn (m : Mineral) add_property(name : String, value : Any)
+    push(m, new_mineral_type(name, value)
+endfn
+
+let diamond = new_mineral("Diamond")
+let ruby = new_mineral("Ruby")
+diamond.add_property("Hardness", 10)
+ruby.add_property("Hardness", 7)
+
+let minerals = [diamond, ruby]
+iterate minerals with mineral
+    print("{{ mineral.name }}: {{ mineral.properties[0].name }} - {{ mineral.properties[0].value }}")
 enditerate
+```
 
-Function creation is done this way.
-fn my_func(param1 : Type, param2 : Type) returns AType
-    # statements
-    return value
-endfn
+Ok. So, functions can have parameters that can default or be variadic return values, and even do a receiver pattern. What else?
 
-But returns are optional
-fn my_func()
-    # statements
-endfn
+Variable captures.
 
-A parameter in a function may be declared variadic. Only the last parameter may do so.
-fn my_variadic_func(param1 : Integer, variadic my_params : String)
-    # statements
-endfn
+Functions are closures. To explicitly capture a variable from an external scope not in the closure's scope, use the `brings` keyword.
 
-A user can spread iterables into variadic parameters on call.
-my_variadic_func(spread(my_list))
-
-A form of default and ternary is supposed in the `use` statment.
-
-If you wanted to default a variable to another value if the first is falsey, you'd do:
-let a = use b over c # If b is falsey, a is equal to c, otherwise b will be used.
-
-If you wanted to assign a variable based on a condition in a single line, this is the ternary use of `use`.
-let a = use b over c unless c > 50
-
-You can define an anonymous function with the following syntax
-let str_join =
-    fn (variadic params : String) returns String
-        let str = ""
-        iterate params with param
-            if length(str) > 0 then
-                str += ", "
-            endif
-            str += param
-        enditerate
-
-        return str
+```
+let a = 10
+fn outer_func()
+    fn brings_test(b : Integer) brings(a)
+        print("a", a, "b", b, a * b)
     endfn
-
-Most of the mathy or programming symbols are binary infix, some are unary prefixes.
-
-Shadowing. Any developer worth their salt will know that shadowing variables is borrowing trouble, so in Chestnut, I'm disabling shadowing with the `let` syntax.
-
-If the user tries to shadow a variable, they will be met with an exception message explaining the next concept.
-
-We need shadowing sometimes. And I've disabled it. What now? I've disabled implicit shadowing, but I've opened up a way to explicitly shadow.
-
-If the user wants to shadow a variable, they must use the `shadow` keyword instead of the `let` keyword.
-
-let x = 0
-let my_list = [1, 2, 3, 4]
-iterate my_list with item
-    let x = x + item # This will trigger an error.
-    print(item)
-enditerate
-
-let x = 0
-let my_list = [1, 2, 3, 4]
-iterate my_list with item
-    shadow x = x + item # This will NOT trigger an error.
-    print(item)
-enditerate
-
-`shadow` comes with a few rules of it's own though.
-
-1. shadowed variables MUST exist in a parent scope.
-2. Variables cannot shadow themselves the scope they were defined.
+    brings_test(5)
+endfn
+outer_func()
+```
+The capture is done in a way that assures you that only that specific variable will be brought into the inner function scope.

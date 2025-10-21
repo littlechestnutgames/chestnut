@@ -276,7 +276,7 @@ def lex(input):
                 state.advance_column()
             if num == "0x":
                 raise SyntaxException(f"Unterminated hex digit", line=start_line, column=start_column)
-            yield Token("Hex", ChestnutInteger(int(num, 16)), start_line, start_column)
+            yield Token("Integer", ChestnutInteger(int(num, 16)), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0o":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -286,7 +286,7 @@ def lex(input):
                 state.advance_column()
             if num == "0o":
                 raise SyntaxException(f"Unterminated octal digit", line=start_line, column=start_column)
-            yield Token("Octal", ChestnutInteger(int(num, 8)), start_line, start_column)
+            yield Token("Integer", ChestnutInteger(int(num, 8)), start_line, start_column)
         elif input[state.pos:state.pos+2] == "0b":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -296,7 +296,7 @@ def lex(input):
                 state.advance_column()
             if num == "0b":
                 raise SyntaxException(f"Unterminated binary digit", line=start_line, column=start_column)
-            yield Token("Binary", ChestnutInteger(int(num, 2)), start_line, start_column)
+            yield Token("Integer", ChestnutInteger(int(num, 2)), start_line, start_column)
         # Numbers
         elif input[state.pos].isnumeric():
             num = input[state.pos]
