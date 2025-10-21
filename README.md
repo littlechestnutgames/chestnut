@@ -11,7 +11,22 @@ Chestnut is a general-purpose programming language that aims to be robust and pr
     * **Inline:** # Inline comments start with a hash sign.
     * **Multi-line:** ### Multi-line comments start with three hash signs and end with three hash signs. ###
 
-## II. Variable declaration
+## II Types
+
+| Type    | Example(s)     | Notes                                    |
+| ------- | -------------- | ---------------------------------------- |
+| Any     | 0              | Represents ANY value. Even null.         |
+| Null    | null           | For now. Maybe Removed later.            |
+| String  | "Hello"        |                                          |
+| Boolean | true, false    |                                          |
+| Integer | 10             | Inferred type of any non-decimal number. |
+| Float   | 3.14           | Inferred type of any decimal number.     |
+| List    | [1, 2, 3]      | Provides index access and assignment     |
+| Tuple   | (1, 2, 3)      | Provides index access. Immutable.        |
+| Error   | error("Error") | A way to provide errors                  |
+
+
+## III. Variable declaration
 
 ### let / shadow / constant
 
@@ -42,7 +57,9 @@ endif
 constant PI = 3.141519           # This sets PI to 3.141519 with an inferred type of Float
 ```
 
-## Assignment Operators
+## IV. Operators
+
+### Assignment Operators
 
 The usual operators are all here. The caveat is that they may not be used on undeclared variables.
 
@@ -54,7 +71,7 @@ The usual operators are all here. The caveat is that they may not be used on und
 | *=       | Multiply in-place assignment | a *= 5  |
 | /=       | Divide in-place assignment   | a /= 5  |
 
-## Mathematical Operators
+### Mathematical Operators
 
 | Operator | Purpose                        | Example | Result |
 | -------- | ------------------------------ | ------- | ------ |
@@ -65,7 +82,7 @@ The usual operators are all here. The caveat is that they may not be used on und
 | %        | Modulo                         |  15 % 5 |      0 |
 | **       | Exponent                       | 15 ** 5 | 759375 |
 
-## Boolean Operators
+### Boolean Operators
 
 | Operator | Purpose               | Example    |
 | -------- | --------------------- | ---------- |
@@ -87,7 +104,7 @@ The usual operators are all here. The caveat is that they may not be used on und
 
 Those last four aren't infix to not have them confused with the bitwise operators, which I'll go into next.
 
-## Bitwise Operators
+### Bitwise Operators
 
 | Operator | Purpose      | Example     | Result     |
 | -------- | ------------ | ----------- | ---------- |
@@ -105,7 +122,7 @@ Those last four aren't infix to not have them confused with the bitwise operator
 
 * **Rotate left** and **rotate right** are not yet implemented.
 
-## Control Flow Statements
+## V. Control Flow Statements
 
 ### if / elif / else / endif
 
@@ -162,9 +179,9 @@ let c = use a over b
 let d = use a over b unless b >= 10 
 ```
 
-## Looping
+## VI. Looping
 
-### iterate / with / enditerate
+### iterate / with / enditerate & continue
 
 An **iterate** statement loops over a List, Tuple, or String type. The `with` keyword specifies the local reference.
 
@@ -211,7 +228,7 @@ iterate my_string with chr
 enditerate
 print(tokens[3]) # Prints "Hello, world"
 ```
-### while
+### while & break
 
 The **while** loop is a fairly traditional construct where the statements in the block repeat until the condition is false.
 
@@ -231,7 +248,7 @@ while true repeat
     break
 endwhile
 ```
-### until
+### until & loop_index
 
 The **until** loop is the invert of the while loop, where it loops until a condition is true.
 
@@ -259,11 +276,11 @@ until loop_index == 1 repeat
 enduntil
 ```
 
-## Structs
+## VII. Structs
 
 What good is a language if you can't structure data with it easily? Chestnut uses structs.
 
-### Example
+### Example:
 
 ```
 struct MineralProperty
@@ -289,15 +306,22 @@ push(diamond.properties, diamond_hardness)
 print("{{ diamond.name }}: {{ diamond.properties[0].name }} - {{ diamond.properties[0].value }}") # Prints Diamond: Hardness - 10
 ```
 
-## Functions
+## VIII. Functions
 
 All functions in Chestnut are first-class functions. When a function is defined, it copies a reference to the scope it was born into. And when functions move beyond the call boundaries they were defined in, they can be recaptured by the parent scope. This means that you can return functions defined inside functions and other cool stuff.
 
-In Chestnut, we have 3 functions.
+In Chestnut, we have 3 types of functions.
 
-1. Named functions. These functions are defined with a label.
-2. Anonymous functions. These functions don't have a name, but can be assigned to a variable or called inline.
-3. Struct functions. These functions use the receiver pattern to operate on structs.
+1. Named functions.
+    1. These functions are defined with a label.
+    2. These are stand-alone statements.
+2. Anonymous functions.
+    1. These functions don't have a name.
+    2. Anonymous functions can be assigned with **let** / **shadow** / **const**.
+    2. These are expressions, but can be turned into a statement by calling them inline.
+3. Struct functions.
+    1. These functions are defined with a label and a struct type receiver.
+    1. They are also stand-alone statements.
 
 ### Examples
 
@@ -323,7 +347,7 @@ endfn
 
 These were all examples of named functions.
 
-Default values can be specific as the above example, but they cannot appear before a required argument or on a variadic.
+Default values can be specific as the above example, but they cannot appear before a required argument or on a **variadic**.
 Variadic values allow the developer to use as many arguments of one type as they like for that parameter. Keep in mind, variadics can only appear once, as the last argument.
 
 ### Example
@@ -336,7 +360,7 @@ endfn
 greet("Chestnut", "User") # Prints Hello Chestnut. Hello User.
 ```
 
-Anonymous functions are specified by leaving off the variable label. These are considered expressions, not fully statements, so they can be assigned or used directly after creation.
+Anonymous functions are specified by leaving off the variable label. These are considered expressions, not full statements, so they can be assigned or used directly after creation.
 
 ### Example
 ```
@@ -347,6 +371,9 @@ let a = fn (variadic names : String)
 endfn
 
 a()
+
+# This is an example of an inline anonymous function call.
+print("{{ fn(name) returns String return "Hello, " endfn("world") }}")
 ```
 
 Struct functions allow us to add methods to structs. Let's refer to the mineral code above and do something about that boilerplate.
