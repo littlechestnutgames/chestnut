@@ -1,0 +1,56 @@
+struct LinkedList
+    data : Any
+    prev : LinkedList
+    next : LinkedList
+endstruct
+
+fn new_linked_list(data : Any, prev : LinkedList = null, next : LinkedList = null) returns LinkedList
+    let llist = LinkedList()
+    llist.data = data
+    llist.prev = prev
+    llist.next = next
+
+    return llist
+endfn
+
+fn (llist : LinkedList) insert(data : Any)
+    let new_item = new_linked_list(data, llist, llist.next)
+    if llist.next then
+        llist.next.prev = new_item
+    endif
+    llist.next = new_item
+endfn
+
+fn (llist : LinkedList) remove() returns LinkedList
+    let prev = llist.prev
+    let next = llist.next
+
+    if prev then
+        prev.next = next
+    endif
+
+    if next then
+        next.prev = prev
+    endif
+
+    llist.prev = null
+    llist.next = null
+
+    return llist
+endfn
+
+fn remove(llist : LinkedList, index : Integer) returns Result
+    let ref = llist
+    until loop_index == index repeat
+        if ref.next then
+	    ref = ref.next
+	else
+	    return Result(null, "Index out of bounds in linked list remove statement")
+	endif
+    enduntil
+    if ref then
+        return Result(ref.remove(), null)
+    endif
+
+    return Result(null, "Index out of bounds in linked list remove statement")
+endfn

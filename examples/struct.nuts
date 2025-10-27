@@ -125,6 +125,8 @@ else
 endif
 
 let amethyst_spocial, err2 = amethyst.get_property_value("Spocial")
+print("err2 is {{ err2 }}")
+print("null is {{ null }}")
 if err2 != null then
     print(err2.message)
 else

@@ -13,17 +13,19 @@ Chestnut is a general-purpose programming language that aims to be robust and pr
 
 ## II Types
 
-| Type    | Example(s)     | Notes                                    |
-| ------- | -------------- | ---------------------------------------- |
-| Any     | 0              | Represents ANY value. Even null.         |
-| Null    | null           | For now. Maybe Removed later.            |
-| String  | "Hello"        |                                          |
-| Boolean | true, false    |                                          |
-| Integer | 10             | Inferred type of any non-decimal number. |
-| Float   | 3.14           | Inferred type of any decimal number.     |
-| List    | [1, 2, 3]      | Provides index access and assignment     |
-| Tuple   | (1, 2, 3)      | Provides index access. Immutable.        |
-| Error   | error("Error") | A way to provide errors                  |
+| Type    | Example(s)               | Notes                                    |
+| ------- | ------------------------ | ---------------------------------------- |
+| Any     | 0                        | Represents ANY value. Even null.         |
+| Null    | null                     | For now. Maybe Removed later.            |
+| String  | "Hello"                  |                                          |
+| Boolean | true, false              |                                          |
+| Integer | 10                       | Inferred type of any non-decimal number. |
+| Float   | 3.14                     | Inferred type of any decimal number.     |
+| List    | [1, 2, 3]                | Provides index access and assignment     |
+| Tuple   | (1, 2, 3)                | Provides index access. Immutable.        |
+| Struct  | See struct section below | Provides a way to structure data.        | 
+| Result  | See error reporting      | Allows returning values and errors       | 
+| Error   | error("Error")           | A struct used for error reporting.       |
 
 
 ## III. Variable declaration
@@ -428,3 +430,43 @@ endfn
 outer_func()
 ```
 The capture is done in a way that assures you that only that specific variable will be brought into the inner function scope.
+
+## IX: Error reporting
+
+Chestnut doesn't provide a typical try / catch mechanism. Instead, following in Go's footsteps, we can return errors in a couple different ways.
+
+1. Tuple return
+2. Result struct
+
+### Tuple return
+
+If you return a Tuple, you can destructure it into components. This makes it useful for error handling.
+
+```
+let a = [1]
+
+# pop's return is (Any, Error). How can we deal with it without destructuring?
+let b = pop(a)
+if b[1] != null then
+    print(b[1].message)
+endif
+
+# But of course, we were able to pop from b, because 1 was present as an element.
+print(b[0]) # Prints 1
+
+# Let's pop again so an error happens, but this time use destructuring.
+let c, err = pop(a)
+if err != null then
+    print(err.message)
+end
+
+print(c) # This is null.
+
+# Let's try again, but with result syntax.
+push(a, 2)
+
+# Imagine pop returned a Result instead of (Any, Error)
+let d = pop(a)
+d.and_then(print) # Prints 2.
+```
+

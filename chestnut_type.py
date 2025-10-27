@@ -1,6 +1,21 @@
 from error import *
 from lexer import Token
 from functools import wraps
+# In chestnut_type.py:
+
+def comparison_operation(op_symbol, op_name, reverse=False):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, other):
+            self.__typecheck__(other, op_name)
+            left = self.value if not reverse else other.value
+            right = other.value if not reverse else self.value
+            
+            raw_result = left.__getattribute__(op_symbol)(right)
+            
+            return raw_result
+        return wrapper
+    return decorator
 
 def comparison_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
@@ -13,6 +28,21 @@ def comparison_operation(op_symbol, op_name, reverse=False):
         return wrapper
     return decorator
 
+def chestnut_wrapper(magic_method_name, chestnut_type_wrapper):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, other):
+            chestnut_type = eval(chestnut_type_wrapper)
+            magic_method = getattr(self, magic_method_name)
+            raw_result = magic_method(other)
+            if magic_method_name in ("__and__", "__or__"):
+                raw_result = bool(raw_result)
+            if not isinstance(raw_result, ChestnutAny):
+                return chestnut_type(raw_result)
+            return raw_result
+        return wrapper
+    return decorator
+
 def numeric_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
@@ -21,8 +51,8 @@ def numeric_operation(op_symbol, op_name, reverse=False):
                 return NotImplemented
             self.__typecheck__(other, op_name)
             if func.__name__.endswith("div__") or func.__name__.endswith("mod__"):
-                divisor = self.value if reverse else other.value
-                if divisor == 0:
+                divisor = self if reverse else other
+                if divisor == ChestnutInteger(0):
                     raise RuntimeException("Cannot divide by 0")
             left = self.value if not reverse else other.value
             right = other.value if not reverse else self.value
@@ -31,10 +61,12 @@ def numeric_operation(op_symbol, op_name, reverse=False):
     return decorator
 
 class ChestnutAny:
-    def __init__(self, token):
+    def __bool__(self):
+        return False
+    def __init__(self,token=None):
         if hasattr(token, "data"):
-             self.value = token.data
-             self.token = token
+            self.value = token.data
+            self.token = token
         else:
             self.value = token
             self.token = token
@@ -87,14 +119,38 @@ class ChestnutAny:
     def isnull(self):
         return False
 
+    def equals(self, other):
+        return ChestnutBoolean(self.__eq__(other))
+
+    def nequals(self, other):
+        return ChestnutBoolean(self.__ne__(other))
+
     def __eq__(self, other):
+        if isinstance(self, ChestnutNull) or isinstance(other, ChestnutNull):
+            return ChestnutBoolean(isinstance(self, ChestnutNull) and isinstance(other, ChestnutNull))
+
+        if not isinstance(other, ChestnutAny):
+            raise Exception(f"Chestnut types must compare to Chestnut types. Given { type(other) }")
+
         self.__typecheck__(other, "equals")
-        return self.value == other.value
+        return ChestnutBoolean(self.value == other.value)
+
+    def __ne__(self, other):
+        return ChestnutBoolean(not self.__eq__(other))
+
+    @chestnut_wrapper("__or__", "ChestnutBoolean")
+    def wrapped_or(self, other): pass
+
+    def __or__(self, other):
+        return self.value or other.value
+
+    @chestnut_wrapper("__and__", "ChestnutBoolean")
+    def wrapped_and(self, other): pass
+
+    def __and__(self, other):
+        return self.value and other.value
 
 class ChestnutString(ChestnutAny):
-    def gettype(self):
-        return "ChestnutString"
-
     def isstring(self):
         return True
 
@@ -103,6 +159,26 @@ class ChestnutString(ChestnutAny):
 
     def length(self):
         return len(self.value)
+
+    def __getitem__(self, item):
+        if not isinstance(item, ChestnutInteger):
+            raise Exception(item.__repr__())
+            raise RuntimeException("Attempt to access a non-Integer index on a string", self.token)
+        return self.value[item.value]
+
+    def __setitem__(self, item, value):
+        if not isinstance(item, ChestnutInteger):
+            raise RuntimeException("Attempt to set non-Integer index on a String", self.token)
+        if not isinstance(value, ChestnutString):
+            raise RuntimeException("Attempt to set non-String value on a String", self.token)
+
+        self.value[item.value] = value.value
+
+    def addition(self, other):
+        value = self.__add__(other)
+        if not isinstance(value, ChestnutString):
+            value = ChestnutString(value)
+        return value
 
     def __add__(self, other):
         value = other
@@ -121,13 +197,20 @@ class ChestnutString(ChestnutAny):
         return ChestnutString(Token("String", self.value + str(value), None, None))
 
     def __eq__(self, other):
-        return str(self) == str(other)
+        other_value = str(other)
+        if isinstance(other, ChestnutAny):
+            other_value = str(other.value)
+
+        return ChestnutBoolean(str(self.value) == str(other_value))
 
     def __len__(self):
         return len(self.value)
 
     def __repr__(self):
         return f"ChestnutString({self.value})"
+
+    def __bool__(self):
+        return len(self.value) > 0
 
 class ChestnutNull(ChestnutAny):
     def isnull(self):
@@ -136,11 +219,20 @@ class ChestnutNull(ChestnutAny):
     def __str__(self):
         return "null"
 
+    def __bool__(self):
+        return False
+
 class ChestnutBoolean(ChestnutAny):
     def isbool(self):
         return True
+
     def __bool__(self):
         return self.value
+
+    def __str__(self):
+        if self.value:
+            return "true"
+        return "false"
 
 class ChestnutNumber(ChestnutAny):
     MIN = 0
@@ -166,6 +258,12 @@ class ChestnutNumber(ChestnutAny):
     @numeric_operation("__rtruediv__", "divide", reverse=True)
     def __rtruediv__(self, other): pass
 
+    @numeric_operation("__mod__", "mod")
+    def __mod__(self, other): pass
+
+    @numeric_operation("__rmod__", "mod", reverse=True)
+    def __rmod__(self, other): pass
+
     @numeric_operation("__mul__", "multiply")
     def __mul__(self, other): pass
 
@@ -187,26 +285,50 @@ class ChestnutNumber(ChestnutAny):
     @comparison_operation("__lt__", "less than")
     def __lt__(self, other): pass
 
+    def less_than(self, other):
+        return ChestnutBoolean(self.__lt__(other))
+
     @comparison_operation("__rlt__", "less than", reverse=True)
     def __rlt__(self, other): pass
+
+    def rightside_less_than(self, other):
+        return ChestnutBoolean(self.__rlt__(other))
 
     @comparison_operation("__gt__", "greater than")
     def __gt__(self, other): pass
 
+    def greater_than(self, other):
+        return ChestnutBoolean(self.__gt__(other))
+
     @comparison_operation("__rgt__", "greater than", reverse=True)
     def __rgt__(self, other): pass
 
-    @comparison_operation("__lte__", "less than or equal to")
-    def __lte__(self, other): pass
+    def rightside_greater_than(self, other):
+        return ChestnutBoolean(self.__rgt__(other))
 
-    @comparison_operation("__rlte__", "less than or equal to", reverse=True)
-    def __rlte__(self, other): pass
+    @comparison_operation("__le__", "less than or equal to")
+    def __le__(self, other): pass
 
-    @comparison_operation("__gte__", "greater than or equal to")
-    def __gte__(self, other): pass
+    def less_than_or_equal_to(self, other):
+        return ChestnutBoolean(self.__le__(other))
 
-    @comparison_operation("__rgte__", "greater than or equal to", reverse=True)
-    def __rgte__(self, other): pass
+    @comparison_operation("__rle__", "less than or equal to", reverse=True)
+    def __rle__(self, other): pass
+
+    def rightside_less_than_or_equal_to(self, other):
+        return ChestnutBoolean(self.__rle__(other))
+
+    @comparison_operation("__ge__", "greater than or equal to")
+    def __ge__(self, other): pass
+
+    def greater_than_or_equal_to(self, other):
+        return ChestnutBoolean(self.__ge__(other))
+
+    @comparison_operation("__rge__", "greater than or equal to", reverse=True)
+    def __rge__(self, other): pass
+
+    def rightside_greater_than_or_equal_to(self, other):
+        return ChestnutBoolean(self.__rge__(other))
 
 class ChestnutInteger(ChestnutNumber):
     def isint(self):
@@ -258,6 +380,47 @@ class ChestnutInteger(ChestnutNumber):
 
     def __str__(self):
         return str(self.value)
+
+    def addition(self, other):
+        value = self.__add__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def subtraction(self, other):
+        value = self.__sub__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def division(self, other):
+        value = self.__truediv__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def multiplication(self, other):
+        value = self.__mul__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def modulos(self, other):
+        value = self.__mod__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def exponentiation(self, other):
+        value = self.__pow__(other)
+        if not isinstance(value, ChestnutInteger):
+            value = ChestnutInteger(value)
+        return value
+
+    def __bool__(self):
+        return self.value != 0
+
+
 
 class ChestnutInt8(ChestnutInteger):
     MIN = -2**7
@@ -362,6 +525,9 @@ class ChestnutList(ChestnutAny):
     def pop(self, index):
         return self.value.pop(index)
 
+    def __bool__(self):
+        return length(self.value) > 0
+
 class ChestnutStruct(ChestnutAny):
     def length(self):
         return len(self.value)
@@ -374,3 +540,29 @@ class ChestnutTuple(ChestnutAny):
         return len(self.value)
     def __getitem__(self, index):
         return self.value[index]
+
+class ChestnutFileHandle(ChestnutAny):
+    def __init__(self, file_object, token=None):
+        if not hasattr(file_object, 'read') or not hasattr(file_object, 'close'):
+            raise InternalException("File object must support read and close methods.")
+        super().__init__(file_object)
+
+    def __repr__(self):
+        try:
+            name = self.value.name
+            mode = self.value.mode
+        except ValueError:
+            name = "CLOSED"
+            mode = "N/A"
+
+        return f"ChestnutFileHandle(name='{name}', mode='{mode}')"
+
+    def gettype(self):
+        return "FileHandle"
+
+    def close(self):
+        if not self.value.closed:
+            self.value.close()
+            return ChestnutBoolean(True)
+        return ChestnutBoolean(False)
+

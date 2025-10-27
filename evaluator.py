@@ -7,6 +7,112 @@ from math import floor
 import copy
 import os
 
+def generate_struct_init(properties):
+    def struct_instance_init(self, *args):
+        ChestnutStruct.__init__(self, ChestnutNull(None))
+        i = 0
+        for i, prop in enumerate(properties):
+            if i < len(args):
+                setattr(self, prop.identifier.data, args[i])
+            else:
+                setattr(self, prop.identifier.data, ChestnutNull(None))
+    return struct_instance_init
+
+class FunctionRegister:
+    def __init__(self):
+        self.functions = {}
+
+    def register(self, func):
+        fname = func.name.data if hasattr(func, "name") else func.identifier.data
+        if not fname in self.functions:
+            self.functions[fname] = {"candidates": []}
+        registry = self.functions[fname]
+
+        for candidate in registry["candidates"]:
+            if candidate.mangled_key == func.mangled_key:
+                raise RuntimeException("Cannot define a function overload with the same parameters", func.name)
+        
+        registry["candidates"].insert(0, func)
+
+    def resolve(self, name, call_parameters=[]):
+        if name not in self.functions:
+            raise RuntimeException(f"Call to undefined function {name}")
+
+        call_params = call_parameters
+        num_call_params = len(call_params)
+        
+        best_match_candidate = None
+        best_score = -1 
+
+        registry = self.functions[name]
+        
+        for candidate in registry["candidates"]:
+            candidate_params = candidate.parameters 
+            num_candidate_params = len(candidate_params)
+            current_score = 0
+            is_feasible = True
+
+            is_variadic_func = num_candidate_params > 0 and candidate_params[-1].variadic
+            
+            required_count = 0
+            for param in candidate_params:
+                if param.default_value is None and not param.variadic:
+                    required_count += 1
+                else:
+                    break
+
+            num_fixed_params = num_candidate_params
+            if is_variadic_func:
+                num_fixed_params -= 1
+            
+            if is_variadic_func:
+                if num_call_params < required_count:
+                    continue
+            else:
+                if not (required_count <= num_call_params <= num_fixed_params):
+                    continue
+            
+            for i in range(min(num_call_params, num_fixed_params)):
+                param = candidate_params[i]
+                expected_type = eval("Chestnut" + param.paramtype.data)
+                runtime_arg = call_params[i]
+                runtime_type_name = runtime_arg.__class__.__name__.replace("Chestnut", "")
+                
+                if isinstance(runtime_arg, expected_type):
+                    current_score += 3
+                elif expected_type == ChestnutAny:
+                    current_score += 1
+                else:
+                    is_feasible = False
+                    break
+            
+            if not is_feasible:
+                continue
+
+            if is_variadic_func and num_call_params > num_fixed_params:
+                variadic_param = candidate_params[-1]
+                variadic_type = eval("Chestnut" + variadic_param.paramtype.data)
+                
+                for i in range(num_fixed_params, num_call_params):
+                    runtime_arg = call_params[i]
+
+                    if isinstance(runtime_arg, variadic_type):
+                        current_score += 3
+                    elif variadic_type == ChestnutAny:
+                        current_score += 1 
+                    else:
+                        is_feasible = False
+                        break
+            
+            if is_feasible and current_score > best_score:
+                best_score = current_score
+                best_match_candidate = candidate
+
+        if best_match_candidate is None:
+            raise RuntimeException(f"No call signature for {name} is compatible with given parameters" + str(call_parameters))
+
+        return best_match_candidate
+
 class BringVariable:
     def __init__(self, scope, var_name):
         self.scope = scope
@@ -50,16 +156,22 @@ class BringVariable:
 class StructNode:
     def __init__(self, definition):
         self.definition = definition
+        self.function_register = FunctionRegister()
 
+        params = []
+        for param in  self.definition.properties:
+            params.append(FnParameter(param.identifier, param.value_type, ChestnutNull(None)))
+        print(f"Registering {definition.identifier.data}'s constructor with its function register")
+        self.function_register.register(NativeFunction(Token("Identifier", "constructor", None, None), params))
+        
     def constructor(self):
         name = self.definition.identifier.data
         properties = self.definition.properties
-        struct_class = type(name, (object,), {
+        struct_class = type(name, (ChestnutStruct,), {
             "__repr__": lambda self: name + "(" + str(properties) + ")",
+            "__init__": generate_struct_init(properties),
             "gettype": lambda self: name
         })
-        for property in properties:
-            setattr(struct_class, property.identifier.data, None)
         struct_instance = struct_class()
         return struct_instance
 
@@ -72,6 +184,8 @@ class NativeFunction:
     def __init__(self, identifier, params):
         self.identifier = identifier
         self.params = params
+        self.name = identifier
+        self.parameters = params
 
     def reconcile_parameters(self, evaluator, call_parameters):
         name = self.identifier
@@ -149,8 +263,10 @@ class AnonymousFunction(Function):
         super().__init__(statement, parent_scopes)
         self.name = name
 
-class SpreadArgs:
+class SpreadArgs(ChestnutAny):
     def __init__(self, args):
+        self.token = Token("Null", ChestnutNull, None, None)
+        self.value = ChestnutNull(None)
         self.args = args
     def __repr__(self):
         return f"SpreadArgs(<{self.args}>)"
@@ -206,6 +322,7 @@ class Evaluator:
                 self.evaluate(node)
 
     def __init__(self):
+        self.function_register = FunctionRegister()
         self.calling_builtin = False
         core_spec = self.get_core_spec()
         native_funcs = {}
@@ -215,10 +332,14 @@ class Evaluator:
             params = []
             if "args" in v:
                 for arg in v["args"]:
-                    params.append(FnParameter(Token("Identifier", arg, None, None), "Any", None, False))
+                    params.append(FnParameter(Token("Identifier", arg, None, None), Token("Identifier", "Any", None, None), None, False))
             if "varargs" in v:
-                params.append(FnParameter(Token("Identifier", v["varargs"], None, None), "Any", None, True))
+                params.append(FnParameter(Token("Identifier", v["varargs"], None, None), Token("Identifier", "Any", None, None), None, True))
+
+            func = NativeFunction(func_name, params)
+
             self.scopes[0][k] = NativeFunction(func_name, params)
+            self.function_register.register(func)
         self.eval_library("lib/core.nuts")
 
     def push_scope(self, scope={}):
@@ -272,13 +393,7 @@ class Evaluator:
 
             return 1
         elif isinstance(node, ChestnutNull):
-            return None
-        elif isinstance(node, ChestnutInteger) and node.token_matches("Hex"):
-            return hex(node.value)
-        elif isinstance(node, ChestnutInteger) and node.token_matches("Binary"):
-            return bin(node.value)
-        elif isinstance(node, ChestnutInteger) and node.token_matches("Octal"):
-            return oct(node.value)
+            return node
         elif isinstance(node, ChestnutInteger):
             return node.value
         elif isinstance(node, ChestnutBoolean):
@@ -287,7 +402,7 @@ class Evaluator:
             return node.value
         elif isinstance(node, ChestnutString):
             return node.value
-        elif isinstance(node, ChestnutAny) and node.token.label in ["ChestnutInteger", "ChestnutBoolean", "ChestnutFloat", "ChestnutString"]:
+        elif isinstance(node, ChestnutAny) and node.token.label in ["ChestnutInteger", "ChestnutBoolean", "ChestnutFloat", "ChestnutString", "UnaryOperationNode"]:
             return node.value
         elif isinstance(node, ImportStatementNode):
             import_path = f"{os.getcwd()}{os.sep}{node.location.data}"
@@ -302,7 +417,8 @@ class Evaluator:
             scope = self.find_first_scope_containing(label)
             if not scope is None:
                 raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
-            self.current_scope()[label] = StructNode(node)
+            struct_node = StructNode(node)
+            self.current_scope()[label] = struct_node
         elif isinstance(node, PropertyAssignmentNode):
             target_object = self.evaluate(node.identifier)
             if target_object is None:
@@ -347,11 +463,11 @@ class Evaluator:
             if not isinstance(target, list):
                 raise RuntimeException("Index access attempted on non-list", node.identifier)
             index = self.evaluate(node.index)
-            if index == -1:
-                index = len(target) - 1
-            if index < -1:
+            if index == ChestnutInteger(-1):
+                index = ChestnutInteger(len(target) - 1)
+            if index < ChestnutInteger(-1):
                 raise RuntimeException("List bounds exceeded in assignment", node.identifier)
-            if index > len(target) - 1:
+            if index > ChestnutInteger(len(target) - 1):
                 raise RuntimeException("List bounds exceeded in assignment", node.identifier)
             op = node.op
 
@@ -370,11 +486,11 @@ class Evaluator:
         elif isinstance(node, IndexAccessNode):
             target_value = self.evaluate(node.target)
             index = self.evaluate(node.index)
-            if not isinstance(target_value, list) and not isinstance(target_value, tuple) and not isinstance(target_value, str):
-                raise Exception(f"Index access attempted on non-array type {target_value}")
-            if index == -1:
-                index = len(target_value)-1
-            if index < 0 or index >= len(target_value):
+            if not isinstance(target_value, list) and not isinstance(target_value, tuple) and not isinstance(target_value, str) and not isinstance(target_value, ChestnutString):
+                raise Exception(f"Index access attempted on non-array type {target_value.__repr__()}")
+            if index == ChestnutInteger(-1):
+                index = ChestnutInteger(len(target_value) - 1)
+            if index < ChestnutInteger(0) or index >= ChestnutInteger(len(target_value)):
                 raise Exception(f"Index out of bounds")
             return target_value[index]
 
@@ -470,10 +586,11 @@ class Evaluator:
                     captured_scopes.append(scope)
 
             func_object = Function(node, captured_scopes)
+            self.function_register.register(node)
             if self.constant_exists(node.name.data):
                 raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
-            if self.exists_in_any_scope(node.name.data):
-                raise Exception(f"{node.name.data} is already defined in the current scope, line {node.name.line}, column {node.name.column}")
+            # if self.exists_in_any_scope(node.name.data):
+            #     raise Exception(f"{node.name.data} is already defined in the current scope, line {node.name.line}, column {node.name.column}")
             self.current_scope()[node.name.data] = func_object
 
             return 1
@@ -483,10 +600,14 @@ class Evaluator:
 
         elif isinstance(node, CallStatementNode):
             callable = self.evaluate(node.identifier)
+            print(callable)
             self.calling_builtin = False
             identifier = None
             func = None
             instance = None
+            if isinstance(callable, StructNode):
+                method = "constructor"
+                func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
             if isinstance(callable, StructMethodCall):
                 instance = callable.instance
                 func = callable.func_object
@@ -505,6 +626,7 @@ class Evaluator:
 
                 identifier = node.identifier.data
                 func_scope = self.find_first_scope_containing(identifier)
+                l = self.function_register.resolve(identifier, [ self.evaluate(x) for x in node.params ])
                 # Check if the scope was found and assign from the function inside.
                 if func_scope:
                     func = func_scope[identifier]
@@ -771,7 +893,7 @@ class Evaluator:
                 return self.evaluate(node.left)
             else:
                 left = self.evaluate(node.left)
-                if left is None:
+                if isinstance(left, ChestnutNull):
                     return self.evaluate(node.right)
                 return left
 
@@ -819,15 +941,10 @@ class Evaluator:
                 case "BitwiseRotateLeft":
                     raise InternalException("Bitwise left rotate is not implemented yet")
                 case "Addition":
-                    if isinstance(left, str) or isinstance(right, str):
-                        value = str(left) + str(right)
-                    else:
                         value = left + right
                 case "Subtraction":
                     value = left - right
                 case "Division":
-                    if right == 0:
-                        raise ValueException(f"Division by 0", node.right.token)
                     value = left / right
                 case "Multiplication":
                     value = left * right
@@ -868,7 +985,8 @@ class Evaluator:
             if op.label == "Subtraction":
                 return -right
             elif op.label == "Not":
-                return not right
+                value = ChestnutBoolean(not right)
+                return value
             elif op.label == "BitwiseNot":
                 return ~right
             raise RuntimeException(f"Unexpected {op.label} operation '{op.data}'", op)
