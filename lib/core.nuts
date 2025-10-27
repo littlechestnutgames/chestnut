@@ -1,3 +1,7 @@
+fn gettype(o : Any) returns String
+    return __internal_type__(o)
+endfn
+
 struct Error
     message : String
 endstruct
@@ -12,19 +16,19 @@ fn error(message : String) returns Error
     return e
 endfn
 
-fn xor(left : Boolean, right : Boolean) returns Boolean
+fn xor(left : Any, right : Any) returns Boolean
     return (left or right) and not (left and right)
 endfn
 
-fn nand(left : Boolean, right : Boolean) returns Boolean
+fn nand(left : Any, right : Any) returns Boolean
     return not (left and right)
 endfn
 
-fn nor(left : Boolean, right : Boolean) returns Boolean
+fn nor(left : Any, right : Any) returns Boolean
     return not left and not right
 endfn
 
-fn xnor(left : Boolean, right : Boolean) returns Boolean
+fn xnor(left : Any, right : Any) returns Boolean
     return (left and right) or (not left and not right)
 endfn
 
@@ -68,6 +72,10 @@ fn length(a : List) returns Integer
     return __internal_length__(a)
 endfn
 
+fn length(a : String) returns Integer
+    return __internal_length__(a)
+endfn
+
 fn insert(l : List, a : Any, i : Integer)
     return __internal_insert__(l, a, i)
 endfn
@@ -92,6 +100,14 @@ fn new_result(value : Any, err: Any) returns Result
     return result
 endfn
 
+fn new_result_from_tuple(tuple : Tuple) returns Result
+    if length(tuple) < 2 then
+        return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
+    endif
+    let success, err = tuple
+    return new_result(success, err)
+endfn
+
 fn (result : Result) unwrap_or (default_value : Any) returns Any
     return use result.value over default_value unless result.error != null
 endfn
@@ -101,5 +117,45 @@ fn (result : Result) and_then (func : Function) returns Result
         return result
     endif
     return func(result.value)
+endfn
+
+fn range (start : Integer, end : Integer) returns List
+    let r = []
+    let l = start
+    while l < end repeat
+       push(r, l)
+       l += 1
+    endwhile
+    return r
+endfn
+
+fn slice (input : String, position_start : Integer, position_end : Integer = -1) returns String
+    let l = length(input)
+    let end = use position_end over l unless position_end < 0 or position_end > l
+    let start = use position_start over 0 unless position_start < 0
+    let r = range(start, end)
+    let sliced = ""
+    iterate r with index
+        sliced += input[index]
+    enditerate
+    return sliced
+endfn
+
+fn span (input : String, terminator : String) returns Result
+    let str = ""
+    let i = 0
+    let found = false
+    while i < length(input) repeat
+        if input[i] == terminator then
+	   if i != 0 and input[i - 1] != "\\" then
+	       found = true
+	       break
+	   endif
+	endif
+	str += input[i]
+	i += 1
+    endwhile
+    let err = use null over error("Unterminated String span") unless not found
+    return (str, err)
 endfn
 

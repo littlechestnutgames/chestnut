@@ -1,0 +1,7 @@
+let str = "This \\\"is\\\" a test of my\" test"
+let spanned, err = span(str, "\"")
+if err != null then
+    print(err.message)
+else
+    print(spanned)
+endif

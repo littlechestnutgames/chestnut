@@ -10,7 +10,6 @@ token_types = [
     # 9
     TokenType("Endstruct", "endstruct"),
     TokenType("Otherwise", "otherwise"),
-    TokenType("Nomangle", "no-mangle"),
 
     # 8 character sequences
     TokenType("Constant", "constant"),
@@ -35,7 +34,7 @@ token_types = [
     TokenType("Unless", "unless"),
 
     # 5 character sequences
-    TokenType("Boolean", "false", False),
+    TokenType("Boolean", "false", ChestnutBoolean(False)),
     TokenType("Break", "break"),
     TokenType("Endfn", "endfn"),
     TokenType("Endif", "endif"),
@@ -44,7 +43,7 @@ token_types = [
     TokenType("While", "while"),
 
     # 4 character sequences
-    TokenType("Boolean", "true", True),
+    TokenType("Boolean", "true", ChestnutBoolean(True)),
     TokenType("Case", "case"),
     TokenType("Elif", "elif"),
     TokenType("Else", "else"),
@@ -74,7 +73,6 @@ token_types = [
     TokenType("Eq", "=="),
     TokenType("Exponent", "**"),
     TokenType("Fn", "fn"),
-    TokenType("Gt", ">"),
     TokenType("Gte", ">="),
     TokenType("If", "if"),
     TokenType("Lte", "<="),
@@ -98,6 +96,7 @@ token_types = [
     TokenType("LBrace", "["),
     TokenType("LParen", "("),
     TokenType("Lt", "<"),
+    TokenType("Gt", ">"),
     TokenType("Multiplication", "*"),
     TokenType("Not", "!"),
     TokenType("Period", "."),
@@ -218,7 +217,7 @@ def lex(input):
             capstr = input[state.pos:state.pos+end_quote_pos]
             if not "{{" in capstr:
                 # Normal string
-                yield Token("String", ChestnutString(capstr), line=start_line, column=start_column)
+                yield Token("String", ChestnutString(capstr.encode().decode("unicode-escape")), line=start_line, column=start_column)
                 for i in range(line_ends):
                     state.advance_line()
                 state.advance_column(len(capstr) - line_ends + 1)
@@ -228,7 +227,7 @@ def lex(input):
                 t = ""
                 while strpos < len(capstr):
                     if capstr[strpos:strpos + 2] == "{{":
-                        strtoken = Token("String", ChestnutString(t), start_line, start_column)
+                        strtoken = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column)
                         yield strtoken
                         t = ""
 
@@ -259,7 +258,7 @@ def lex(input):
                     else:
                         t = t + capstr[strpos]
                         strpos = strpos + 1
-                token = Token("String", ChestnutString(t), start_line, start_column)
+                token = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column)
                 yield token
 
                 for i in range(line_ends):

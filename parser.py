@@ -1,6 +1,7 @@
 from error import *
 from supporting import *
 from chestnut_type import *
+from abc import ABC
 
 class UnaryOperationNode:
     def __init__(self, op, right):
@@ -93,29 +94,42 @@ class ElseStatementNode:
     def __repr__(self):
         return f"ElseStatementNode(<{self.block_statements}>)"
 
-class FnStatementNode:
-    def __init__(self, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
+class BaseFn:
+    def __init__(self, parameters, statements, return_types=None, brings=[]):
+        self.parameters = parameters
+        self.statements = statements
+        self.return_types = return_types
+        self.brings = brings
+
+    def mangle(self, identifier=""):
+        return f"{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
+
+    def __repr__(self):
+        return f"{self.__name__}({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
+
+class FnStatementNode(BaseFn):
+    def __init__(self, name, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
         self.name = name
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle # Mangle functions by default.
+        self.mangled_key = self.mangle(self.name.data)
 
     def __repr__(self):
-        return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings}\n\tNo-Mangle:{self.no_mangle}>)"
+        return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings})"
 
+class StructFnStatementNode(BaseFn):
+    def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
+        self.target_struct = target_struct
+        self.name = name
+        self.mangled_key = self.mangle(self.target_struct.name.data + " " + self.name.data)
 
-class AnonymousFnExpressionNode:
-    def __init__(self, parameters, statements, return_types=None, brings=[], no_mangle=False):
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle
 
     def __repr__(self):
-        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+
+class AnonymousFnExpressionNode(BaseFn):
+    def __init__(self, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
 
 class FnParameter:
     def __init__(self, name, paramtype, default_value=None, variadic=False):
@@ -126,19 +140,6 @@ class FnParameter:
 
     def __repr__(self):
         return f"FnParameter(<{self.name}>, <{self.paramtype}>, <{self.default_value}>, <{self.variadic}>)"
-
-class StructFnStatementNode:
-    def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
-        self.target_struct = target_struct
-        self.name = name
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle
-
-    def __repr__(self):
-        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
 
 class CaseStatementNode:
     def __init__(self, subject, when_blocks, otherwise):
@@ -508,7 +509,6 @@ class Parser:
 
         # Parse parameter identifier
         if not self.check_label("Identifier"):
-            print(self.peek())
             raise SyntaxException("Expected identifier in function parameters", self.peek())
         identifier = self.consume() # Consume identifier
 
@@ -626,7 +626,6 @@ class Parser:
     def parse_fn_statement(self):
         # Consume fn token
         self.consume()
-        
         struct_params = None
         if self.check_label("LParen"):
             struct_params = self.pull_params()
@@ -648,6 +647,7 @@ class Parser:
                 raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
 
         brings = self.parse_brings()
+
         return_types = self.parse_returns()
 
         statements = []
