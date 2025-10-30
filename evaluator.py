@@ -22,15 +22,22 @@ class FunctionRegister:
     def __init__(self):
         self.functions = {}
 
+    def is_registered(self, name):
+        return name in self.functions
+
     def register(self, func):
-        fname = func.name.data if hasattr(func, "name") else func.identifier.data
+        fname = ""
+        if isinstance(func, NativeFunction):
+            fname = func.identifier.data
+        if isinstance(func, Function):
+            fname = func.statement.name.data
         if not fname in self.functions:
             self.functions[fname] = {"candidates": []}
         registry = self.functions[fname]
 
         for candidate in registry["candidates"]:
-            if candidate.mangled_key == func.mangled_key:
-                raise RuntimeException("Cannot define a function overload with the same parameters", func.name)
+            if candidate.statement.mangled_key == func.statement.mangled_key:
+                raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
         
         registry["candidates"].insert(0, func)
 
@@ -161,7 +168,6 @@ class StructNode:
         params = []
         for param in  self.definition.properties:
             params.append(FnParameter(param.identifier, param.value_type, ChestnutNull(None)))
-        print(f"Registering {definition.identifier.data}'s constructor with its function register")
         self.function_register.register(NativeFunction(Token("Identifier", "constructor", None, None), params))
         
     def constructor(self):
@@ -213,10 +219,12 @@ class NativeFunction:
             arg_index += 1
         return values
 
-class Function:
+class Function(ChestnutAny):
     def __init__(self, statement, parent_scopes=None):
         self.statement = statement
         self.scopes = parent_scopes if parent_scopes is not None else []
+        self.token = Token("Null", ChestnutNull(None), None, None)
+        self.value = ChestnutNull(None)
 
     def reconcile_parameters(self, evaluator, call_parameters):
         statement = self.statement
@@ -460,7 +468,7 @@ class Evaluator:
             target = self.evaluate(node.identifier)
             if isinstance(target, tuple):
                 raise RuntimeException("Illegal assingment, tuples are immutable", node.identifier)
-            if not isinstance(target, list):
+            if not isinstance(target, (list, ChestnutList, ChestnutTuple, tuple)):
                 raise RuntimeException("Index access attempted on non-list", node.identifier)
             index = self.evaluate(node.index)
             if index == ChestnutInteger(-1):
@@ -486,7 +494,7 @@ class Evaluator:
         elif isinstance(node, IndexAccessNode):
             target_value = self.evaluate(node.target)
             index = self.evaluate(node.index)
-            if not isinstance(target_value, list) and not isinstance(target_value, tuple) and not isinstance(target_value, str) and not isinstance(target_value, ChestnutString):
+            if not isinstance(target_value, (list, ChestnutList)) and not isinstance(target_value, (tuple, ChestnutTuple)) and not isinstance(target_value, str) and not isinstance(target_value, ChestnutString):
                 raise Exception(f"Index access attempted on non-array type {target_value.__repr__()}")
             if index == ChestnutInteger(-1):
                 index = ChestnutInteger(len(target_value) - 1)
@@ -541,7 +549,10 @@ class Evaluator:
 
             i = 0
             while i < len(labels):
-                self.current_scope()[labels[i].data] = expression[i]
+                if isinstance(expression[0], tuple):
+                    self.current_scope()[labels[i].data] = expression[0][i]
+                else:
+                    self.current_scope()[labels[i].data] = expression[i]
                 i = i + 1
 
             return 1
@@ -566,7 +577,10 @@ class Evaluator:
 
             i = 0
             while i < len(labels):
-                self.current_scope()[labels[i].data] = expression[i]
+                if isinstance(expression[0], tuple):
+                    self.current_scope()[labels[i].data] = expression[0][i]
+                else:
+                    self.current_scope()[labels[i].data] = expression[i]
                 i = i + 1
 
             return 1
@@ -586,7 +600,7 @@ class Evaluator:
                     captured_scopes.append(scope)
 
             func_object = Function(node, captured_scopes)
-            self.function_register.register(node)
+            self.function_register.register(func_object)
             if self.constant_exists(node.name.data):
                 raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
             # if self.exists_in_any_scope(node.name.data):
@@ -600,14 +614,15 @@ class Evaluator:
 
         elif isinstance(node, CallStatementNode):
             callable = self.evaluate(node.identifier)
-            print(callable)
+            if not isinstance(callable, (Function, AnonymousFunction, NativeFunction, StructNode, StructMethodCall)):
+                raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
             self.calling_builtin = False
             identifier = None
             func = None
             instance = None
-            if isinstance(callable, StructNode):
-                method = "constructor"
-                func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
+            # if isinstance(callable, StructNode):
+            #     method = "constructor"
+            #     func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
             if isinstance(callable, StructMethodCall):
                 instance = callable.instance
                 func = callable.func_object
@@ -626,7 +641,7 @@ class Evaluator:
 
                 identifier = node.identifier.data
                 func_scope = self.find_first_scope_containing(identifier)
-                l = self.function_register.resolve(identifier, [ self.evaluate(x) for x in node.params ])
+                # l = self.function_register.resolve(identifier, [ self.evaluate(x) for x in node.params ])
                 # Check if the scope was found and assign from the function inside.
                 if func_scope:
                     func = func_scope[identifier]
@@ -672,7 +687,7 @@ class Evaluator:
                     *final_args
                 )
 
-                raise ReturnValue(result)
+                return result
 
             fn = func.statement
 
@@ -983,7 +998,7 @@ class Evaluator:
             right = self.evaluate(node.right)
 
             if op.label == "Subtraction":
-                return -right
+                return ChestnutInteger(-(right.value))
             elif op.label == "Not":
                 value = ChestnutBoolean(not right)
                 return value

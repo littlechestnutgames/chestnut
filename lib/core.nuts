@@ -1,19 +1,128 @@
+struct TableRecord
+    key : String
+    value : Any
+endstruct
+
+fn new_table_record (k : String, v : Any) returns TableRecord
+    let tr = TableRecord()
+    tr.key = k
+    tr.value = v
+
+    return tr
+endfn
+
+struct Table
+    records : List  
+endstruct
+
+fn new_table() returns Table
+    let t = Table()
+    t.records = []
+
+    return t
+endfn
+
+fn (t : Table) get_index(k : String) returns Integer
+    let index = -1
+    iterate t.records with record
+        if k == record.key then
+            index = loop_index
+            break
+        endif
+    enditerate
+    return index
+endfn
+
+fn (t : Table) exists(k : String) returns Boolean
+    return get_index(k) != -1
+endfn
+
+fn (t : Table) get(k : String, default : Any = null) returns Any
+    iterate t.records with record
+        if record.key == k then
+            return record.value
+        endif
+    enditerate
+    return default
+endfn
+
+fn (t : Table) set(k : String, v : Any)
+    let index = t.get_index(k)
+    if index == -1 then
+        push(t.records, new_table_record(k, v))
+    else
+        t.records[index].value = v
+    endif
+endfn
+
 fn gettype(o : Any) returns String
     return __internal_type__(o)
 endfn
 
 struct Error
     message : String
+    error: Error
 endstruct
 
-fn (err : Error) getError() returns String
-    return err.message
-endfn
-
-fn error(message : String) returns Error
+fn error(message : String, err : Error = null) returns Error
     let e = Error()
     e.message = message
+    e.error = err
     return e
+endfn
+
+struct Result
+    value : Any
+    error : Error
+endstruct
+
+fn new_result(value : Any, err: Any) returns Result
+    let result = Result()
+    result.value = value
+    result.error = err
+    return result
+endfn
+
+fn new_result_from_tuple(tuple : Tuple) returns Result
+    if length(tuple) < 2 then
+        return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
+    endif
+    let success, err = tuple
+    return new_result(success, err)
+endfn
+
+fn (result : Result) unwrap_or (default_value : Any) returns Any
+    return use result.value
+               over default_value
+               unless result.error != null
+endfn
+
+fn (result : Result) wrap_err (message : String) returns Result
+    let e = err
+    if result.error != null then
+    endif
+    return result
+endfn
+
+fn (result : Result) and_then (func : Function) returns Result
+    if result.error != null then
+        return result
+    endif
+    return func(result.value)
+endfn
+
+fn (result : Result) catching (func : Function) returns Result
+    if result.error then
+        return func(result.error)
+    endif
+    return result
+endfn
+
+fn (result : Result) unwrap_or_fallback (func : Function) returns Any
+   if result.error == null then
+       return result.value
+   endif
+   return func(result.error)
 endfn
 
 fn xor(left : Any, right : Any) returns Boolean
@@ -88,37 +197,6 @@ fn remove(l : List, i : Integer) returns Any
     return __internal_remove__(l, i)
 endfn
 
-struct Result
-    value : Any
-    error : Error
-endstruct
-
-fn new_result(value : Any, err: Any) returns Result
-    let result = Result()
-    result.value = value
-    result.error = err
-    return result
-endfn
-
-fn new_result_from_tuple(tuple : Tuple) returns Result
-    if length(tuple) < 2 then
-        return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
-    endif
-    let success, err = tuple
-    return new_result(success, err)
-endfn
-
-fn (result : Result) unwrap_or (default_value : Any) returns Any
-    return use result.value over default_value unless result.error != null
-endfn
-
-fn (result : Result) and_then (func : Function) returns Result
-    if result.error != null then
-        return result
-    endif
-    return func(result.value)
-endfn
-
 fn range (start : Integer, end : Integer) returns List
     let r = []
     let l = start
@@ -159,3 +237,18 @@ fn span (input : String, terminator : String) returns Result
     return (str, err)
 endfn
 
+fn open_file(path : String, mode : String) returns Result
+    return new_result_from_tuple(__internal_open_file__(path, mode))
+endfn
+
+fn read_file_handle(handle : FileHandle, size : Integer) returns Result
+    return new_result_from_tuple(__internal_read_file__(handle, size))
+endfn
+
+fn close_file(handle : FileHandle) returns Result
+    return new_result_from_tuple(__internal_close_file__(handle))
+endfn
+
+fn halt(message : Any)
+    __internal_halt__(message)
+endfn

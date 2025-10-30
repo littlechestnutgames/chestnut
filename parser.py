@@ -105,7 +105,10 @@ class BaseFn:
         return f"{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
 
     def __repr__(self):
-        return f"{self.__name__}({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
+        if hasattr(self, "name"):
+            return f"{self.__name__}({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
+        else:
+            return f"({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
 
 class FnStatementNode(BaseFn):
     def __init__(self, name, parameters, statements, return_types=None, brings=[]):
@@ -323,37 +326,41 @@ class Parser:
 
     def parse_statement(self):
         token = self.peek()
+        statement = None
         if token and token.label in ["Let", "Shadow", "Constant"]:
-            return self.parse_let_statement()
+            statement = self.parse_let_statement()
         elif token and token.label == "Struct":
-            return self.parse_struct_definition()
+            statement = self.parse_struct_definition()
         elif token and token.label == "Import":
-            return self.parse_import_statement()
+            statement = self.parse_import_statement()
         elif token and token.label == "If":
-            return self.parse_if_statement()
+            statement = self.parse_if_statement()
         elif token and token.label == "Fn":
-            return self.parse_fn_statement()
+            statement = self.parse_fn_statement()
         elif token and token.label == "Case":
-            return self.parse_case_statement()
+            statement = self.parse_case_statement()
         elif token and token.label == "While":
-            return self.parse_while_statement()
+            statement = self.parse_while_statement()
         elif token and token.label == "Until":
-            return self.parse_until_statement()
+            statement = self.parse_until_statement()
         elif token and token.label == "Iterate":
-            return self.parse_iterate_statement()
+            statement = self.parse_iterate_statement()
         elif token and token.label == "Return":
-            return self.parse_return_statement()
+            statement = self.parse_return_statement()
         elif token and token.label == "Break":
-            return BreakStatementNode(self.consume())
+            statement = BreakStatementNode(self.consume())
         elif token and token.label == "Continue":
-            return ContinueStatementNode(self.consume())
+            statement = ContinueStatementNode(self.consume())
         elif self.check_label("Identifier") and self.peek_next().label in [
                 "Assignment", "Addassign", "Subassign", 
                 "Mulassign", "Divassign"
             ]:
-            return self.parse_assignment_statement()
+            statement = self.parse_assignment_statement()
         else:
-            return ExpressionStatementNode(self.parse_expression())
+            statement = ExpressionStatementNode(self.parse_expression())
+        if self.check_label("Semicolon"):
+            self.consume()
+        return statement
 
     def parse_let_statement(self):
         let_token = self.consume()
@@ -435,53 +442,53 @@ class Parser:
 
         condition_expression = self.parse_expression()
 
-        if self.peek() and self.peek().label != "Then":
+        if not self.check_label("Then"):
             raise SyntaxException("`then` missing after condition in if statement", self.peek())
 
         # Consume then.
         self.consume()
 
         if_statements = []
-        while self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+        while not self.check_labels(['Elif', 'Else', 'Endif']):
             if_statements.append(self.parse_statement())
 
-        if self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+        if not self.check_labels(['Elif', 'Else', 'Endif']):
             raise SyntaxException("Expected elif, else, or endif after if statement", self.peek())
 
         elif_blocks = []
-        while self.peek() and self.peek().label == 'Elif':
+        while self.check_label('Elif'):
             # Consume elif
             self.consume()
             
             condition_expression = self.parse_expression()
 
-            if self.peek() and self.peek().label != "Then":
+            if not self.check_label("Then"):
                 raise SyntaxException("`then` missing after condition in elif statement", self.peek())
 
             # Consume then
             self.consume()
 
             elif_statements = []
-            while self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+            while self.check_labels(['Elif', 'Else', 'Endif']):
                 elif_statements.append(self.parse_statement())
 
             elif_blocks.append(ElifStatementNode(condition_expression, elif_statements))
 
-        if self.peek() and not self.peek().label in ['Else', 'Endif']:
+        if not self.check_labels(['Else', 'Endif']):
             raise SyntaxException("Expected else or endifin if statement", self.peek())
 
         else_block = None
-        if self.peek() and self.peek().label == "Else":
+        if self.check_label("Else"):
             # Consume else
             self.consume()
             
             else_statements = []
-            while self.peek() and not self.peek().label == "Endif":
+            while not self.check_label("Endif"):
                 else_statements.append(self.parse_statement())
 
             else_block = ElseStatementNode(else_statements)
 
-        if self.peek() and self.peek().label != "Endif":
+        if not self.check_label("Endif"):
             raise SyntaxException("Expected endif in if statement", self.peek())
 
         # Consume endif
@@ -601,20 +608,20 @@ class Parser:
 
     def parse_returns(self):
         return_types = []
-        if self.peek() and self.peek().label == "Returns":
+        if self.check_label("Returns"):
             self.consume() # Consume Returns
 
-            if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
+            if not self.check_labels(["LParen", "Identifier"]):
                 raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
 
-            if self.peek() and self.peek().label == "LParen":
+            if self.check_label("LParen"):
                 self.consume() # Consume LParen
                 # Multiple return types.
-                while self.peek() and self.peek().label != "RParen":
-                    if self.peek() and self.peek().label == "Comma":
+                while not self.check_label("RParen"):
+                    if self.check_label("Comma"):
                         self.consume()
 
-                    if self.peek() and self.peek().label != "Identifier":
+                    if not self.check_label("Identifier"):
                         raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
                     return_types.append(self.consume())
 
@@ -652,7 +659,7 @@ class Parser:
 
         statements = []
 
-        while self.peek() and self.peek().label != "Endfn":
+        while not self.check_label("Endfn"):
             statements.append(self.parse_statement())
 
         if not self.peek():
@@ -709,16 +716,16 @@ class Parser:
 
         condition = self.parse_expression()
 
-        if self.peek() and self.peek().label != "Repeat":
+        if not self.check_label("Repeat"):
             raise SyntaxException("Expected repeat after condition in until statement", self.peek())
 
         self.consume()
 
         statements = []
-        while self.peek() and self.peek().label != "Endwhile":
+        while not self.check_label("Endwhile"):
             statements.append(self.parse_statement())
         
-        if self.peek() and self.peek().label != "Endwhile":
+        if not self.check_label("Endwhile"):
             raise SyntaxException("Unexpected end of input, unterminated while block", self.peek())
         
         self.consume()
@@ -985,7 +992,7 @@ class Parser:
     def parse_postfix_expression(self):
         left = self.parse_primary()
      
-        while self.check_labels(["LBrace", "Period", "LParen"]):
+        while self.check_labels(["LBrace", "Period", "LParen"]) and not self.check_label("Semicolon"):
             if self.check_label("LBrace"):
                 left = self.parse_index_access(left)
             elif self.check_label("Period"):
@@ -1008,7 +1015,8 @@ class Parser:
                 self.consume() # Consume ')'
                 left = CallStatementNode(left, params)
                 continue
-        
+        if self.check_label("Semicolon"):
+            self.consume()
         return left
 
     def parse_paren_expression(self):

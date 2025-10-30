@@ -102,7 +102,8 @@ token_types = [
     TokenType("Period", "."),
     TokenType("RBrace", "]"),
     TokenType("RParen", ")"),
-    TokenType("Subtraction", "-")
+    TokenType("Subtraction", "-"),
+    TokenType("Semicolon", ";")
 ]
 
 class LexerState:
