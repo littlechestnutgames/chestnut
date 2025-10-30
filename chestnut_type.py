@@ -334,6 +334,9 @@ class ChestnutInteger(ChestnutNumber):
     def isint(self):
         return True
 
+    def __int__(self):
+        return self.value
+
     def __bitwise_shift_lengthcheck__(self, shift_amount_operand):
         if shift_amount_operand.value < 0:
             raise ValueException("Shift amount must be greater than 0")
@@ -493,13 +496,23 @@ class ChestnutList(ChestnutAny):
         return len(self.value)
 
     def __getitem__(self, var_name):
-        return self.value[var_name]
+        value = None
+        if isinstance(var_name, ChestnutInteger):
+            value = var_name.value
+        if not isinstance(value, int):
+            raise Exception(type(value))
+        return self.value[value]
 
     def __setitem__(self, var_name, value):
         if not isinstance(value, self.bound_type):
             raise TypeException(f"Item inserted into Chestnut list must be a Chestnut {self.bound_type}")
 
-        self.value[var_name] = value
+        k = None
+        if isinstance(var_name, ChestnutInteger):
+            k = var_name.value
+        if not isinstance(k, int):
+            raise Exception(type(value))
+        self.value[k] = value
 
     def __iter__(self):
         return iter(self.value)
@@ -538,6 +551,7 @@ class ChestnutTuple(ChestnutAny):
 
     def __len__(self):
         return len(self.value)
+
     def __getitem__(self, index):
         return self.value[index]
 
