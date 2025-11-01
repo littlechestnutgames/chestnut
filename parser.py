@@ -10,13 +10,20 @@ class UnaryOperationNode:
     def __repr__(self):
         return f"UnaryOperationNode(<{self.op}>, <{self.right}>)"
 
+    def get_name(self):
+        return op.data
+
 class BinaryOperationNode:
     def __init__(self, left, op, right):
         self.left = left
         self.op = op
         self.right = right
+
     def __repr__(self):
         return f"BinaryOperationNode(<{self.left}>, <{self.op}>, <{self.right}>)"
+
+    def get_name(self):
+        return self.op.data
 
 class ConstantStatementNode:
     def __init__(self, label, expression, explicit_type=None):
@@ -26,6 +33,9 @@ class ConstantStatementNode:
     
     def __repr__(self):
         return f"ConstantStatementNode(<{self.label}>, <{self.expression}>)"
+
+    def get_name(self):
+        return self.label.data
 
 class SimpleTokenStatement:
     def __init__(self, token):
@@ -37,13 +47,22 @@ class SimpleTokenStatement:
     def __repr__(self):
         return f"{self.gettype()}(<{self.token}>)"
 
+    def get_name(self):
+        return self.token.data
+
 class BreakStatementNode(SimpleTokenStatement):
     def gettype(self):
         return "BreakStatementNode"
 
+    def get_name(self):
+        return "break"
+
 class ContinueStatementNode(SimpleTokenStatement):
     def gettype(self):
         return "ContinueStatementNode"
+
+    def get_name(self):
+        return "continue"
 
 class LetStatementNode:
     def __init__(self, label, expression, explicit_type=None):
@@ -54,20 +73,33 @@ class LetStatementNode:
     def __repr__(self):
         return f"LetStatementNode(<{self.label}>, <{self.expression}>)"
 
+    def get_name(self):
+        return self.label.data
+
 class ShadowStatementNode:
     def __init__(self, label, expression, explicit_type=None):
         self.label = label
         self.expression = expression
         self.explicit_type = explicit_type
 
+    def get_name(self):
+        return self.label.data
+
 class LoopindexExpressionNode():
     def __repr__(self):
         return "LoopindexExpressionNode"
 
+    def get_name(self):
+        return "loop_index"
+
 class ImportStatementNode:
-    def __init__(self, token, location):
+    def __init__(self, token, location, imports=None):
         self.token = token
         self.location = location
+        self.imports = imports
+
+    def get_name(self):
+        return self.token.data
 
 class IfStatementNode:
     def __init__(self, condition_expression, block_statements, elif_blocks, else_block):
@@ -79,6 +111,9 @@ class IfStatementNode:
     def __repr__(self):
         return f"IfStatementNode(<{self.condition_expression}>, <{self.block_statements}>, <{self.elif_blocks}>, <{self.else_block}>)"
 
+    def get_name(self):
+        return "if"
+
 class ElifStatementNode:
     def __init__(self, condition_expression, block_statements):
         self.condition_expression = condition_expression
@@ -87,12 +122,18 @@ class ElifStatementNode:
     def __repr__(self):
         return f"ElifStatementNode(<{self.condition_expression}>, <{self.block_statements}>)"
 
+    def get_name(self):
+        return "elif"
+
 class ElseStatementNode:
     def __init__(self, block_statements):
         self.block_statements = block_statements
 
     def __repr__(self):
         return f"ElseStatementNode(<{self.block_statements}>)"
+
+    def get_name(self):
+        return "else"
 
 class BaseFn:
     def __init__(self, parameters, statements, return_types=None, brings=[]):
@@ -119,6 +160,9 @@ class FnStatementNode(BaseFn):
     def __repr__(self):
         return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings})"
 
+    def get_name(self):
+        return self.name.data
+
 class StructFnStatementNode(BaseFn):
     def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[]):
         super().__init__(parameters, statements, return_types, brings)
@@ -126,13 +170,18 @@ class StructFnStatementNode(BaseFn):
         self.name = name
         self.mangled_key = self.mangle(self.target_struct.name.data + " " + self.name.data)
 
-
     def __repr__(self):
         return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+
+    def get_name(self):
+        return self.name.data
 
 class AnonymousFnExpressionNode(BaseFn):
     def __init__(self, parameters, statements, return_types=None, brings=[]):
         super().__init__(parameters, statements, return_types, brings)
+
+    def get_name(self):
+        return "fn"
 
 class FnParameter:
     def __init__(self, name, paramtype, default_value=None, variadic=False):
@@ -144,6 +193,9 @@ class FnParameter:
     def __repr__(self):
         return f"FnParameter(<{self.name}>, <{self.paramtype}>, <{self.default_value}>, <{self.variadic}>)"
 
+    def get_name(self):
+        return self.name.data
+
 class CaseStatementNode:
     def __init__(self, subject, when_blocks, otherwise):
         self.subject = subject
@@ -153,6 +205,9 @@ class CaseStatementNode:
     def __repr__(self):
         return f"CaseStatementNode(<{self.subject}>, <{self.when_blocks}>, <{self.otherwise}>)"
 
+    def get_name(self):
+        return "case"
+
 class WhenStatementNode:
     def __init__(self, conditions, statements):
         self.conditions = conditions
@@ -161,12 +216,18 @@ class WhenStatementNode:
     def __repr__(self):
         return f"WhenStatementNode(<{self.conditions}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "when"
+
 class OtherwiseStatementNode:
     def __init__(self, statements):
         self.statements = statements
 
     def __repr__(self):
         return f"OtherwiseStatementNode(<{self.statements}>)"
+
+    def get_name(self):
+        return "otherwise"
 
 class UntilStatementNode:
     def __init__(self, condition, statements):
@@ -176,6 +237,9 @@ class UntilStatementNode:
     def __repr__(self):
         return f"UntilStatementNode(<{self.condition}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "until"
+
 class WhileStatementNode:
     def __init__(self, condition, statements):
         self.condition = condition
@@ -183,6 +247,9 @@ class WhileStatementNode:
 
     def __repr__(self):
         return f"WhileStatementNode(<{self.condition}>, <{self.statements}>)"
+
+    def get_name(self):
+        return "while"
 
 class IterateStatementNode:
     def __init__(self, subject, identifier, statements):
@@ -193,17 +260,26 @@ class IterateStatementNode:
     def __repr__(self):
         return f"IterateStatementNode(<{self.subject}>, <{self.identifier}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "iterate"
+
 class ListLiteralNode:
     def __init__(self, elements):
         self.elements = elements
     def __repr__(self):
         return f"ListLiteralNode({self.elements})"
 
+    def get_name(self):
+        return "List"
+
 class TupleLiteralNode:
     def __init__(self, elements):
         self.elements = elements
     def __repr__(self):
         return f"TupleLiteralNode({self.elements})"
+
+    def get_name(self):
+        return "Tuple"
 
 class IndexAccessNode:
     def __init__(self, target, index):
@@ -269,6 +345,9 @@ class StructDefinitionNode():
 
     def __repr__(self):
         return f"StructDefinitionNode(<{self.identifier}>, <{self.properties}>)"
+
+    def get_name(self):
+        return self.identifier.data
 
 class StructPropertyNode():
     def __init__(self, identifier, value_type):
@@ -433,8 +512,22 @@ class Parser:
         if not self.check_label("String"):
             raise SyntaxException("Expected string after import", self.peek())
         location = self.consume()
+        imports = []
+        if self.check_label("LParen"):
+            self.consume()
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+            imports.append(self.consume())
+            while self.check_label("Comma"):
+                self.consume()
+                if not self.check_label("Identifier"):
+                    raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+                imports.append(self.consume())
+            if not self.check_label("RParen"):
+                raise SyntaxException(f"Expected right parenthesis to end imports list, got {self.peek().label}", self.peek())
+            self.consume()
 
-        return ImportStatementNode(keyword, location)
+        return ImportStatementNode(keyword, location, imports)
 
     def parse_if_statement(self):
         # Consume the if

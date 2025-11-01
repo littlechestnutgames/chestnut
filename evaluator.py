@@ -501,8 +501,9 @@ class Evaluator:
             tokens = lex("".join(new_import.readlines()))
             parser = Parser(tokens)
             ast = parser.parse_program()
-            for node in ast:
-                self.evaluate(node)
+            for n in ast:
+                if len(node.imports) == 0 or n.get_name() in [ x.data for x in node.imports ]:
+                    self.evaluate(n)
 
     def visit_StructDefinitionNode(self, node):
         if not isinstance(node, StructDefinitionNode):

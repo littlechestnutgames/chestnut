@@ -83,7 +83,7 @@ fn new_result(value : Any, err: Any) returns Result
     return result
 endfn
 
-fn new_result_from_tuple(tuple : Tuple) returns Result
+fn new_result_from_tuple(tuple : Any) returns Result
     if length(tuple) < 2 then
         return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
     endif
@@ -177,11 +177,19 @@ fn print(variadic a : Any)
     __internal_print__(spread a)
 endfn
 
+fn print(a : Integer)
+    __internal_print__(a)
+endfn
+
 fn length(a : List) returns Integer
     return __internal_length__(a)
 endfn
 
 fn length(a : String) returns Integer
+    return __internal_length__(a)
+endfn
+
+fn length(a : Any) returns Integer
     return __internal_length__(a)
 endfn
 
