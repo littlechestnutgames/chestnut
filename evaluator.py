@@ -7,15 +7,17 @@ from math import floor
 import copy
 import os
 
+CHESTNUT_NULL = Token("Null", ChestnutNull(None), None, None)
+
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
-        ChestnutStruct.__init__(self, ChestnutNull(None))
+        ChestnutStruct.__init__(self, CHESTNUT_NULL.data)
         i = 0
         for i, prop in enumerate(properties):
             if i < len(args):
                 setattr(self, prop.identifier.data, args[i])
             else:
-                setattr(self, prop.identifier.data, ChestnutNull(None))
+                setattr(self, prop.identifier.data, CHESTNUT_NULL.data)
     return struct_instance_init
 
 class FunctionRegister:
@@ -27,24 +29,29 @@ class FunctionRegister:
 
     def register(self, func):
         fname = ""
-        if isinstance(func, NativeFunction):
+        if isinstance(func, FunctionReference):
             fname = func.identifier.data
+            mangled_key = func.mangled_key
+        if isinstance(func, BridgeFunction):
+            # Bridge functions should strive to only be defined once.
+            fname = func.identifier.data
+            mangled_key = fname
         if isinstance(func, Function):
             fname = func.statement.name.data
+            mangled_key = func.statement.mangled_key
         if not fname in self.functions:
             self.functions[fname] = {"candidates": []}
         registry = self.functions[fname]
 
         for candidate in registry["candidates"]:
-            if candidate.statement.mangled_key == func.statement.mangled_key:
+            if candidate.statement.mangled_key == mangled_key:
                 raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
         
         registry["candidates"].insert(0, func)
 
     def resolve(self, name, call_parameters=[]):
         if name not in self.functions:
-            raise RuntimeException(f"Call to undefined function {name}")
-
+            return None
         call_params = call_parameters
         num_call_params = len(call_params)
         
@@ -54,7 +61,7 @@ class FunctionRegister:
         registry = self.functions[name]
         
         for candidate in registry["candidates"]:
-            candidate_params = candidate.parameters 
+            candidate_params = candidate.parameters if hasattr(candidate, "parameters") else candidate.statement.parameters
             num_candidate_params = len(candidate_params)
             current_score = 0
             is_feasible = True
@@ -85,7 +92,7 @@ class FunctionRegister:
                 runtime_arg = call_params[i]
                 runtime_type_name = runtime_arg.__class__.__name__.replace("Chestnut", "")
                 
-                if isinstance(runtime_arg, expected_type):
+                if isinstance(runtime_arg, expected_type) and not expected_type == ChestnutAny:
                     current_score += 3
                 elif expected_type == ChestnutAny:
                     current_score += 1
@@ -103,7 +110,7 @@ class FunctionRegister:
                 for i in range(num_fixed_params, num_call_params):
                     runtime_arg = call_params[i]
 
-                    if isinstance(runtime_arg, variadic_type):
+                    if isinstance(runtime_arg, variadic_type) and not variadic_type == ChestnutAny:
                         current_score += 3
                     elif variadic_type == ChestnutAny:
                         current_score += 1 
@@ -114,9 +121,6 @@ class FunctionRegister:
             if is_feasible and current_score > best_score:
                 best_score = current_score
                 best_match_candidate = candidate
-
-        if best_match_candidate is None:
-            raise RuntimeException(f"No call signature for {name} is compatible with given parameters" + str(call_parameters))
 
         return best_match_candidate
 
@@ -182,31 +186,59 @@ class StructNode:
 
         params = []
         for param in  self.definition.properties:
-            params.append(FnParameter(param.identifier, param.value_type, ChestnutNull(None)))
-        self.function_register.register(NativeFunction(Token("Identifier", "constructor", None, None), params))
+            params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL.data))
         
-    def constructor(self):
+    def constructor(self, *args):
         name = self.definition.identifier.data
         properties = self.definition.properties
         struct_class = type(name, (ChestnutStruct,), {
             "__repr__": lambda self: name + "(" + str(properties) + ")",
             "__init__": generate_struct_init(properties),
+            "function_register": self.function_register,
             "gettype": lambda self: name
         })
-        struct_instance = struct_class()
+        struct_instance = struct_class(*args)
         return struct_instance
+
+    def __repr__(self):
+        return f"StructNode({self.definition.identifier.data})"
+
+class StructMethodCall2:
+    def __init__(self, instance, method_name):
+        self.instance = instance
+        self.method_name = method_name
+
+    def resolve(self, call_params):
+        return self.instance.function_register.resolve(self.method_name, call_params)
+
+    def __repr__(self):
+        return f"StructMethodCall({self.instance.__class__.__name__}, {self.method_name})"
 
 class StructMethodCall:
     def __init__(self, instance, func_object):
         self.instance = instance
         self.func_object = func_object
 
-class NativeFunction:
+    def __repr__(self):
+        fname = ""
+        if isinstance(self.func_object, Function):
+            if isinstance(self.func_object.statement, Token):
+                fname = self.func_object.statement.identifier.data
+            if isinstance(self.func_object.statement, StructFnStatementNode):
+                fname = self.func_object.statement.name.data
+        if isinstance(self.func_object, StructFnStatementNode):
+            fname = self.func_object.name.data
+        return f"StructMethodCall({self.instance.__class__.__name__}, {fname})"
+
+class BridgeFunction:
     def __init__(self, identifier, params):
         self.identifier = identifier
         self.params = params
         self.name = identifier
         self.parameters = params
+
+    def __repr__(self):
+        return f"BridgeFunction({self.identifier.data})"
 
     def reconcile_parameters(self, evaluator, call_parameters):
         name = self.identifier
@@ -234,12 +266,71 @@ class NativeFunction:
             arg_index += 1
         return values
 
+class UnresolvedFunctionProxy(ChestnutAny):
+    def __init__(self, identifier):
+        self.identifier = identifier
+        self.token = CHESTNUT_NULL
+        self.value = CHESTNUT_NULL.data
+
+    def gettype(self):
+        return "UnresolvedFunctionProxy"
+
+    def __repr__(self):
+        return f"UnresolvedFunctionProxy({self.identifier})"
+
+class FunctionReference(ChestnutAny):
+    def __init__(self, func, identifier, parameters):
+        self.func = func
+        self.identifier = identifier
+        self.parameters = parameters
+        self.token = CHESTNUT_NULL
+        self.value = CHESTNUT_NULL.data
+        self.mangled_key = self.mangle(identifier.data)
+
+    def mangle(self, identifier=""):
+        return f"{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
+
+    def reconcile_parameters(self, evaluator, call_parameters):
+        name = self.name.data
+
+        required_count = 0
+        has_variadic = False
+        for param in self.parameters:
+            if param.default_value is None and not param.variadic:
+                required_count += 1
+            if param.variadic:
+                has_variadic = True
+
+        if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(self.parameters)):
+            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
+
+        evaluated_args = [evaluator.evaluate(param) for param in call_parameters]
+
+        values = {}
+        arg_index = 0
+        for param in self.parameters:
+            param_name = param.name.data
+            if param.variadic:
+                # Variadic takes the remaining arguments.
+                values[param_name] = evaluated_args[arg_index:]
+                break
+            elif arg_index < len(evaluated_args):
+                values[param_name] = evaluated_args[arg_index]
+                arg_index += 1
+            elif param.default_value is not None:
+                values[param_name] = evaluator.evaluate(param.default_value)
+
+        return values
+
+    def __repr__(self):
+        return f"FunctionReference({self.name})"
+
 class Function(ChestnutAny):
     def __init__(self, statement, parent_scopes=None):
         self.statement = statement
         self.scopes = parent_scopes if parent_scopes is not None else []
-        self.token = Token("Null", ChestnutNull(None), None, None)
-        self.value = ChestnutNull(None)
+        self.token = CHESTNUT_NULL
+        self.value = CHESTNUT_NULL.data
 
     def reconcile_parameters(self, evaluator, call_parameters):
         statement = self.statement
@@ -279,17 +370,20 @@ class Function(ChestnutAny):
 
         return values
     def __repr__(self):
-        return f"{self.statement}"
+        return f"Function({self.statement})"
 
 class AnonymousFunction(Function):
     def __init__(self, statement, name=None, parent_scopes=None):
         super().__init__(statement, parent_scopes)
         self.name = name
 
+    def __repr__():
+        return "AnonymousFunction"
+
 class SpreadArgs(ChestnutAny):
     def __init__(self, args):
-        self.token = Token("Null", ChestnutNull, None, None)
-        self.value = ChestnutNull(None)
+        self.token = CHESTNUT_NULL
+        self.value = CHESTNUT_NULL.data
         self.args = args
     def __repr__(self):
         return f"SpreadArgs(<{self.args}>)"
@@ -359,9 +453,9 @@ class Evaluator:
             if "varargs" in v:
                 params.append(FnParameter(Token("Identifier", v["varargs"], None, None), Token("Identifier", "Any", None, None), None, True))
 
-            func = NativeFunction(func_name, params)
+            func = BridgeFunction(func_name, params)
 
-            self.scopes[0][k] = NativeFunction(func_name, params)
+            self.scopes[0][k] = BridgeFunction(func_name, params)
             self.function_register.register(func)
         self.eval_library("lib/core.nuts")
 
@@ -409,6 +503,11 @@ class Evaluator:
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructFnStatementNode", node)
 
         struct_name = node.target_struct.paramtype.data
+        struct_def_scope = self.find_first_scope_containing(struct_name)
+        if struct_def_scope is None:
+            raise RuntimeError("Cannot define method on undefined scope", node)
+        struct_definition = struct_def_scope[struct_name]
+
         method_name = node.name.data
         scope_key = f"{struct_name} {method_name}"
         func_object = Function(node)
@@ -416,6 +515,7 @@ class Evaluator:
             raise RuntimeError(f"{method_name} for struct {struct_name} already exists", node)
         self.current_scope()[scope_key] = func_object
 
+        struct_definition.function_register.register(func_object)
         return 1
     
     def visit_ChestnutNull(self, node):
@@ -465,7 +565,7 @@ class Evaluator:
                 levels = levels - 1
             elif identifier in scope:
                 return scope[identifier]
-        return ChestnutNull(Token("Null", "null", 0, 0))
+        return CHESTNUT_NULL
     
     def _handle_unary_Subtraction(self, node):
         right = self.evaluate(node.right)
@@ -513,6 +613,12 @@ class Evaluator:
         if not scope is None:
             raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
         struct_node = StructNode(node)
+
+        params = []
+        for param in node.properties:
+            params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL.data))
+        self.function_register.register(FunctionReference(struct_node.constructor, Token("Identifier", label, None, None), params))
+
         self.current_scope()[label] = struct_node
 
     def _handle_prop_Assignment(self, target_object, property, value):
@@ -722,6 +828,8 @@ class Evaluator:
         return 1
 
     def visit_FnStatementNode(self, node):
+        if self.constant_exists(node.name.data):
+            raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
         captured_scopes = []
 
         definition_scope = self.current_scope()
@@ -736,36 +844,45 @@ class Evaluator:
                 captured_scopes.append(scope)
 
         func_object = Function(node, captured_scopes)
+
         self.function_register.register(func_object)
-        if self.constant_exists(node.name.data):
-            raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
         # if self.exists_in_any_scope(node.name.data):
         #     raise Exception(f"{node.name.data} is already defined in the current scope, line {node.name.line}, column {node.name.column}")
-        self.current_scope()[node.name.data] = func_object
+        # self.current_scope()[node.name.data] = func_object
 
         return 1
 
     def visit_AnonymousFnExpressionNode(self, node):
         return AnonymousFunction(node)
 
-    def visit_CallStatementNode(self, node):
-        callable = self.evaluate(node.identifier)
-        if not isinstance(callable, (Function, AnonymousFunction, NativeFunction, StructNode, StructMethodCall)):
-            raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
-        self.calling_builtin = False
-        identifier = None
+    def _handle_fn_resolution(self, node):
         func = None
-        instance = None
-        # if isinstance(callable, StructNode):
-        #     method = "constructor"
-        #     func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
-        if isinstance(callable, StructMethodCall):
-            instance = callable.instance
-            func = callable.func_object
-            identifier = func.statement.target_struct.name.data
-            scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
-            first_scope = self.find_first_scope_containing(scope_key)
-            first_scope[identifier] = instance
+        if isinstance(node.identifier, Token) and node.identifier.label == "Identifier":
+            func = self.function_register.resolve(node.identifier.data, [ self.evaluate(x) for x in node.params])
+        if not isinstance(func, Function) and not isinstance(func, AnonymousFunction):
+            callable = self.evaluate(node.identifier)
+            if isinstance(callable, UnresolvedFunctionProxy):
+                identifier_name = callable.identifier.data
+                resolved_func = self.function_register.resolve(identifier_name, [ self.evaluate(x) for x in node.params ])
+        
+                if resolved_func is not None:
+                    return resolved_func
+                print(f"Failed to resolve {identifier_name}")
+
+            if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
+                raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
+            self.calling_builtin = False
+            identifier = None
+            func = None
+            instance = None
+
+            if isinstance(callable, StructMethodCall):
+                instance = callable.instance
+                func = callable.func_object
+                identifier = func.statement.target_struct.name.data
+                scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
+                first_scope = self.find_first_scope_containing(scope_key)
+                first_scope[identifier] = instance
 
         if isinstance(node.identifier, AnonymousFnExpressionNode):
             func = AnonymousFunction(node.identifier)
@@ -792,13 +909,16 @@ class Evaluator:
 
                 # We found a constant function, save the function reference.
                 func = func_scope["constant " + identifier]
-        if isinstance(func, StructNode):
-            return func.constructor()
+        return func
 
-        if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, NativeFunction):
+    def _handle_fn_execution(self, node, func):
+        if isinstance(func, StructNode):
+            return func.constructor(*[ self.evaluate(x) for x in node.params])
+
+        if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, BridgeFunction):
             # Block function calls to other stored data.
             raise Exception(f"Call to non-function `{identifier}` at line {node.identifier.line}, column {node.identifier.column}")
-        if isinstance(func, NativeFunction):
+        if isinstance(func, BridgeFunction):
             params = []
             try:
                 reconciled_values = func.reconcile_parameters(self, node.params)
@@ -815,7 +935,7 @@ class Evaluator:
                     final_args.append(value)
             from bridge import py_bridge as core
                 
-            if not hasattr(core,func.identifier.data):
+            if not hasattr(core, func.identifier.data):
                 raise InternalException(f"{func.identifier.data} does not exist in the core built-ins", node)
 
             result = core.__dict__[func.identifier.data](
@@ -866,6 +986,10 @@ class Evaluator:
             self.pop_scope()
         return False
 
+    def visit_CallStatementNode(self, node):
+        func = self._handle_fn_resolution(node)
+        return self._handle_fn_execution(node, func)
+
     def visit_BreakStatementNode(self, node):
         raise BreakLoop(node)
 
@@ -875,21 +999,40 @@ class Evaluator:
     def visit_Token(self, node):
         if not isinstance(node, Token):
             raise InternalException(f"Cannot use visit_Token with { node.__class__.__name__}", node)
-        if node.label != "Identifier":
-            raise InternalException(f"Expected Identifier token, got {node.__class__.__name__}", node)
 
         label = node.data
 
         if self.constant_exists(label):
-            label = f"constant {label}"
-        stored_scope = self.find_first_scope_containing(label)
-        if stored_scope is None:
-            raise Exception(f"Couldn't find symbol {label} at line {node.line}, column {node.column}")
-        result = stored_scope[label]
-        if isinstance(result, BringVariable):
-            return result.__getitem__(None)
+            stored_scope = self.find_first_scope_containing(f"constant {label}")
+        else:
+            stored_scope = self.find_first_scope_containing(label)
 
-        return result
+        if stored_scope is not None:
+            result = stored_scope[label]
+            if isinstance(result, BringVariable):
+                return result.__getitem__(None)
+            return result
+    
+        if self.function_register.is_registered(node.data):
+            return UnresolvedFunctionProxy(node)
+        if node.label != "Identifier":
+            raise InternalException(f"Expected Identifier token, got {node.__class__.__name__}", node)
+        raise Exception(f"Couldn't find symbol {label} at line {node.line}, column {node.column}")
+        # label = node.data
+
+        # if self.function_register.is_registered(node.data):
+        #     return UnresolvedFunctionProxy(node)
+
+        # if self.constant_exists(label):
+        #     label = f"constant {label}"
+        # stored_scope = self.find_first_scope_containing(label)
+        # if stored_scope is None:
+        #     raise Exception(f"Couldn't find symbol {label} at line {node.line}, column {node.column}")
+        # result = stored_scope[label]
+        # if isinstance(result, BringVariable):
+        #     return result.__getitem__(None)
+
+        # return result
 
     def visit_IfStatementNode(self, node):
         if self.evaluate(node.condition_expression):
@@ -901,7 +1044,7 @@ class Evaluator:
         for elif_block in node.elif_blocks:
             if self.evaluate(elif_block.condition_expression):
                 self.push_scope()
-                for statement in elif_block.statements:
+                for statement in elif_block.block_statements:
                     self.evaluate(statement)
                 self.pop_scope()
                 return

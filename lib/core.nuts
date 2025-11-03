@@ -1,4 +1,4 @@
-struct TableRecord
+###struct TableRecord
     key : String
     value : Any
 endstruct
@@ -54,7 +54,7 @@ fn (t : Table) set(k : String, v : Any)
         t.records[index].value = v
     endif
 endfn
-
+###
 fn gettype(o : Any) returns String
     return __internal_type__(o)
 endfn
@@ -112,8 +112,9 @@ fn (result : Result) and_then (func : Function) returns Result
 endfn
 
 fn (result : Result) catching (func : Function) returns Result
-    if result.error then
-        return func(result.error)
+    if result.error != null then
+        func(result.error.message)
+        return result
     endif
     return result
 endfn
@@ -175,10 +176,6 @@ endfn
 
 fn print(variadic a : Any)
     __internal_print__(spread a)
-endfn
-
-fn print(a : Integer)
-    __internal_print__(a)
 endfn
 
 fn length(a : List) returns Integer
