@@ -1,0 +1,5 @@
+if not true then
+    print("Here 1")
+elif true then
+    print("Here 2")
+endif

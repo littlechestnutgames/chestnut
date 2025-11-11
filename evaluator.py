@@ -908,7 +908,7 @@ class Evaluator:
         for elif_block in node.elif_blocks:
             if self.evaluate(elif_block.condition_expression):
                 self.push_scope()
-                for statement in elif_block.statements:
+                for statement in elif_block.block_statements:
                     self.evaluate(statement)
                 self.pop_scope()
                 return
