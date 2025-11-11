@@ -3,24 +3,9 @@ struct TableRecord
     value : Any
 endstruct
 
-fn new_table_record (k : String, v : Any) returns TableRecord
-    let tr = TableRecord()
-    tr.key = k
-    tr.value = v
-
-    return tr
-endfn
-
 struct Table
     records : List  
 endstruct
-
-fn new_table() returns Table
-    let t = Table()
-    t.records = []
-
-    return t
-endfn
 
 fn (t : Table) get_index(k : String) returns Integer
     let index = -1
@@ -49,7 +34,7 @@ endfn
 fn (t : Table) set(k : String, v : Any)
     let index = t.get_index(k)
     if index == -1 then
-        push(t.records, new_table_record(k, v))
+        push(t.records, TableRecord(k, v))
     else
         t.records[index].value = v
     endif
@@ -104,18 +89,29 @@ fn (result : Result) wrap_err (message : String) returns Result
     return result
 endfn
 
-fn (result : Result) and_then (func : Function) returns Result
-    if result.error != null then
+fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
+    if result.error != null or result.value == null then
         return result
     endif
-    return func(result.value)
+    let call_result = func(result.value, spread params)
+    if gettype(call_result) == "Result" then
+        return call_result
+    else
+        return Result(call_result, null)
+    endif
 endfn
 
-fn (result : Result) catching (func : Function) returns Result
-    if result.error then
-        return func(result.error)
+fn (result: Result) catching (func : Function, variadic params : Any) returns Result
+    if result.error != null then
+        let call_result = func(result.error, spread params)
+        if gettype(call_result) == "Result" then
+            return call_result
+        else
+            return Result(null, call_result)
+        endif
+    else
+        return result
     endif
-    return result
 endfn
 
 fn (result : Result) unwrap_or_fallback (func : Function) returns Any
@@ -177,10 +173,6 @@ fn print(variadic a : Any)
     __internal_print__(spread a)
 endfn
 
-fn print(a : Integer)
-    __internal_print__(a)
-endfn
-
 fn length(a : List) returns Integer
     return __internal_length__(a)
 endfn
@@ -208,9 +200,17 @@ endfn
 fn range (start : Integer, end : Integer) returns List
     let r = []
     let l = start
+    let use_addition = true
+    if start > end then
+        use_addition = false
+    endif
     while l < end repeat
        push(r, l)
-       l += 1
+       if use_addition then
+           l += 1
+       else
+           l -= 1
+       endif
     endwhile
     return r
 endfn
@@ -227,22 +227,52 @@ fn slice (input : String, position_start : Integer, position_end : Integer = -1)
     return sliced
 endfn
 
-fn span (input : String, terminator : String) returns Result
-    let str = ""
+fn split(input : String, delimiter : String, number : Integer = -1) returns List
+    if number == 0 then
+        return [input]
+    endif
+
+    let parts = []
     let i = 0
-    let found = false
+    let built_str = ""
+    while i < length(input) repeat
+        if length(parts) < number or number < 0 then
+            if input[i] != delimiter or
+               (
+                   i != 0 and
+                   input[i] == delimiter and
+                   input[i-1] == "\\"
+               ) then
+               built_str += input[i]
+            else
+                push(parts, built_str)
+                built_str = ""
+            endif
+        else
+            built_str += input[i]
+        endif
+        i = i + 1
+    endwhile
+    if built_str != "" then
+        push(parts, built_str)
+    endif
+
+    return parts
+endfn
+
+fn span (input : String, terminator : String) returns String
+    let spanned_str = ""
+    let i = 0
     while i < length(input) repeat
         if input[i] == terminator then
-	   if i != 0 and input[i - 1] != "\\" then
-	       found = true
+	   if i == 0 or (i != 0 and input[i - 1] != "\\") then
 	       break
 	   endif
 	endif
-	str += input[i]
+	spanned_str += input[i]
 	i += 1
     endwhile
-    let err = use null over error("Unterminated String span") unless not found
-    return (str, err)
+    return spanned_str
 endfn
 
 fn open_file(path : String, mode : String) returns Result
@@ -253,10 +283,46 @@ fn read_file_handle(handle : FileHandle, size : Integer) returns Result
     return new_result_from_tuple(__internal_read_file__(handle, size))
 endfn
 
+fn write_file_handle(handle : FileHandle, data : Any) returns Result
+    return new_result_from_tuple(__internal_write_file__(handle, data))
+endfn
+
+fn delete_file(path: String) returns Result
+    return new_result_from_tuple(__internal_delete_file__(path))
+endfn
+
 fn close_file(handle : FileHandle) returns Result
     return new_result_from_tuple(__internal_close_file__(handle))
 endfn
 
 fn halt(message : Any)
     __internal_halt__(message)
+endfn
+
+fn env_unset(var_name : String)
+    __internal_env_unset__(var_name)
+endfn
+
+fn env_get(var_name : String, default : String = null) returns String
+    return __internal_env_get__(var_name, default)
+endfn
+
+fn env_set(var_name : String, value : String)
+    __internal_env_set__(var_name, value) 
+endfn
+
+fn bytes(a : Any) returns List
+    return __internal_to_uint8__(a)
+endfn
+
+fn from_bytes(a : Any) return String
+    return __internal_from_bytes_to_string__(a)
+endfn
+
+fn uint8(a : Any) returns UInt8
+    return __internal_to_uint8__(a)
+endfn
+
+fn uint64(a : Any) returns UInt16
+    return __internal_to_uint64__(a)
 endfn

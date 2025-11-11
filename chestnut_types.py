@@ -1,7 +1,6 @@
 from error import *
-from lexer import Token
+from token_types import Token
 from functools import wraps
-# In chestnut_type.py:
 
 def comparison_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
@@ -48,11 +47,12 @@ def numeric_operation(op_symbol, op_name, reverse=False):
         @wraps(func)
         def wrapper(self, other):
             if func.__name__ == "__add__" and isinstance(other, ChestnutString):
+                print("FIRING")
                 return NotImplemented
             self.__typecheck__(other, op_name)
             if func.__name__.endswith("div__") or func.__name__.endswith("mod__"):
                 divisor = self if reverse else other
-                if divisor == ChestnutInteger(0):
+                if divisor.value == 0:
                     raise RuntimeException("Cannot divide by 0")
             left = self.value if not reverse else other.value
             right = other.value if not reverse else self.value
@@ -150,6 +150,18 @@ class ChestnutAny:
     def __and__(self, other):
         return self.value and other.value
 
+class ChestnutNull(ChestnutAny):
+    def isnull(self):
+        return True
+
+    def __str__(self):
+        return "null"
+
+    def __bool__(self):
+        return False
+
+CHESTNUT_NULL = ChestnutNull(None)
+
 class ChestnutString(ChestnutAny):
     def isstring(self):
         return True
@@ -212,15 +224,17 @@ class ChestnutString(ChestnutAny):
     def __bool__(self):
         return len(self.value) > 0
 
-class ChestnutNull(ChestnutAny):
-    def isnull(self):
-        return True
+    @comparison_operation("__lte__", "less than or equal to")
+    def __lte__(self, other): pass
 
-    def __str__(self):
-        return "null"
+    @comparison_operation("__lt__", "less than")
+    def __lt__(self, other): pass
 
-    def __bool__(self):
-        return False
+    @comparison_operation("__gte__", "greater than or equal to")
+    def __gte__(self, other): pass
+
+    @comparison_operation("__gt__", "greater than")
+    def __gt__(self, other): pass
 
 class ChestnutBoolean(ChestnutAny):
     def isbool(self):
@@ -228,6 +242,9 @@ class ChestnutBoolean(ChestnutAny):
 
     def __bool__(self):
         return self.value
+
+    def __repr__(self):
+        return self.__str__()
 
     def __str__(self):
         if self.value:
@@ -465,6 +482,10 @@ class ChestnutUInt32(ChestnutUnsignedInteger):
 class ChestnutUInt64(ChestnutUnsignedInteger):
     MASK = 0xFFFFFFFFFFFFFFFF
     MAX = 2**64-1
+    def __init__(self, token):
+        if isinstance(token, ChestnutAny):
+            print(f"DOUBLE WRAPPED TOKEN {token}")
+        super().__init__(token)
 
 class ChestnutUInt128(ChestnutUnsignedInteger):
     MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
@@ -499,6 +520,8 @@ class ChestnutList(ChestnutAny):
         value = None
         if isinstance(var_name, ChestnutInteger):
             value = var_name.value
+        if isinstance(value, float):
+            value = int(value)
         if not isinstance(value, int):
             raise Exception(type(value))
         return self.value[value]
@@ -546,6 +569,9 @@ class ChestnutStruct(ChestnutAny):
         return len(self.value)
 
 class ChestnutTuple(ChestnutAny):
+    def __init__(self, *args):
+        self.value = tuple(args)
+
     def length(self):
         return ChestnutInteger(len(self.value))
 
@@ -556,9 +582,9 @@ class ChestnutTuple(ChestnutAny):
         return self.value[index]
 
 class ChestnutFileHandle(ChestnutAny):
-    def __init__(self, file_object, token=None):
-        if not hasattr(file_object, 'read') or not hasattr(file_object, 'close'):
-            raise InternalException("File object must support read and close methods.")
+    def __init__(self, file_object):
+        if not hasattr(file_object, "write") and not hasattr(file_object, 'read') and not hasattr(file_object, 'close'):
+            raise InternalException("File object must support read, write, or close methods.")
         super().__init__(file_object)
 
     def __repr__(self):
@@ -580,3 +606,7 @@ class ChestnutFileHandle(ChestnutAny):
             return ChestnutBoolean(True)
         return ChestnutBoolean(False)
 
+class ChestnutSocket(ChestnutAny):
+    def __init__(self, sock):
+        self.token = ChestnutNull(null)
+        self.sock = sock

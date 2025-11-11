@@ -1,0 +1,3 @@
+let s = "This,is,a,split"
+let p = split(s, ",", 2)
+print(p)
