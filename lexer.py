@@ -1,110 +1,145 @@
 from error import *
 from collections import namedtuple
-from supporting import *
-from chestnut_type import *
-token_types = [
-    # 10 character sequences
-    TokenType("Enditerate", "enditerate"),
-    TokenType("Loopindex", "loop_index"),
+from token_types import *
+from chestnut_types import *
 
-    # 9
-    TokenType("Endstruct", "endstruct"),
-    TokenType("Otherwise", "otherwise"),
+class TokenData:
+    def __init__(self, token_type, default_value=None):
+        self.token_type = token_type
+        self.default_value = default_value
 
-    # 8 character sequences
-    TokenType("Constant", "constant"),
-    TokenType("Continue", "continue"),
-    TokenType("Enduntil", "enduntil"),
-    TokenType("Endwhile", "endwhile"),
-    TokenType("Variadic", "variadic"),
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.value = None
 
-    # 7 character sequences
-    TokenType("Endcase", "endcase"),
-    TokenType("Iterate", "iterate"),
-    TokenType("Returns", "returns"),
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+        self.max_token_length = 0
 
-    # 6 character sequences
-    TokenType("Brings", "brings"),
-    TokenType("Import", "import"),
-    TokenType("Repeat", "repeat"),
-    TokenType("Return", "return"),
-    TokenType("Shadow", "shadow"),
-    TokenType("Spread", "spread"),
-    TokenType("Struct", "struct"),
-    TokenType("Unless", "unless"),
+    def insert(self, key, value, default_value=None):
+        current = self.root
+        if len(key) > self.max_token_length:
+            self.max_token_length = len(key)
 
-    # 5 character sequences
-    TokenType("Boolean", "false", ChestnutBoolean(False)),
-    TokenType("Break", "break"),
-    TokenType("Endfn", "endfn"),
-    TokenType("Endif", "endif"),
-    TokenType("Outer", "outer"),
-    TokenType("Until", "until"),
-    TokenType("While", "while"),
+        for c in key:
+            if c not in current.children:
+                current.children[c] = TrieNode()
+            current = current.children[c]
+        current.value = TokenData(value, default_value)
 
-    # 4 character sequences
-    TokenType("Boolean", "true", ChestnutBoolean(True)),
-    TokenType("Case", "case"),
-    TokenType("Elif", "elif"),
-    TokenType("Else", "else"),
-    TokenType("Over", "over"),
-    TokenType("Then", "then"),
-    TokenType("When", "when"),
-    TokenType("With", "with"),
+    def search(self, key):
+        current = self.root
+        for c in key:
+            if c not in current.children:
+                return None
+            current = current.children[c]
+        return current.value
 
-    # 3 character sequences
-    TokenType("BitwiseRotateLeft", "<<<"),
-    TokenType("BitwiseRotateRight", ">>>"),
-    TokenType("And", "and"),
-    TokenType("Let", "let"),
-    TokenType("Not", "not"),
-    TokenType("Null", "null", None),
-    TokenType("Use", "use"),
+token_trie = Trie()
+
+# 10 character sequences
+token_trie.insert("enditerate", "Enditerate")
+token_trie.insert("loop_index", "Loopindex")
+
+# 9 character sequences
+token_trie.insert("endstruct", "Endstruct")
+token_trie.insert("otherwise", "Otherwise")
+
+# 8 character sequences
+token_trie.insert("constant", "Constant")
+token_trie.insert("continue", "Continue")
+token_trie.insert("enduntil", "Enduntil")
+token_trie.insert("endwhile", "Endwhile")
+token_trie.insert("variadic", "Variadic")
+
+# 7 character sequences
+token_trie.insert("endcase", "Endcase")
+token_trie.insert("iterate", "Iterate")
+token_trie.insert("returns", "Returns")
+
+# 6 character sequences
+token_trie.insert("brings", "Brings")
+token_trie.insert("import", "Import")
+token_trie.insert("repeat", "Repeat")
+token_trie.insert("return", "Return")
+token_trie.insert("shadow", "Shadow")
+token_trie.insert("spread", "Spread")
+token_trie.insert("struct", "Struct")
+token_trie.insert("unless", "Unless")
+
+# 5 character sequences
+token_trie.insert("break", "Break")
+token_trie.insert("endfn", "Endfn")
+token_trie.insert("endif", "Endif")
+token_trie.insert("false", "Boolean", ChestnutBoolean(False))
+token_trie.insert("outer", "Outer")
+token_trie.insert("until", "Until")
+token_trie.insert("while", "While")
+
+# 4 character sequences
+token_trie.insert("case", "Case")
+token_trie.insert("elif", "Elif")
+token_trie.insert("else", "Else")
+token_trie.insert("over", "Over")
+token_trie.insert("then", "Then")
+token_trie.insert("true", "Boolean", ChestnutBoolean(True))
+token_trie.insert("when", "When")
+token_trie.insert("with", "With")
+
+# 3 character sequences
+token_trie.insert("<<<", "BitwiseRotateLeft")
+token_trie.insert(">>>", "BitwiseRotateRight")
+token_trie.insert("and", "And")
+token_trie.insert("let", "Let")
+token_trie.insert("not", "Not")
+token_trie.insert("null", "Null", ChestnutNull(None))
+token_trie.insert("use", "Use")
     
-    # 2 character sequences
-    TokenType("Addassign", "+="),
-    TokenType("And", "&&"),
-    TokenType("BitwiseNand", "~&"),
-    TokenType("BitwiseNor", "~|"),
-    TokenType("BitwiseShiftLeft", "<<"),
-    TokenType("BitwiseShiftRight", ">>"),
-    TokenType("BitwiseXnor", "~^"),
-    TokenType("Divassign", "/="),
-    TokenType("Eq", "=="),
-    TokenType("Exponent", "**"),
-    TokenType("Fn", "fn"),
-    TokenType("Gte", ">="),
-    TokenType("If", "if"),
-    TokenType("Lte", "<="),
-    TokenType("Modulo", "%"),
-    TokenType("Mulassign", "*="),
-    TokenType("Neq", "!="),
-    TokenType("Or", "or"),
-    TokenType("Or", "||"),
-    TokenType("Subassign", "-="),
+# 2 character sequences
+token_trie.insert("+=", "Addassign")
+token_trie.insert("&&", "And")
+token_trie.insert("~&", "BitwiseNand")
+token_trie.insert("~|", "BitwiseNor")
+token_trie.insert("<<", "BitwiseShiftLeft")
+token_trie.insert(">>", "BitwiseShiftRight")
+token_trie.insert("~^", "BitwiseXnor")
+token_trie.insert("/=", "Divassign")
+token_trie.insert("==", "Eq")
+token_trie.insert("**", "Exponent")
+token_trie.insert("fn", "Fn")
+token_trie.insert(">=", "Gte")
+token_trie.insert("if", "If")
+token_trie.insert("<=", "Lte")
+token_trie.insert("%", "Modulo")
+token_trie.insert("*=", "Mulassign")
+token_trie.insert("!=", "Neq")
+token_trie.insert("or", "Or")
+token_trie.insert("||", "Or")
+token_trie.insert("-=", "Subassign")
 
-    # 1 character sequences
-    TokenType("BitwiseAnd", "&"),
-    TokenType("Assignment", "="),
-    TokenType("Addition", "+"),
-    TokenType("BitwiseNot", "~"),
-    TokenType("BitwiseOr", "|"),
-    TokenType("BitwiseXor", "^"),
-    TokenType("Colon", ":"),
-    TokenType("Comma", ","),
-    TokenType("Division", "/"),
-    TokenType("LBrace", "["),
-    TokenType("LParen", "("),
-    TokenType("Lt", "<"),
-    TokenType("Gt", ">"),
-    TokenType("Multiplication", "*"),
-    TokenType("Not", "!"),
-    TokenType("Period", "."),
-    TokenType("RBrace", "]"),
-    TokenType("RParen", ")"),
-    TokenType("Subtraction", "-"),
-    TokenType("Semicolon", ";")
-]
+# 1 character sequences
+token_trie.insert("&", "BitwiseAnd")
+token_trie.insert("=", "Assignment")
+token_trie.insert("+", "Addition")
+token_trie.insert("~", "BitwiseNot")
+token_trie.insert("|", "BitwiseOr")
+token_trie.insert("^", "BitwiseXor")
+token_trie.insert(":", "Colon")
+token_trie.insert(",", "Comma")
+token_trie.insert("/", "Division")
+token_trie.insert("[", "LBrace")
+token_trie.insert("(", "LParen")
+token_trie.insert("<", "Lt")
+token_trie.insert(">", "Gt")
+token_trie.insert("*", "Multiplication")
+token_trie.insert("!", "Not")
+token_trie.insert(".", "Period")
+token_trie.insert("]", "RBrace")
+token_trie.insert(")", "RParen")
+token_trie.insert("-", "Subtraction")
+token_trie.insert(";", "Semicolon")
 
 class LexerState:
     def __init__(self):
@@ -146,29 +181,32 @@ def lex(input):
             continue
         found_token = None
 
-        # Simple token types
-        for token_type in token_types:
-            if len(token_type.sequence) == 1:
-                if input[state.pos] == token_type.sequence:
-                    value = token_type.sequence
-                    if token_type.default_value is not None:
-                        if token_type.default_value == True or token_type.default_value == False:
-                            value = ChestnutBoolean(token_type.default_value)
-                        else:
-                            value = token_type.default_value
-                    found_token = Token(token_type.name, value, start_line, start_column)
-                    state.advance_column()
-                    break
-            else:
-                if is_token_match(input, state.pos, token_type.sequence):
-                    value = token_type.sequence
-                    if token_type.default_value is not None:
-                        value = token_type.default_value
-                    found_token = Token(token_type.name, value, start_line, start_column)
-                    state.advance_column(len(token_type.sequence))
+        for length in range(token_trie.max_token_length, 0, -1):
+            if state.pos + length > len(input):
+                continue
+
+            potential_token_value = input[state.pos:state.pos + length]
+            token_data: TokenData = token_trie.search(potential_token_value)
+            
+            if token_data is not None:
+                if is_identifier(potential_token_value[0].lower()):
+                    if is_token_match(input, state.pos, potential_token_value):
+                        val = potential_token_value
+                        if token_data.default_value is not None:
+                            val = token_data.default_value
+                        found_token = Token(token_data.token_type, val, start_line, start_column)
+                        state.advance_column(length)
+                        break
+                else:
+                    val = potential_token_value
+                    if token_data.default_value is not None:
+                        val = token_data.default_value
+                    found_token = Token(token_data.token_type, val, start_line, start_column)
+                    state.advance_column(length)
                     break
         if found_token:
             yield found_token
+            continue
 
         # Comments
         elif input[state.pos:state.pos+3] == "###":

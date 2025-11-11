@@ -1,0 +1,103 @@
+struct Heap
+    data : List
+    compare : Function
+endstruct
+
+fn (h : Heap) is_empty() returns Boolean
+    return length(h.data) == 0
+endfn
+
+fn (h : Heap) insert(value : Any)
+    let heap_length = length(h.data)
+    push(h.data, value)
+    h.heapify_up(heap_length)
+endfn
+
+fn (h : Heap) heapify_up(idx : Integer)
+    let p_idx = use (idx - 1) / 2 over 0 unless idx == 0
+    let compare_fn = h.compare
+    while idx > 0 and compare_fn(h.data[idx], h.data[p_idx]) > 0 repeat
+        let tmp = h.data[idx]
+        h.data[idx] = h.data[p_idx]
+        h.data[p_idx] = tmp
+
+        idx = p_idx
+        p_idx = (idx - 1) / 2
+    endwhile
+endfn
+
+fn (h : Heap) heapify_down(idx : Integer)
+   let lc_idx = 2 * idx + 1 # left child index
+   let rc_idx = lc_idx + 1 # right child index
+   let l_idx = idx # largest index
+   let heap_length = length(h.data)
+   let compare_fn = h.compare
+
+   if lc_idx < heap_length and compare_fn(h.data[lc_idx], h.data[l_idx]) > 0 then
+       l_idx = lc_idx
+   endif
+
+   if rc_idx < heap_length and compare_fn(h.data[rc_idx], h.data[l_idx]) > 0 then
+       l_idx = rc_idx
+   endif
+
+   if l_idx != idx then
+       let tmp = h.data[idx]
+       h.data[idx] = h.data[l_idx]
+       h.data[l_idx] = tmp
+       h.heapify_down(l_idx)
+   endif
+endfn
+
+fn (h : Heap) extract() returns Result
+    let heap_length = length(h.data)
+    if heap_length == 0 then
+        return Result(null, "Heap is empty.")
+    endif
+
+    let element = h.data[0]
+    if length(h.data) > 1 then
+        let last = remove(h.data, length(h.data)-1)
+        h.data[0] = last
+        h.heapify_down(0)
+    else
+        remove(h.data, 0)
+    endif
+
+    return Result(element, null)
+endfn
+
+fn (h : Heap) peek(idx : Integer) returns Result
+    if idx < 0 or idx > length(h.data) - 1 then
+        return Result(null, error("Heap is empty."))
+    endif
+    return Result(h.data[idx], null)
+endfn
+
+fn new_heap(compare_fn : Function) returns Heap
+    if compare_fn == null then
+        halt("A compare function is required for the heap")
+    endif
+
+    let h = Heap()
+    h.data = []
+    h.compare = compare_fn
+    return h
+endfn
+
+fn str_cmp (a : String, b : String) returns Integer
+    if a == b then
+        return 0
+    endif
+    if a > b then
+        return -1
+    endif
+    if a < b then
+        return 1
+    endif
+endfn
+
+
+let my_heap = new_heap(str_cmp)
+my_heap.insert("Test")
+my_heap.insert("Banana")

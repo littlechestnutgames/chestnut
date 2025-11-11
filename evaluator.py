@@ -1,7 +1,7 @@
 from parser import *
-from chestnut_type import *
+from chestnut_types import *
 from error import *
-from supporting import *
+from token_types import *
 from lexer import lex
 from math import floor
 import copy
@@ -217,7 +217,7 @@ class NativeFunction:
                 required_count += 1
             if param.variadic:
                 has_variadic = True
-
+        # Test
         if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(self.params)):
             raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
 
@@ -249,6 +249,12 @@ class Function(ChestnutAny):
             name = statement.name.data
         elif isinstance(statement, AnonymousFnExpressionNode):
             name = self.name
+
+        if len(call_parameters) > 0 and isinstance(call_parameters[-1], UnaryOperationNode) and call_parameters[-1].op.label == "Spread":
+            op_node = call_parameters.pop(-1)
+            evaluated_spread = evaluator.evaluate(op_node)
+            for arg in evaluated_spread.args:
+                call_parameters.append(arg)
 
         required_count = 0
         has_variadic = False
@@ -846,6 +852,7 @@ class Evaluator:
         try:
             params = func.reconcile_parameters(self, node.params)
         except RuntimeException as e:
+            print(node.identifier.__class__.__name__)
             raise RuntimeException(e.message, node.identifier)
         for p in func.statement.parameters:
             self.current_scope()[p.name.data] = params[p.name.data]

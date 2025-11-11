@@ -1,6 +1,6 @@
 from error import *
-from supporting import *
-from chestnut_type import *
+from token_types import *
+from chestnut_types import *
 from abc import ABC
 
 class UnaryOperationNode:

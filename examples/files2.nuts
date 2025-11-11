@@ -1,0 +1,18 @@
+fn log_error(e : Error) returns Error
+    print("[ERROR] {{ e.message }}")
+    return e
+endfn
+
+open_file("examples/my_file2", "w")
+    .catching(print)
+    .and_then(write_file_handle, "This is a test")
+    .and_then(print)
+
+delete_file("examples/my_file2")
+    .catching(log_error)
+    .and_then(print)
+
+delete_file("examples/my_file2")
+    .catching(log_error)
+    .and_then(print)
+
