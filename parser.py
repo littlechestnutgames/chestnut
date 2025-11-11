@@ -533,8 +533,7 @@ class Parser:
         # Consume the if
         self.consume()
 
-        condition_expression = self.parse_expression()
-
+        if_condition_expression = self.parse_expression()
         if not self.check_label("Then"):
             raise SyntaxException("`then` missing after condition in if statement", self.peek())
 
@@ -562,13 +561,12 @@ class Parser:
             self.consume()
 
             elif_statements = []
-            while self.check_labels(['Elif', 'Else', 'Endif']):
+            while not self.check_labels(['Elif', 'Else', 'Endif']):
                 elif_statements.append(self.parse_statement())
-
             elif_blocks.append(ElifStatementNode(condition_expression, elif_statements))
 
         if not self.check_labels(['Else', 'Endif']):
-            raise SyntaxException("Expected else or endifin if statement", self.peek())
+            raise SyntaxException(f"Expected else or endifin if statement, got {self.peek().label} {self.peek().data}", self.peek())
 
         else_block = None
         if self.check_label("Else"):
@@ -587,7 +585,7 @@ class Parser:
         # Consume endif
         self.consume()
 
-        return IfStatementNode(condition_expression, if_statements, elif_blocks, else_block)
+        return IfStatementNode(if_condition_expression, if_statements, elif_blocks, else_block)
 
     def pull_params(self):
         self.consume() # Consume the (
