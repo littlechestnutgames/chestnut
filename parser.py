@@ -1,6 +1,7 @@
 from error import *
-from supporting import *
-from chestnut_type import *
+from token_types import *
+from chestnut_types import *
+from abc import ABC
 
 class UnaryOperationNode:
     def __init__(self, op, right):
@@ -9,13 +10,20 @@ class UnaryOperationNode:
     def __repr__(self):
         return f"UnaryOperationNode(<{self.op}>, <{self.right}>)"
 
+    def get_name(self):
+        return op.data
+
 class BinaryOperationNode:
     def __init__(self, left, op, right):
         self.left = left
         self.op = op
         self.right = right
+
     def __repr__(self):
         return f"BinaryOperationNode(<{self.left}>, <{self.op}>, <{self.right}>)"
+
+    def get_name(self):
+        return self.op.data
 
 class ConstantStatementNode:
     def __init__(self, label, expression, explicit_type=None):
@@ -25,6 +33,9 @@ class ConstantStatementNode:
     
     def __repr__(self):
         return f"ConstantStatementNode(<{self.label}>, <{self.expression}>)"
+
+    def get_name(self):
+        return self.label.data
 
 class SimpleTokenStatement:
     def __init__(self, token):
@@ -36,13 +47,22 @@ class SimpleTokenStatement:
     def __repr__(self):
         return f"{self.gettype()}(<{self.token}>)"
 
+    def get_name(self):
+        return self.token.data
+
 class BreakStatementNode(SimpleTokenStatement):
     def gettype(self):
         return "BreakStatementNode"
 
+    def get_name(self):
+        return "break"
+
 class ContinueStatementNode(SimpleTokenStatement):
     def gettype(self):
         return "ContinueStatementNode"
+
+    def get_name(self):
+        return "continue"
 
 class LetStatementNode:
     def __init__(self, label, expression, explicit_type=None):
@@ -53,20 +73,33 @@ class LetStatementNode:
     def __repr__(self):
         return f"LetStatementNode(<{self.label}>, <{self.expression}>)"
 
+    def get_name(self):
+        return self.label.data
+
 class ShadowStatementNode:
     def __init__(self, label, expression, explicit_type=None):
         self.label = label
         self.expression = expression
         self.explicit_type = explicit_type
 
+    def get_name(self):
+        return self.label.data
+
 class LoopindexExpressionNode():
     def __repr__(self):
         return "LoopindexExpressionNode"
 
+    def get_name(self):
+        return "loop_index"
+
 class ImportStatementNode:
-    def __init__(self, token, location):
+    def __init__(self, token, location, imports=None):
         self.token = token
         self.location = location
+        self.imports = imports
+
+    def get_name(self):
+        return self.token.data
 
 class IfStatementNode:
     def __init__(self, condition_expression, block_statements, elif_blocks, else_block):
@@ -78,6 +111,9 @@ class IfStatementNode:
     def __repr__(self):
         return f"IfStatementNode(<{self.condition_expression}>, <{self.block_statements}>, <{self.elif_blocks}>, <{self.else_block}>)"
 
+    def get_name(self):
+        return "if"
+
 class ElifStatementNode:
     def __init__(self, condition_expression, block_statements):
         self.condition_expression = condition_expression
@@ -86,6 +122,9 @@ class ElifStatementNode:
     def __repr__(self):
         return f"ElifStatementNode(<{self.condition_expression}>, <{self.block_statements}>)"
 
+    def get_name(self):
+        return "elif"
+
 class ElseStatementNode:
     def __init__(self, block_statements):
         self.block_statements = block_statements
@@ -93,29 +132,56 @@ class ElseStatementNode:
     def __repr__(self):
         return f"ElseStatementNode(<{self.block_statements}>)"
 
-class FnStatementNode:
-    def __init__(self, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
+    def get_name(self):
+        return "else"
+
+class BaseFn:
+    def __init__(self, parameters, statements, return_types=None, brings=[]):
+        self.parameters = parameters
+        self.statements = statements
+        self.return_types = return_types
+        self.brings = brings
+
+    def mangle(self, identifier=""):
+        return f"{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
+
+    def __repr__(self):
+        if hasattr(self, "name"):
+            return f"{self.__name__}({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
+        else:
+            return f"({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
+
+class FnStatementNode(BaseFn):
+    def __init__(self, name, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
         self.name = name
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle # Mangle functions by default.
+        self.mangled_key = self.mangle(self.name.data)
 
     def __repr__(self):
-        return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings}\n\tNo-Mangle:{self.no_mangle}>)"
+        return f"FnStatementNode:\n\tName: <{self.name}>\n\tParam count<{len(self.parameters)}>\n\tStatement count: {len(self.statements)}\n\tReturn types: {self.return_types}\n\tBrings{self.brings})"
 
+    def get_name(self):
+        return self.name.data
 
-class AnonymousFnExpressionNode:
-    def __init__(self, parameters, statements, return_types=None, brings=[], no_mangle=False):
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle
+class StructFnStatementNode(BaseFn):
+    def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
+        self.target_struct = target_struct
+        self.name = name
+        self.mangled_key = self.mangle(self.target_struct.name.data + " " + self.name.data)
 
     def __repr__(self):
-        return f"AnonymousFnExpressionNode(<{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>)"
+
+    def get_name(self):
+        return self.name.data
+
+class AnonymousFnExpressionNode(BaseFn):
+    def __init__(self, parameters, statements, return_types=None, brings=[]):
+        super().__init__(parameters, statements, return_types, brings)
+
+    def get_name(self):
+        return "fn"
 
 class FnParameter:
     def __init__(self, name, paramtype, default_value=None, variadic=False):
@@ -127,18 +193,8 @@ class FnParameter:
     def __repr__(self):
         return f"FnParameter(<{self.name}>, <{self.paramtype}>, <{self.default_value}>, <{self.variadic}>)"
 
-class StructFnStatementNode:
-    def __init__(self, target_struct, name, parameters, statements, return_types=None, brings=[], no_mangle=False):
-        self.target_struct = target_struct
-        self.name = name
-        self.parameters = parameters
-        self.statements = statements
-        self.return_types = return_types
-        self.brings = brings
-        self.no_mangle = no_mangle
-
-    def __repr__(self):
-        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+    def get_name(self):
+        return self.name.data
 
 class CaseStatementNode:
     def __init__(self, subject, when_blocks, otherwise):
@@ -149,6 +205,9 @@ class CaseStatementNode:
     def __repr__(self):
         return f"CaseStatementNode(<{self.subject}>, <{self.when_blocks}>, <{self.otherwise}>)"
 
+    def get_name(self):
+        return "case"
+
 class WhenStatementNode:
     def __init__(self, conditions, statements):
         self.conditions = conditions
@@ -157,12 +216,18 @@ class WhenStatementNode:
     def __repr__(self):
         return f"WhenStatementNode(<{self.conditions}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "when"
+
 class OtherwiseStatementNode:
     def __init__(self, statements):
         self.statements = statements
 
     def __repr__(self):
         return f"OtherwiseStatementNode(<{self.statements}>)"
+
+    def get_name(self):
+        return "otherwise"
 
 class UntilStatementNode:
     def __init__(self, condition, statements):
@@ -172,6 +237,9 @@ class UntilStatementNode:
     def __repr__(self):
         return f"UntilStatementNode(<{self.condition}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "until"
+
 class WhileStatementNode:
     def __init__(self, condition, statements):
         self.condition = condition
@@ -179,6 +247,9 @@ class WhileStatementNode:
 
     def __repr__(self):
         return f"WhileStatementNode(<{self.condition}>, <{self.statements}>)"
+
+    def get_name(self):
+        return "while"
 
 class IterateStatementNode:
     def __init__(self, subject, identifier, statements):
@@ -189,17 +260,26 @@ class IterateStatementNode:
     def __repr__(self):
         return f"IterateStatementNode(<{self.subject}>, <{self.identifier}>, <{self.statements}>)"
 
+    def get_name(self):
+        return "iterate"
+
 class ListLiteralNode:
     def __init__(self, elements):
         self.elements = elements
     def __repr__(self):
         return f"ListLiteralNode({self.elements})"
 
+    def get_name(self):
+        return "List"
+
 class TupleLiteralNode:
     def __init__(self, elements):
         self.elements = elements
     def __repr__(self):
         return f"TupleLiteralNode({self.elements})"
+
+    def get_name(self):
+        return "Tuple"
 
 class IndexAccessNode:
     def __init__(self, target, index):
@@ -266,6 +346,9 @@ class StructDefinitionNode():
     def __repr__(self):
         return f"StructDefinitionNode(<{self.identifier}>, <{self.properties}>)"
 
+    def get_name(self):
+        return self.identifier.data
+
 class StructPropertyNode():
     def __init__(self, identifier, value_type):
         self.identifier = identifier
@@ -322,37 +405,41 @@ class Parser:
 
     def parse_statement(self):
         token = self.peek()
+        statement = None
         if token and token.label in ["Let", "Shadow", "Constant"]:
-            return self.parse_let_statement()
+            statement = self.parse_let_statement()
         elif token and token.label == "Struct":
-            return self.parse_struct_definition()
+            statement = self.parse_struct_definition()
         elif token and token.label == "Import":
-            return self.parse_import_statement()
+            statement = self.parse_import_statement()
         elif token and token.label == "If":
-            return self.parse_if_statement()
+            statement = self.parse_if_statement()
         elif token and token.label == "Fn":
-            return self.parse_fn_statement()
+            statement = self.parse_fn_statement()
         elif token and token.label == "Case":
-            return self.parse_case_statement()
+            statement = self.parse_case_statement()
         elif token and token.label == "While":
-            return self.parse_while_statement()
+            statement = self.parse_while_statement()
         elif token and token.label == "Until":
-            return self.parse_until_statement()
+            statement = self.parse_until_statement()
         elif token and token.label == "Iterate":
-            return self.parse_iterate_statement()
+            statement = self.parse_iterate_statement()
         elif token and token.label == "Return":
-            return self.parse_return_statement()
+            statement = self.parse_return_statement()
         elif token and token.label == "Break":
-            return BreakStatementNode(self.consume())
+            statement = BreakStatementNode(self.consume())
         elif token and token.label == "Continue":
-            return ContinueStatementNode(self.consume())
+            statement = ContinueStatementNode(self.consume())
         elif self.check_label("Identifier") and self.peek_next().label in [
                 "Assignment", "Addassign", "Subassign", 
                 "Mulassign", "Divassign"
             ]:
-            return self.parse_assignment_statement()
+            statement = self.parse_assignment_statement()
         else:
-            return ExpressionStatementNode(self.parse_expression())
+            statement = ExpressionStatementNode(self.parse_expression())
+        if self.check_label("Semicolon"):
+            self.consume()
+        return statement
 
     def parse_let_statement(self):
         let_token = self.consume()
@@ -425,68 +512,80 @@ class Parser:
         if not self.check_label("String"):
             raise SyntaxException("Expected string after import", self.peek())
         location = self.consume()
+        imports = []
+        if self.check_label("LParen"):
+            self.consume()
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+            imports.append(self.consume())
+            while self.check_label("Comma"):
+                self.consume()
+                if not self.check_label("Identifier"):
+                    raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+                imports.append(self.consume())
+            if not self.check_label("RParen"):
+                raise SyntaxException(f"Expected right parenthesis to end imports list, got {self.peek().label}", self.peek())
+            self.consume()
 
-        return ImportStatementNode(keyword, location)
+        return ImportStatementNode(keyword, location, imports)
 
     def parse_if_statement(self):
         # Consume the if
         self.consume()
 
-        condition_expression = self.parse_expression()
-
-        if self.peek() and self.peek().label != "Then":
+        if_condition_expression = self.parse_expression()
+        if not self.check_label("Then"):
             raise SyntaxException("`then` missing after condition in if statement", self.peek())
 
         # Consume then.
         self.consume()
 
         if_statements = []
-        while self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+        while not self.check_labels(['Elif', 'Else', 'Endif']):
             if_statements.append(self.parse_statement())
 
-        if self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+        if not self.check_labels(['Elif', 'Else', 'Endif']):
             raise SyntaxException("Expected elif, else, or endif after if statement", self.peek())
 
         elif_blocks = []
-        while self.peek() and self.peek().label == 'Elif':
+        while self.check_label('Elif'):
             # Consume elif
             self.consume()
             
             condition_expression = self.parse_expression()
 
-            if self.peek() and self.peek().label != "Then":
+            if not self.check_label("Then"):
                 raise SyntaxException("`then` missing after condition in elif statement", self.peek())
 
             # Consume then
             self.consume()
 
             elif_statements = []
-            while self.peek() and not self.peek().label in ['Elif', 'Else', 'Endif']:
+            while not self.check_labels(['Elif', 'Else', 'Endif']):
                 elif_statements.append(self.parse_statement())
-
             elif_blocks.append(ElifStatementNode(condition_expression, elif_statements))
 
-        if self.peek() and not self.peek().label in ['Else', 'Endif']:
-            raise SyntaxException("Expected else or endifin if statement", self.peek())
+        if not self.check_labels(['Else', 'Endif']):
+            raise SyntaxException(f"Expected else or endifin if statement, got {self.peek().label} {self.peek().data}", self.peek())
 
         else_block = None
-        if self.peek() and self.peek().label == "Else":
+        if self.check_label("Else"):
             # Consume else
             self.consume()
             
             else_statements = []
-            while self.peek() and not self.peek().label == "Endif":
+            while not self.check_label("Endif"):
                 else_statements.append(self.parse_statement())
 
             else_block = ElseStatementNode(else_statements)
 
-        if self.peek() and self.peek().label != "Endif":
+        if not self.check_label("Endif"):
             raise SyntaxException("Expected endif in if statement", self.peek())
 
         # Consume endif
         self.consume()
 
-        return IfStatementNode(condition_expression, if_statements, elif_blocks, else_block)
+        return IfStatementNode(if_condition_expression, if_statements, elif_blocks, else_block)
 
     def pull_params(self):
         self.consume() # Consume the (
@@ -508,8 +607,7 @@ class Parser:
 
         # Parse parameter identifier
         if not self.check_label("Identifier"):
-            print(self.peek())
-            raise SyntaxException("Expected identifier in function parameters", self.peek())
+            raise SyntaxException(f"Expected identifier in function parameters, got {self.peek().label}", self.peek())
         identifier = self.consume() # Consume identifier
 
         # Parse type delimiter
@@ -601,20 +699,20 @@ class Parser:
 
     def parse_returns(self):
         return_types = []
-        if self.peek() and self.peek().label == "Returns":
+        if self.check_label("Returns"):
             self.consume() # Consume Returns
 
-            if self.peek() and self.peek().label != "LParen" and self.peek().label != "Identifier":
+            if not self.check_labels(["LParen", "Identifier"]):
                 raise SyntaxException(f"Expected type identifier(s), got {self.peek().label}", self.peek())
 
-            if self.peek() and self.peek().label == "LParen":
+            if self.check_label("LParen"):
                 self.consume() # Consume LParen
                 # Multiple return types.
-                while self.peek() and self.peek().label != "RParen":
-                    if self.peek() and self.peek().label == "Comma":
+                while not self.check_label("RParen"):
+                    if self.check_label("Comma"):
                         self.consume()
 
-                    if self.peek() and self.peek().label != "Identifier":
+                    if not self.check_label("Identifier"):
                         raise SyntaxException(f"Expected type identifier, got {self.peek().label}", self.peek())
                     return_types.append(self.consume())
 
@@ -626,7 +724,6 @@ class Parser:
     def parse_fn_statement(self):
         # Consume fn token
         self.consume()
-        
         struct_params = None
         if self.check_label("LParen"):
             struct_params = self.pull_params()
@@ -636,7 +733,7 @@ class Parser:
             name = self.consume()
 
         fn_params = struct_params
-        if self.check_label("LParen"):
+        if self.check_label("LParen") and name is not None:
             fn_params = self.pull_params()
 
         if struct_params is not None and struct_params != fn_params:
@@ -648,11 +745,12 @@ class Parser:
                 raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
 
         brings = self.parse_brings()
+
         return_types = self.parse_returns()
 
         statements = []
 
-        while self.peek() and self.peek().label != "Endfn":
+        while not self.check_label("Endfn"):
             statements.append(self.parse_statement())
 
         if not self.peek():
@@ -709,16 +807,16 @@ class Parser:
 
         condition = self.parse_expression()
 
-        if self.peek() and self.peek().label != "Repeat":
+        if not self.check_label("Repeat"):
             raise SyntaxException("Expected repeat after condition in until statement", self.peek())
 
         self.consume()
 
         statements = []
-        while self.peek() and self.peek().label != "Endwhile":
+        while not self.check_label("Endwhile"):
             statements.append(self.parse_statement())
         
-        if self.peek() and self.peek().label != "Endwhile":
+        if not self.check_label("Endwhile"):
             raise SyntaxException("Unexpected end of input, unterminated while block", self.peek())
         
         self.consume()
@@ -985,7 +1083,7 @@ class Parser:
     def parse_postfix_expression(self):
         left = self.parse_primary()
      
-        while self.check_labels(["LBrace", "Period", "LParen"]):
+        while self.check_labels(["LBrace", "Period", "LParen"]) and not self.check_label("Semicolon"):
             if self.check_label("LBrace"):
                 left = self.parse_index_access(left)
             elif self.check_label("Period"):
@@ -1008,7 +1106,8 @@ class Parser:
                 self.consume() # Consume ')'
                 left = CallStatementNode(left, params)
                 continue
-        
+        if self.check_label("Semicolon"):
+            self.consume()
         return left
 
     def parse_paren_expression(self):

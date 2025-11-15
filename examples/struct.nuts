@@ -45,6 +45,7 @@ fn (mineral : Mineral) get_property_value2(name : String) returns Result
         if property.name == name then
 	    return new_result(property.value, null)
 	endif
+	return new_result(null, Error("Fall through case."))
     enditerate
 
     return new_result(null, error("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
@@ -125,6 +126,8 @@ else
 endif
 
 let amethyst_spocial, err2 = amethyst.get_property_value("Spocial")
+print("err2 is {{ err2 }}")
+print("null is {{ null }}")
 if err2 != null then
     print(err2.message)
 else

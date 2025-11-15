@@ -1,30 +1,97 @@
-struct Error
-    message : String
-endstruct
-
-fn (err : Error) getError() returns String
-    return err.message
+fn gettype(o : Any) returns String
+    return __internal_type__(o)
 endfn
 
-fn error(message : String) returns Error
+struct Error
+    message : String
+    error: Error
+endstruct
+
+fn error(message : String, err : Error = null) returns Error
     let e = Error()
     e.message = message
+    e.error = err
     return e
 endfn
 
-fn xor(left : Boolean, right : Boolean) returns Boolean
+struct Result
+    value : Any
+    error : Error
+endstruct
+
+fn new_result(value : Any, err: Any) returns Result
+    let result = Result()
+    result.value = value
+    result.error = err
+    return result
+endfn
+
+fn new_result_from_tuple(tuple : Any) returns Result
+    if length(tuple) < 2 then
+        return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
+    endif
+    let success, err = tuple
+    return new_result(success, err)
+endfn
+
+fn (result : Result) unwrap_or (default_value : Any) returns Any
+    return use result.value
+               over default_value
+               unless result.error != null
+endfn
+
+fn (result : Result) wrap_err (message : String) returns Result
+    let e = err
+    if result.error != null then
+    endif
+    return result
+endfn
+
+fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
+    if result.error != null or result.value == null then
+        return result
+    endif
+    let call_result = func(result.value, spread params)
+    if gettype(call_result) == "Result" then
+        return call_result
+    else
+        return Result(call_result, null)
+    endif
+endfn
+
+fn (result: Result) catching (func : Function, variadic params : Any) returns Result
+    if result.error != null then
+        let call_result = func(result.error, spread params)
+        if gettype(call_result) == "Result" then
+            return call_result
+        else
+            return Result(null, call_result)
+        endif
+    else
+        return result
+    endif
+endfn
+
+fn (result : Result) unwrap_or_fallback (func : Function) returns Any
+   if result.error == null then
+       return result.value
+   endif
+   return func(result.error)
+endfn
+
+fn xor(left : Any, right : Any) returns Boolean
     return (left or right) and not (left and right)
 endfn
 
-fn nand(left : Boolean, right : Boolean) returns Boolean
+fn nand(left : Any, right : Any) returns Boolean
     return not (left and right)
 endfn
 
-fn nor(left : Boolean, right : Boolean) returns Boolean
+fn nor(left : Any, right : Any) returns Boolean
     return not left and not right
 endfn
 
-fn xnor(left : Boolean, right : Boolean) returns Boolean
+fn xnor(left : Any, right : Any) returns Boolean
     return (left and right) or (not left and not right)
 endfn
 
@@ -68,6 +135,14 @@ fn length(a : List) returns Integer
     return __internal_length__(a)
 endfn
 
+fn length(a : String) returns Integer
+    return __internal_length__(a)
+endfn
+
+fn length(a : Any) returns Integer
+    return __internal_length__(a)
+endfn
+
 fn insert(l : List, a : Any, i : Integer)
     return __internal_insert__(l, a, i)
 endfn
@@ -80,26 +155,214 @@ fn remove(l : List, i : Integer) returns Any
     return __internal_remove__(l, i)
 endfn
 
-struct Result
-    value : Any
-    error : Error
-endstruct
-
-fn new_result(value : Any, err: Any) returns Result
-    let result = Result()
-    result.value = value
-    result.error = err
-    return result
+fn index_of(l : List, value : Any) returns Integer
+    let found_idx = -1
+    iterate l with item
+        if item == value then
+            found_idx = loop_index
+            break
+        endif
+    enditerate
+    return found_idx
 endfn
 
-fn (result : Result) unwrap_or (default_value : Any) returns Any
-    return use result.value over default_value unless result.error != null
-endfn
-
-fn (result : Result) and_then (func : Function) returns Result
-    if result.error != null then
-        return result
+fn range (start : Integer, end : Integer) returns List
+    let r = []
+    let l = start
+    let use_addition = true
+    if start > end then
+        use_addition = false
     endif
-    return func(result.value)
+    while l < end repeat
+       push(r, l)
+       if use_addition then
+           l += 1
+       else
+           l -= 1
+       endif
+    endwhile
+    return r
 endfn
 
+fn slice (input : String, position_start : Integer, position_end : Integer = -1) returns String
+    let l = length(input)
+    let end = use position_end over l unless position_end < 0 or position_end > l
+    let start = use position_start over 0 unless position_start < 0
+    let r = range(start, end)
+    let sliced = ""
+    iterate r with index
+        sliced += input[index]
+    enditerate
+    return sliced
+endfn
+
+fn split(input : String, delimiter : String, number : Integer = -1) returns List
+    if number == 0 then
+        return [input]
+    endif
+
+    let parts = []
+    let i = 0
+    let built_str = ""
+    while i < length(input) repeat
+        if length(parts) < number or number < 0 then
+            if input[i] != delimiter or
+               (
+                   i != 0 and
+                   input[i] == delimiter and
+                   input[i-1] == "\\"
+               ) then
+               built_str += input[i]
+            else
+                push(parts, built_str)
+                built_str = ""
+            endif
+        else
+            built_str += input[i]
+        endif
+        i = i + 1
+    endwhile
+    if built_str != "" then
+        push(parts, built_str)
+    endif
+
+    return parts
+endfn
+
+fn span (input : String, terminator : String) returns String
+    let spanned_str = ""
+    let i = 0
+    while i < length(input) repeat
+        if input[i] == terminator then
+	   if i == 0 or (i != 0 and input[i - 1] != "\\") then
+	       break
+	   endif
+	endif
+	spanned_str += input[i]
+	i += 1
+    endwhile
+    return spanned_str
+endfn
+
+fn open_file(path : String, mode : String) returns Result
+    return new_result_from_tuple(__internal_open_file__(path, mode))
+endfn
+
+fn read_file_handle(handle : FileHandle, size : Integer) returns Result
+    return new_result_from_tuple(__internal_read_file__(handle, size))
+endfn
+
+fn write_file_handle(handle : FileHandle, data : Any) returns Result
+    return new_result_from_tuple(__internal_write_file__(handle, data))
+endfn
+
+fn delete_file(path: String) returns Result
+    return new_result_from_tuple(__internal_delete_file__(path))
+endfn
+
+fn close_file(handle : FileHandle) returns Result
+    return new_result_from_tuple(__internal_close_file__(handle))
+endfn
+
+fn halt(message : Any)
+    __internal_halt__(message)
+endfn
+
+fn env_unset(var_name : String)
+    __internal_env_unset__(var_name)
+endfn
+
+fn env_get(var_name : String, default : String = null) returns String
+    return __internal_env_get__(var_name, default)
+endfn
+
+fn env_set(var_name : String, value : String)
+    __internal_env_set__(var_name, value) 
+endfn
+
+fn bytes(a : Any) returns List
+    return __internal_to_uint8__(a)
+endfn
+
+fn from_bytes(a : Any) return String
+    return __internal_from_bytes_to_string__(a)
+endfn
+
+fn uint8(a : Any) returns UInt8
+    return __internal_to_uint8__(a)
+endfn
+
+fn uint16(a : Any) returns UInt16
+    return __internal_to_uint16__(a)
+endfn
+
+fn uint32(a : Any) returns UInt32
+    return __internal_to_uint32__(a)
+endfn
+
+fn uint64(a : Any) returns UInt64
+    return __internal_to_uint64__(a)
+endfn
+
+fn uint128(a : Any) returns UInt8
+    return __internal_to_uint128__(a)
+endfn
+
+fn int_list_to_hex_string(l : List) returns String
+    return __internal_int_list_to_hex__(l)
+endfn
+
+fn get_bit_width(v : Integer) returns Integer
+    return __internal_get_bit_width__(v)
+endfn
+
+fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteger) returns UnsignedInteger
+    let get_cast_fn = fn (bit_width : Integer) returns Function
+        let func = null
+        case bit_width
+            when 8
+                func = uint8
+            when 16
+                func = uint16
+            when 32
+                func = uint32
+            when 64
+                func = uint64
+            when 128
+                func = uint128
+            otherwise
+                halt("Unidentified UnsignedInteger type \"{{ b_type }}\"")
+        endcase
+
+        return func
+    endfn
+    let cast_fn = get_cast_fn(target_bit_width)
+    let original_len = length(original_bytes)
+    if original_len == 0 then
+        return cast_fn(0)
+    endif
+
+    let bit_len = get_bit_width(original_bytes)
+
+    # Guard from bits that won't fit into the target size.
+    if (bit_len * original_len) > target_bit_width then
+        halt("Original bytes cannot fit into target bit width.")
+    endif
+
+
+    let prev_type = null
+    let working = cast_fn(0)
+
+    iterate original_bytes with byte
+        # To keep things uniform and simple, all bytes must be the same length.
+        if prev_type != null and gettype(byte) != prev_type then
+            halt("All bytes must be the same size.")
+        endif
+
+        working = working | (cast_fn(byte) << (target_bit_width - bit_len * (loop_index + 1)))
+
+        prev_type = gettype(byte)
+    enditerate
+
+    return working
+endfn

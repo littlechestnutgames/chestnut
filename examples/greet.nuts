@@ -11,6 +11,7 @@ fn greet()
             push(names, name)
         endif
     endwhile
+
     while length(names) > 0 repeat
         if str != "" then
             str += ", "
