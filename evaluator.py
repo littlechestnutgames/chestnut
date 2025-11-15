@@ -37,7 +37,12 @@ class FunctionRegister:
 
         for candidate in registry["candidates"]:
             if candidate.statement.mangled_key == func.statement.mangled_key:
-                raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
+                # Function register is temporarily disabled until we get functions
+                # Registering in lexical scope instead of with the global FunctionRegister
+                # Any function that defines inner functions right now will error out
+                # if the code below the return were enabled.
+                return
+                # raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
         
         registry["candidates"].insert(0, func)
 
@@ -634,9 +639,10 @@ class Evaluator:
         index = self.evaluate(node.index)
         if not isinstance(target_value, (list, ChestnutList)) and not isinstance(target_value, (tuple, ChestnutTuple)) and not isinstance(target_value, str) and not isinstance(target_value, ChestnutString):
             raise Exception(f"Index access attempted on non-array type {target_value.__repr__()}")
-        if index == ChestnutInteger(-1):
-            index = ChestnutInteger(len(target_value) - 1)
-        if index < ChestnutInteger(0) or index >= ChestnutInteger(len(target_value)):
+
+        if index == index.__class__(-1):
+            index = index.__class__(len(target_value) - 1)
+        if index < index.__class__(0) or index >= index.__class__(len(target_value)):
             raise Exception(f"Index out of bounds")
         return target_value[index]
 
@@ -1114,10 +1120,10 @@ class Evaluator:
         return left >> right
 
     def _handle_binary_BitwiseRotateLeft(self, left, right):
-        raise InternalException("Bitwise left rotation is not implemented yet")
+        return left.lrotate(right)
 
     def _handle_binary_BitwiseRotateRight(self, left, right):
-        raise InternalException("Bitwise right rotation is not implemented yet")
+        return left.rrotate(right)
 
     def _handle_binary_Addition(self, left, right):
         return left + right

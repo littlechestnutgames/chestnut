@@ -1,5 +1,0 @@
-let t = new_table()
-t.set("Test", 123)
-t.set("Test", 0)
-print(t.get("Test"))
-print(t.get("Testing", 121))

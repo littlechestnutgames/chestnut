@@ -136,6 +136,20 @@ def __internal_to_uint8__(v):
         bytes = ChestnutList([ ChestnutUInt8(x) for x in v.value.encode("utf-8") ])
     return bytes
 
+def __internal_to_uint16__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt16(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt16(x.value) for x in __internal_to_uint16__(v) ]
+
+def __internal_to_uint32__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt32(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt32(x.value) for x in __internal_to_uint32__(v) ]
+
 def __internal_to_uint64__(v):
     if isinstance(v, ChestnutInteger):
         return ChestnutUInt64(v.value)
@@ -143,9 +157,24 @@ def __internal_to_uint64__(v):
     if isinstance(v, ChestnutString):
         return [ ChestnutUInt64(x.value) for x in __internal_to_uint8__(v) ]
 
+def __internal_to_uint128__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt128(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt128(x.value) for x in __internal_to_uint8__(v) ]
+
 def __internal_from_bytes_to_string__(v):
     if isinstance(v, ChestnutInteger):
         return ChestnutString(v.value.decode("utf-8"))
     if isinstance(v, ChestnutList):
         return ChestnutString("".join([ x.value for x in v.value]))
     
+def __internal_int_list_to_hex__(v):
+    l = [ x.value for x in v ]
+    return ''.join('{:08x}'.format(a) for a in l)
+
+def __internal_get_bit_width__(v):
+    if hasattr(v[0], "BIT_WIDTH"):
+        return ChestnutInteger(v[0].BIT_WIDTH)
+    return ChestnutInteger(v[0].value.bit_length())
