@@ -1,0 +1,16 @@
+__internal_print__("ABc");
+
+(fn (n : String) print(n) endfn)("test")
+###
+
+struct Thing
+    name : String
+endstruct
+let t = Thing()
+t.name = "Test"
+fn (t : Thing) get_name() returns Thing
+    return t.name
+endfn
+
+print(t.get_name())
+###

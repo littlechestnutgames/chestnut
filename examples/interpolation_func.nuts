@@ -1,2 +1,5 @@
 let a = "Hello {{ (fn () returns String print("Test") return "world" endfn)() }}!"
 print(a)
+
+let bug = "X\n{{ 1 }}"
+print(bug)

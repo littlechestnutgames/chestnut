@@ -11,7 +11,7 @@ endfn
 let A = 10 # Binary: ...00001010
 let B = 3  # Binary: ...00000011
 let R = 2147483649 # 0x80000001
-let S = 4
+let S = 8
 
 display_result("Not (~)", A, null, ~A)
 display_result("And (&)", A, B, A & B)
@@ -25,8 +25,8 @@ display_result("Xnor (~^)", A, B, A ~^ B)
 
 # Bitwise rotate functions are not yet implemented.
 
-# let R_rotated_left = R <<< S
-# display_result("<<<", R, S, R_rotated_left)
+let R_rotated_left = uint8(R) <<< S
+display_result("<<<", uint8(R), S, R_rotated_left)
 
-# let R_rotated_right = R >>> S
-# display_result(">>>", R, S, R_rotated_right)
+let R_rotated_right = uint8(R) >>> S
+display_result(">>>", uint8(R), S, R_rotated_right)

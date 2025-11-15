@@ -1,0 +1,161 @@
+# Algorithm implemented from FIPS 180-4.
+
+# A function that takes the bits in A, B, C, and D and makes them into a single UInt32
+fn pack_uint8_to_uint32 (A : UInt8, B : UInt8, C : UInt8, D : UInt8) returns UInt32
+    return (uint32(A) << 24) | (uint32(B) << 16) | (uint32(C) << 8) | uint32(D)
+endfn
+
+fn sha256(message : String) returns List
+    # Choice function - If x is 1, the output is y, if x is 0, the output is z.
+    let Ch = fn (x : UInt32, y : UInt32, z : UInt32) return (x & y) ^ (~x & z) endfn
+
+    # Majority function - Output bit depends on majority of x, y, and z (e.g. 2 1's outputs a 1. Two 0's outputs 0)
+    let Maj = fn (x : UInt32, y : UInt32, z : UInt32) return (x & y) ^ (x & z) ^ (y & z) endfn
+
+    # Big sigma 0 - Diffusion function used in T2 calculation
+    let Σ0 = fn (x : UInt32) return (x >>> 2) ^ (x >>> 13) ^ (x >>> 22) endfn
+
+    # Big sigma 1 - Diffusion funciton used in T1 calculation
+    let Σ1 = fn (x : UInt32) return (x >>> 6) ^ (x >>> 11) ^ (x >>> 25) endfn
+
+    let σ0 = fn (x : UInt32) return (x >>> 7) ^ (x >>> 18) ^ (x >> 3) endfn
+
+    # Small sigma 1 - Diffusion funciton used in message schedule Wt
+    let σ1 = fn (x : UInt32) return (x >>> 17) ^ (x >>> 19) ^ (x >> 10) endfn
+
+    # The 64 round constants derived from the first 64 fractional cube roots, adding a non-linear salt to protect against mathematical attacks.
+    constant K = [
+        uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5), uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
+        uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3), uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7), uint32(0xc19bf174),
+        uint32(0xe49b69c1), uint32(0xefbe4786), uint32(0x0fc19dc6), uint32(0x240ca1cc), uint32(0x2de92c6f), uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
+        uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8), uint32(0xbf597fc7), uint32(0xc6e00bf3), uint32(0xd5a79147), uint32(0x06ca6351), uint32(0x14292967),
+        uint32(0x27b70a85), uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13), uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e), uint32(0x92722c85),
+        uint32(0xa2bfe8a1), uint32(0xa81a664b), uint32(0xc24b8b70), uint32(0xc76c51a3), uint32(0xd192e819), uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
+        uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c), uint32(0x34b0bcb5), uint32(0x391c0cb3), uint32(0x4ed8aa4a), uint32(0x5b9cca4f), uint32(0x682e6ff3),
+        uint32(0x748f82ee), uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208), uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)
+    ]
+
+    # Pad the messages and divide them into blocks of 512 bits.
+    fn pad_message () returns List
+        let message_bytes = bytes(message)
+        let bit_length = uint64(length(message_bytes) * 8)
+
+        # Add the required 1-bit.
+        push(message_bytes, uint8(0x80))
+
+        # Calculate the amount of zero bits we need to add.
+        let current_bit_length = length(message_bytes) * 8
+        let remainder = current_bit_length % 512
+        let padding_bits = 448 - remainder
+        if remainder > 448 then
+            # This is in case we need to add a whole block of padding.
+            padding_bits = 448 + (512 - remainder)
+        endif
+        
+        # Add on the zeros.
+        let padding_bytes = padding_bits / 8
+        while loop_index < padding_bytes repeat
+            push(message_bytes, uint8(0))
+        endwhile
+        # Append the original message length in Big-Endian bits.
+        iterate [56, 48, 40, 32, 24, 16, 8, 0] with shr_num
+            push(message_bytes, uint8(bit_length >> shr_num))
+        enditerate
+
+        # Convert the padded original message into 512 bit blocks.
+        let blocks = []
+        let total_bytes = length(message_bytes)
+
+        iterate range(0, total_bytes / 64) with idx
+            let words = []
+            let start_byte = idx * 64
+            iterate range(0, 16) with word_idx
+                # Calculate the start position of the word.
+                let bidx = start_byte + (word_idx * 4)
+                push(
+                    words,
+                    pack_bits (
+                        32,
+                        message_bytes[bidx],
+                        message_bytes[bidx + 1],
+                        message_bytes[bidx + 2],
+                        message_bytes[bidx + 3]
+                    )
+                )
+            enditerate
+            # Finally, push the 512-bit word block onto our blocks list.
+            push(blocks, words)
+        enditerate
+
+        return blocks
+    endfn
+
+    # Get the padded blocks
+    let M = pad_message()
+
+    # The initial hash.
+    let H0 = uint32(0x6a09e667)
+    let H1 = uint32(0xbb67ae85)
+    let H2 = uint32(0x3c6ef372)
+    let H3 = uint32(0xa54ff53a)
+    let H4 = uint32(0x510e527f)
+    let H5 = uint32(0x9b05688c)
+    let H6 = uint32(0x1f83d9ab)
+    let H7 = uint32(0x5be0cd19)
+
+    iterate M with block
+        # Here are our working values.
+        let a = H0
+        let b = H1
+        let c = H2
+        let d = H3
+        let e = H4
+        let f = H5
+        let g = H6
+        let h = H7
+
+        # Message schedule creation.
+        let W = []
+        iterate range(0, 16) with t
+            push(W, block[t])
+        enditerate
+        iterate range(16, 64) with t
+            let w_t = σ1(W[t-2]) + W[t-7] + σ0(W[t-15]) + W[t-16]
+            push(W, w_t)
+        enditerate
+
+        # Compression loop
+        iterate range(0, 64) with t
+            # Setup temporary values
+            let T1 = h + Σ1(e) + Ch(e, f, g) + K[t] + W[t]
+            let T2 = Σ0(a) + Maj(a, b, c)
+
+            h = g
+            g = f
+            f = e
+            e = d + T1
+            d = c
+            c = b
+            b = a
+            a = T1 + T2
+        enditerate
+
+        # Update our hash values.
+        H0 = H0 + a
+        H1 = H1 + b
+        H2 = H2 + c
+        H3 = H3 + d
+        H4 = H4 + e
+        H5 = H5 + f
+        H6 = H6 + g
+        H7 = H7 + h
+    enditerate
+
+    # Return the raw hash value.
+    return [ H0, H1, H2, H3, H4, H5, H6, H7 ]
+
+endfn
+print("Blank string: {{ int_list_to_hex_string(sha256("")) }}, expected e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+print("Testing: {{ int_list_to_hex_string(sha256("testing")) }}, expected cf80cd8aed482d5d1527d7dc72fceff84e6326592848447d2dc0b0e87dfc9a90")
+print("A very long string: {{ int_list_to_hex_string(sha256("This is a somewhat longer test. It should be a more comprehensive validation of the function. Let's see if it is working or not. I hope so. I've been working on this all night after work was over.")) }}, expected afb4bb33f9fc530e6e3b50fac02e66c661148d6839b5308af9bfc4c107e3c4cd")
+

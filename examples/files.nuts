@@ -1,0 +1,47 @@
+fn write_my_file(handle : FileHandle)
+    return write_file_handle(handle, "This is a test")
+endfn
+open_file("examples/my_file2", "w").and_then(write_my_file).and_then(print)
+delete_file("examples/my_file2").catching(print).and_then(print)
+###
+fn read_whole_file(path : String) returns String
+    let handle_result = open_file(path, "r")
+    if handle_result.error != null then
+        halt(handle_result.error)
+    endif
+    let handle = handle_result.value
+    let str = ""
+    while true repeat
+        let c = read_file_handle(handle, 1)
+        if c.error != null then
+            halt(c.error)
+        endif
+        if length(c.value) == 0 then
+            break
+        endif
+        str += c.value
+    endwhile
+    close_file(handle)
+    return str
+endfn
+
+fn read_line(handle : FileHandle) returns Result
+    let str = ""
+    while true repeat
+        let c = read_file_handle(handle, 1)
+        if c.error != null then
+            return new_result(null, c.error)
+        endif
+        if length(c.value) == 0 or c.value == "\n" then
+            break
+        endif
+        str += c.value
+    endwhile
+    return new_result(str, null)
+endfn
+
+let result = open_file("examples/bitwise.nuts", "r")
+                  .and_then(read_line)
+                  .and_then(print)
+###
+

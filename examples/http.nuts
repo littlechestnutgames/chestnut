@@ -1,0 +1,31 @@
+import "lib/collections.nuts"
+struct HttpHeaders
+    headers : HashMap
+endstruct
+
+fn new_http_headers() returns HttpHeaders
+     let hh = HttpHeaders()
+     hh.headers = new_hashmap(7)
+     return hh
+endfn
+
+fn (hh : HttpHeaders) set_header(name : String, value : String)
+    hh.headers.set(name, value)
+endfn
+
+fn (hh : HttpHeaders) to_string() returns String
+    let headers_str = ""
+    let keys = hh.headers.get_keys() 
+    iterate keys with k
+        let value = hh.headers.get(k)
+        headers_str += "{{ k }}: {{ value }}\r\n"
+    enditerate
+    headers_str += "\r\n"
+    return headers_str
+endfn
+
+let my_headers = new_http_headers()
+my_headers.set_header("Content-Type", "text/html")
+my_headers.set_header("Accept", "application/json")
+
+print(my_headers.to_string())
