@@ -171,7 +171,7 @@ class StructFnStatementNode(BaseFn):
         self.mangled_key = self.mangle(self.target_struct.name.data + " " + self.name.data)
 
     def __repr__(self):
-        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>, <{self.no_mangle}>)"
+        return f"StructFnStatementNode(<{self.target_struct}>, <{self.name}>, <{self.parameters}>, <{self.statements}>, <{self.return_types}>)"
 
     def get_name(self):
         return self.name.data
@@ -607,7 +607,7 @@ class Parser:
 
         # Parse parameter identifier
         if not self.check_label("Identifier"):
-            raise SyntaxException("Expected identifier in function parameters", self.peek())
+            raise SyntaxException(f"Expected identifier in function parameters, got {self.peek().label}", self.peek())
         identifier = self.consume() # Consume identifier
 
         # Parse type delimiter
@@ -733,7 +733,7 @@ class Parser:
             name = self.consume()
 
         fn_params = struct_params
-        if self.check_label("LParen"):
+        if self.check_label("LParen") and name is not None:
             fn_params = self.pull_params()
 
         if struct_params is not None and struct_params != fn_params:

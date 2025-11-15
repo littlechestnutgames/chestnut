@@ -3,6 +3,7 @@ struct HashMap
     size : Integer
     initial_size : Integer
     keys : Integer
+    keys_list : List
 endstruct
 
 struct KV
@@ -10,6 +11,11 @@ struct KV
     value : Any
 endstruct
 
+# Initializes a new bucket of size {initial_size}
+# Note: Bucket sizes are powers of 2. For example, 
+# the default of 7 means that the amount of buckets
+# will be 128. HashMaps won't shrink past the initial
+# size specified.
 fn new_hashmap(initial_size : Integer = 7) returns HashMap
     if initial_size < 0 then
         halt("HashMap initial size cannot be less than 0.")
@@ -20,10 +26,12 @@ fn new_hashmap(initial_size : Integer = 7) returns HashMap
     hm.size = initial_size
     hm.initial_size = initial_size
     hm.keys = 0
+    hm.keys_list = []
     hm.resize(initial_size)
     return hm
 endfn
 
+# Returns a new KV struct instances with key {key} and value {value}.
 fn new_kv(key : String, value : Any) returns KV
     let kv = KV()
     kv.key = key
@@ -31,6 +39,7 @@ fn new_kv(key : String, value : Any) returns KV
     return kv
 endfn
 
+# Resizes the bucket (up or down) and rehases all keys in the old buckets.
 fn (h : HashMap) resize(new_size : Integer)
     # Check if the resize is valid.
     if new_size < 0 then
@@ -64,6 +73,7 @@ fn (h : HashMap) resize(new_size : Integer)
     endif
 endfn
 
+# Calculates the bucket a given key will exist in.
 fn (h : HashMap) hash(key : String) returns Integer
     # FNV_offset_basis and prime.
     let idx = uint64(14695981039346656037)
@@ -79,6 +89,7 @@ fn (h : HashMap) hash(key : String) returns Integer
     return idx & (uint64(2 ** h.size) - uint64(1))
 endfn
 
+# Sets a key {value} pair in the buckets at {key}
 fn (h : HashMap) set(key : String, value : Any)
     if h.keys * 4 > 2 ** h.size * 3 and h.size < 63 then
         # We have exceeded load factor 0.75. Resize array up, bounded by 2**63
@@ -102,10 +113,12 @@ fn (h : HashMap) set(key : String, value : Any)
     # If now found, we have to insert a new key.
     if not found then
         h.keys = h.keys + 1
+        push(h.keys_list, key)
         push(h.buckets[bucket_index], new_kv(key, value))
     endif
 endfn
 
+# Removes the value of the associated {key} from the buckets and key_list.
 fn (h : HashMap) unset(key : String) returns Result
     # Setup
     let bucket_index = h.hash(key)
@@ -123,6 +136,12 @@ fn (h : HashMap) unset(key : String) returns Result
         let res = remove(h.buckets[bucket_index], idx)
         h.keys = h.keys - 1
 
+        # Remove from tracked inserted keys.
+        let keys_list_idx = index_of(h.keys_list, key)
+        if keys_list_idx >= 0 then
+            remove(h.keys_list, keys_list_idx)
+        endif
+
         # Check if we have to shrink the bucket (factor of 0.25)
         if h.keys * 4 < 2 ** h.size and h.size > h.initial_size then
             h.resize(h.size - 1)
@@ -136,6 +155,7 @@ fn (h : HashMap) unset(key : String) returns Result
     endif
 endfn
 
+# Gets the value stored in the hashmap with {key}, defaulting to {default} if not found.
 fn (h : HashMap) get(key : String, default : Any = null) returns Any
     # Setup
     let bucket_index = h.hash(key)
@@ -155,3 +175,7 @@ fn (h : HashMap) get(key : String, default : Any = null) returns Any
     return use kv_value over default unless not found
 endfn
 
+# Returns a list of keys in the hashmap.
+fn (h : HashMap) get_keys() returns List
+    return h.keys_list
+endfn

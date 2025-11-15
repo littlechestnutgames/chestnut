@@ -9,20 +9,6 @@ def comparison_operation(op_symbol, op_name, reverse=False):
             self.__typecheck__(other, op_name)
             left = self.value if not reverse else other.value
             right = other.value if not reverse else self.value
-            
-            raw_result = left.__getattribute__(op_symbol)(right)
-            
-            return raw_result
-        return wrapper
-    return decorator
-
-def comparison_operation(op_symbol, op_name, reverse=False):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, other):
-            self.__typecheck__(other, op_name)
-            left = self.value if not reverse else other.value
-            right = other.value if not reverse else self.value
             return ChestnutBoolean(left.__getattribute__(op_symbol)(right))
         return wrapper
     return decorator
@@ -47,7 +33,6 @@ def numeric_operation(op_symbol, op_name, reverse=False):
         @wraps(func)
         def wrapper(self, other):
             if func.__name__ == "__add__" and isinstance(other, ChestnutString):
-                print("FIRING")
                 return NotImplemented
             self.__typecheck__(other, op_name)
             if func.__name__.endswith("div__") or func.__name__.endswith("mod__"):
@@ -83,7 +68,7 @@ class ChestnutAny:
 
     def gettype(self):
         import re
-        t = type(self).__name__.replace("Chestnut", "")
+        t = self.__class__.__name__.replace("Chestnut", "")
         return t
 
     def isstring(self):
@@ -348,6 +333,26 @@ class ChestnutNumber(ChestnutAny):
         return ChestnutBoolean(self.__rge__(other))
 
 class ChestnutInteger(ChestnutNumber):
+    BIT_WIDTH = -1
+
+    def __init__(self, token):
+        if isinstance(token, ChestnutNumber):
+            token = int(token.value)
+        if isinstance(token, int):
+            max_bits = self.BIT_WIDTH
+            if max_bits != -1:
+                if hasattr(self, "MASK"):
+                    mask = self.MASK
+                else:
+                    mask = (1 << max_bits) - 1
+                token = token & mask
+                if not hasattr(self, "MASK"):
+                    sign_bit_mask = 1 << (max_bits - 1)
+                    if token & sign_bit_mask:
+                        token = token - (1 << max_bits)
+
+        super().__init__(token)
+
     def isint(self):
         return True
 
@@ -383,20 +388,67 @@ class ChestnutInteger(ChestnutNumber):
             raise TypeException("Lefthand value must be an Integer type")
         return type(self)(other.value >> self.value)
 
+    def lrotate(self, amount):
+        val = self.value
+        amt = amount
+        if isinstance(amt, ChestnutAny):
+            amt = amt.value
+        max_bits = self.BIT_WIDTH
+
+        if max_bits == -1:
+            return self.__class__(val << amt)
+
+        amt %= max_bits
+        part1 = val << amt
+        part2 = val >> (max_bits - amt)
+        rotated_val = part1 | part2
+        if hasattr(self, "MASK"):
+            mask = self.MASK
+        else:
+            mask = (1 << max_bits) - 1
+        result_value = rotated_val & mask
+
+        return self.__class__(result_value)
+
+    def rrotate(self, amount):
+        val = self.value
+        amt = amount
+        max_bits = self.BIT_WIDTH
+
+        if isinstance(amt, ChestnutAny):
+            amt = amt.value
+
+        if max_bits == -1:
+            return self.__class__(val >> amt)
+
+        amt %= max_bits
+        part1 = val >> amt
+        part2 = val << (max_bits - amt)
+        rotated_val = part1 | part2
+
+        if hasattr(self, "MASK"):
+            mask = self.MASK
+        else:
+            mask = (1 << max_bits) - 1
+
+        result_value = rotated_val & mask
+
+        return self.__class__(result_value)
+
     def __invert__(self):
-        return ChestnutInteger(~self.value)
+        return self.__class__(~self.value)
 
     def __and__(self, other):
         self.__typecheck__(other, "&")
-        return ChestnutInteger(self.value & other.value)
+        return self.__class__(self.value & other.value)
 
     def __or__(self, other):
         self.__typecheck__(other, "|")
-        return ChestnutInteger(self.value | other.value)
+        return self.__class__(self.value | other.value)
 
     def __xor__(self, other):
         self.__typecheck__(other, "^")
-        return ChestnutInteger(self.value ^ other.value)
+        return self.__class__(self.value ^ other.value)
 
     def __str__(self):
         return str(self.value)
@@ -437,57 +489,86 @@ class ChestnutInteger(ChestnutNumber):
             value = ChestnutInteger(value)
         return value
 
+    def __lt__(self, other):
+        if isinstance(other, int):
+            other = self.__class__(other)
+
+        return ChestnutBoolean(self.value < other.value)
+
+    def __lte__(self, other):
+        if isinstance(other, int):
+            other = self.__class__(other)
+
+        return ChestnutBoolean(self.value <= other.value)
+
+    def __gt__(self, other):
+        if isinstance(other, int):
+            other = self.__class__(other)
+        return ChestnutBoolean(self.value > other.value)
+
+    def __gte__(self, other):
+        if isinstance(other, int):
+            other = self.__class__(other)
+        return ChestnutBoolean(self.value >= other.value)
+
     def __bool__(self):
         return self.value != 0
 
 
 
 class ChestnutInt8(ChestnutInteger):
+    BIT_WIDTH = 8
     MIN = -2**7
     MAX = 2**7-1
 
 class ChestnutInt16(ChestnutInteger):
+    BIT_WIDTH = 16
     MIN = -2**15
     MAX = 2**15-1
 
 class ChestnutInt32(ChestnutInteger):
+    BIT_WIDTH = 32
     MIN = -2**31
     MAX = 2**31-1
 
 class ChestnutInt64(ChestnutInteger):
+    BIT_WIDTH = 64
     MIN = -2**63
     MAX = 2**63-1
 
 class ChestnutInt128(ChestnutInteger):
+    BIT_WIDTH = 128
     MIN = -2**128
     MAX = 2**128-1
 
 class ChestnutUnsignedInteger(ChestnutInteger):
+    BIT_WIDTH = -1
     MASK = 0x0
     def isunsigned(self):
         return True
 
 class ChestnutUInt8(ChestnutUnsignedInteger):
+    BIT_WIDTH = 8
     MASK = 0xFF
     MAX = 2**8-1
 
 class ChestnutUInt16(ChestnutUnsignedInteger):
+    BIT_WIDTH = 16
     MASK = 0xFFFF
     MAX = 2**16-1
 
 class ChestnutUInt32(ChestnutUnsignedInteger):
+    BIT_WIDTH = 32
     MASK = 0xFFFFFFFF
     MAX = 2**32-1
 
 class ChestnutUInt64(ChestnutUnsignedInteger):
+    BIT_WIDTH = 64
     MASK = 0xFFFFFFFFFFFFFFFF
     MAX = 2**64-1
-    def __init__(self, token):
-        if isinstance(token, ChestnutAny):
-            print(f"DOUBLE WRAPPED TOKEN {token}")
-        super().__init__(token)
 
 class ChestnutUInt128(ChestnutUnsignedInteger):
+    BIT_WIDTH = 128
     MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     MAX = 2**128-1
 
