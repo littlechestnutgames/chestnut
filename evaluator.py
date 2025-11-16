@@ -27,7 +27,7 @@ class FunctionRegister:
 
     def register(self, func):
         fname = ""
-        if isinstance(func, NativeFunction):
+        if isinstance(func, BridgeFunction):
             fname = func.identifier.data
         if isinstance(func, Function):
             fname = func.statement.name.data
@@ -188,7 +188,7 @@ class StructNode:
         params = []
         for param in  self.definition.properties:
             params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL))
-        self.function_register.register(NativeFunction(Token("Identifier", "constructor", None, None), params))
+        self.function_register.register(BridgeFunction(Token("Identifier", "constructor", None, None), params))
         
     def constructor(self):
         name = self.definition.identifier.data
@@ -206,7 +206,7 @@ class StructMethodCall:
         self.instance = instance
         self.func_object = func_object
 
-class NativeFunction:
+class BridgeFunction:
     def __init__(self, identifier, params):
         self.identifier = identifier
         self.params = params
@@ -370,9 +370,9 @@ class Evaluator:
             if "varargs" in v:
                 params.append(FnParameter(Token("Identifier", v["varargs"], None, None), Token("Identifier", "Any", None, None), None, True))
 
-            func = NativeFunction(func_name, params)
+            func = BridgeFunction(func_name, params)
 
-            self.scopes[0][k] = NativeFunction(func_name, params)
+            self.scopes[0][k] = BridgeFunction(func_name, params)
             self.function_register.register(func)
         self.eval_library("lib/core.nuts")
 
@@ -762,7 +762,7 @@ class Evaluator:
 
     def visit_CallStatementNode(self, node):
         callable = self.evaluate(node.identifier)
-        if not isinstance(callable, (Function, AnonymousFunction, NativeFunction, StructNode, StructMethodCall)):
+        if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
         self.calling_builtin = False
         identifier = None
@@ -807,10 +807,10 @@ class Evaluator:
         if isinstance(func, StructNode):
             return func.constructor()
 
-        if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, NativeFunction):
+        if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, BridgeFunction):
             # Block function calls to other stored data.
             raise Exception(f"Call to non-function `{identifier}` at line {node.identifier.line}, column {node.identifier.column}")
-        if isinstance(func, NativeFunction):
+        if isinstance(func, BridgeFunction):
             params = []
             try:
                 reconciled_values = func.reconcile_parameters(self, node.params)
