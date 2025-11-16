@@ -155,7 +155,4 @@ fn sha256(message : String) returns List
     return [ H0, H1, H2, H3, H4, H5, H6, H7 ]
 
 endfn
-print("Blank string: {{ int_list_to_hex_string(sha256("")) }}, expected e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-print("Testing: {{ int_list_to_hex_string(sha256("testing")) }}, expected cf80cd8aed482d5d1527d7dc72fceff84e6326592848447d2dc0b0e87dfc9a90")
-print("A very long string: {{ int_list_to_hex_string(sha256("This is a somewhat longer test. It should be a more comprehensive validation of the function. Let's see if it is working or not. I hope so. I've been working on this all night after work was over.")) }}, expected afb4bb33f9fc530e6e3b50fac02e66c661148d6839b5308af9bfc4c107e3c4cd")
 

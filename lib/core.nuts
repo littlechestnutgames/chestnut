@@ -371,3 +371,9 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
 
     return working
 endfn
+
+fn assert(condition : Boolean, ctx : Any)
+    if not condition then
+        halt("Assertion failed: {{ ctx }}")
+    endif
+endfn
