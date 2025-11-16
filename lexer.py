@@ -94,7 +94,7 @@ token_trie.insert(">>>", "BitwiseRotateRight")
 token_trie.insert("and", "And")
 token_trie.insert("let", "Let")
 token_trie.insert("not", "Not")
-token_trie.insert("null", "Null", ChestnutNull(None))
+token_trie.insert("null", "Null", CHESTNUT_NULL)
 token_trie.insert("use", "Use")
     
 # 2 character sequences
