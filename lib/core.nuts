@@ -34,17 +34,10 @@ fn new_result_from_tuple(tuple : Any) returns Result
     return new_result(success, err)
 endfn
 
-fn (result : Result) unwrap_or (default_value : Any) returns Any
+fn (result : Result) unwrap (default_value : Any) returns Any
     return use result.value
                over default_value
                unless result.error != null
-endfn
-
-fn (result : Result) wrap_err (message : String) returns Result
-    let e = err
-    if result.error != null then
-    endif
-    return result
 endfn
 
 fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
@@ -52,6 +45,18 @@ fn (result : Result) and_then (func : Function, variadic params : Any) returns R
         return result
     endif
     let call_result = func(result.value, spread params)
+    if gettype(call_result) == "Result" then
+        return call_result
+    else
+        return Result(call_result, null)
+    endif
+endfn
+
+fn (result : Result) tap (func : Function, variadic params : Any) returns Result
+    if result.error != null or result.value == null then
+        return result
+    endif
+    let call_result = func(spread params)
     if gettype(call_result) == "Result" then
         return call_result
     else

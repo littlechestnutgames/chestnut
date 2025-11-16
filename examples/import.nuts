@@ -1,3 +1,0 @@
-import "lib/collections.nuts" (LinkedList, remove)
-let l = LinkedList()
-print(l.remove)

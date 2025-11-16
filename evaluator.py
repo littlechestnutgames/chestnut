@@ -9,13 +9,13 @@ import os
 
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
-        ChestnutStruct.__init__(self, ChestnutNull(None))
+        ChestnutStruct.__init__(self, CHESTNUT_NULL)
         i = 0
         for i, prop in enumerate(properties):
             if i < len(args):
                 setattr(self, prop.identifier.data, args[i])
             else:
-                setattr(self, prop.identifier.data, ChestnutNull(None))
+                setattr(self, prop.identifier.data, CHESTNUT_NULL)
     return struct_instance_init
 
 class FunctionRegister:
@@ -187,7 +187,7 @@ class StructNode:
 
         params = []
         for param in  self.definition.properties:
-            params.append(FnParameter(param.identifier, param.value_type, ChestnutNull(None)))
+            params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL))
         self.function_register.register(NativeFunction(Token("Identifier", "constructor", None, None), params))
         
     def constructor(self):
@@ -243,8 +243,8 @@ class Function(ChestnutAny):
     def __init__(self, statement, parent_scopes=None):
         self.statement = statement
         self.scopes = parent_scopes if parent_scopes is not None else []
-        self.token = Token("Null", ChestnutNull(None), None, None)
-        self.value = ChestnutNull(None)
+        self.token = Token("Null", CHESTNUT_NULL, None, None)
+        self.value = CHESTNUT_NULL
 
     def reconcile_parameters(self, evaluator, call_parameters):
         statement = self.statement
@@ -300,7 +300,7 @@ class AnonymousFunction(Function):
 class SpreadArgs(ChestnutAny):
     def __init__(self, args):
         self.token = Token("Null", ChestnutNull, None, None)
-        self.value = ChestnutNull(None)
+        self.value = CHESTNUT_NULL
         self.args = args
     def __repr__(self):
         return f"SpreadArgs(<{self.args}>)"
