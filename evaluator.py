@@ -412,9 +412,6 @@ class Evaluator:
     def current_scope(self):
         return self.scopes[-1]
     
-    def constant_exists(self, label):
-        return self.exists_in_any_scope(f"constant {label}")
-
     def visit_StructFnStatementNode(self, node):
         if not isinstance(node, StructFnStatementNode):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructFnStatementNode", node)
@@ -661,11 +658,8 @@ class Evaluator:
             labels = [node.label]
 
         for l in labels:
-            if self.constant_exists(l.data):
-                raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
-
             if self.exists_in_any_scope(l.data):
-                raise RuntimeException(f"`{l.data}` is already declared in this scope", l)
+                raise RuntimeException(f"`{l.data}` is already declared elsewhere", l)
 
         expression = self.evaluate(node.expression)
         if not isinstance(expression, ChestnutTuple):
@@ -673,7 +667,8 @@ class Evaluator:
 
         i = 0
         while i < len(labels):
-            self.current_scope()[f"constant {labels[i].data}"] = expression[i]
+            setattr(expression[i], "constant", True)
+            self.current_scope()[f"{labels[i].data}"] = expression[i]
             i = i + 1
 
         return 1
@@ -685,11 +680,8 @@ class Evaluator:
 
         for l in labels:
             if not self.calling_builtin:
-                if self.constant_exists(l.data):
-                    raise RuntimeException(f"Cannot redeclare constant `{l.data}`", l)
-
                 if self.exists_in_any_scope(l.data):
-                    raise RuntimeException(f"Cannot redeclare {l.data} in this scope", l)
+                    raise RuntimeException(f"Cannot redeclare {l.data}", l)
 
         expression = self.evaluate(node.expression)
         if not isinstance(expression, ChestnutTuple):
@@ -710,14 +702,15 @@ class Evaluator:
         if not isinstance(node.label, list):
             labels = [node.label]
         for l in labels:
-            if self.constant_exists(l.data):
-                raise RuntimeException(f"Cannot shadow constant `{l.data}`", l)
+            var_scope = self.find_first_scope_containing(l.data)
+            if var_scope is None:
+                raise RuntimeException(f"Cannot shadow undeclared {l.data}", l)
 
-            if self.exists_in_current_scope(l.data):
-                raise RuntimeException(f"Cannot shadow {l.data} because is already declared in the same scope", l)
+            if hasattr(var_scope[l.data], "constant"):
+                raise RuntimeException(f"Cannot shadow constant {l.data}", l)
 
-            if not self.exists_in_any_scope(l.data):
-                raise RuntimeException(f"{l.data} is not declared in any scope", l)
+            if l.data in self.current_scope():
+                raise RuntimeException(f"Cannot shadow {l.data} because it was declared or redeclared  in the same scope.")
 
         expression = self.evaluate(node.expression)
         if not isinstance(expression, tuple):
@@ -749,8 +742,10 @@ class Evaluator:
 
         func_object = Function(node, captured_scopes)
         self.function_register.register(func_object)
-        if self.constant_exists(node.name.data):
-            raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
+        scope = self.find_first_scope_containing(node.name.data)
+        if scope is not None:
+            if hasattr(scope[node.name.data], "constant"):
+                raise Exception(f"Function definition for `{node.name.data}` conflicts with a constant at line {node.name.line}, column {node.name.column}")
         # if self.exists_in_any_scope(node.name.data):
         #     raise Exception(f"{node.name.data} is already defined in the current scope, line {node.name.line}, column {node.name.column}")
         self.current_scope()[node.name.data] = func_object
@@ -893,8 +888,6 @@ class Evaluator:
 
         label = node.data
 
-        if self.constant_exists(label):
-            label = f"constant {label}"
         stored_scope = self.find_first_scope_containing(label)
         if stored_scope is None:
             raise Exception(f"Couldn't find symbol {label} at line {node.line}, column {node.column}")
@@ -1051,13 +1044,14 @@ class Evaluator:
     def visit_AssignStatementNode(self, node):
         label = node.identifier.data
 
-        if self.constant_exists(label):
-            raise Exception(f"Cannot assign to constant `{label}` at line {node.identifier.line}, column {node.identifier.column}")
 
         if not self.exists_in_any_scope(node.identifier.data):
             raise Exception(f"Undeclared identifier {label} at line {node.identifier.line}, column {node.identifier.column}")
 
         scope = self.find_first_scope_containing(label)
+        if hasattr(scope[label], "constant"):
+            raise Exception(f"Cannot assign to constant `{label}` at line {node.identifier.line}, column {node.identifier.column}")
+
         if isinstance(node, AnonymousFunction):
             node.name = label
         expression = self.evaluate(node.expression)
