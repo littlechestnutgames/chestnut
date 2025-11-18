@@ -3,5 +3,6 @@ import "lib/collections.nuts"
 let hm = new_hashmap()
 hm.set("Hello", "World")
 
-print(hm.get("Hello"))
+printline(hm.get("Hello"))
 hm.unset("Hello")
+printline(hm.get("Hello"))

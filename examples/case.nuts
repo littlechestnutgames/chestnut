@@ -31,5 +31,5 @@ case favorite_number
 endcase
 
 # Output the results
-print("Fruit color: " + result_color)
-print("Number category: " + number_category)
+printline("Fruit color: {{ result_color }}")
+printline("Number category: {{ number_category }}")

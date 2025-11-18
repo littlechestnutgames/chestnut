@@ -105,7 +105,7 @@ iterate minerals with mineral
     enditerate
     let properties_display = use " with properties {{ properties }}" over "" unless properties == ""
 
-    print("{{ mineral.name }} has a weight of {{ mineral.weight }}{{ properties_display }}")
+    printline("{{ mineral.name }} has a weight of {{ mineral.weight }}{{ properties_display }}")
 enditerate
 
 push(
@@ -120,18 +120,18 @@ push(
 
 let amethyst_special, err = amethyst.get_property_value("Special")
 if err != null then
-    print(err.message)
+    printline(err.message)
 else
-    print(amethyst_special(8.0))
+    printline(amethyst_special(8.0))
 endif
 
 let amethyst_spocial, err2 = amethyst.get_property_value("Spocial")
-print("err2 is {{ err2 }}")
-print("null is {{ null }}")
+printline("err2 is {{ err2 }}")
+printline("null is {{ null }}")
 if err2 != null then
-    print(err2.message)
+    printline(err2.message)
 else
-    print(amethyst_spocial(8.0))
+    printline(amethyst_spocial(8.0))
 endif
 
-let a = diamond.get_property_value2("Hardness").and_then(print)
+let a = diamond.get_property_value2("Hardness").and_then(printline)

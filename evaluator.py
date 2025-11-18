@@ -436,6 +436,11 @@ class Evaluator:
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ChestnutInteger", node)
         return node.value
 
+    def visit_ChestnutUInt8(self, node):
+        if not isinstance(node, ChestnutUInt8):
+            raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ChestnutUInt8", node)
+        return node.value
+
     def visit_ChestnutBoolean(self, node):
         if not isinstance(node, ChestnutBoolean):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ChestnutBoolean", node)

@@ -2,6 +2,10 @@ from chestnut_types import *
 from error import *
 
 def __internal_print__(*args):
+    print(*args, end='')
+    return CHESTNUT_NULL
+
+def __internal_printline__(*args):
     print(*args)
     return CHESTNUT_NULL
 
@@ -81,11 +85,11 @@ def __internal_delete_file__(path):
         return ChestnutTuple(CHESTNUT_NULL, ChestnutError(f"Path must be a String {path.__class__.__name__} given"))
     try:
         os.remove(path.value)
-        return ChestnutTuple(ChestnutBoolean(True), CHESTNUT_NULL)
     except FileNotFoundError:
-        return ChestnutTuple(ChestnutBoolean(False), ChestnutError(f"File I/O Error: File not found at {path.value}"))
+        return ChestnutTuple(CHESTNUT_NULL, ChestnutError(f"File I/O Error: File not found at {path.value}"))
     except Exception as e:
-        return ChestnutTuple(ChestnutBoolean(False), ChestnutError(f"File I/O Error: Failed to delete file: {e}"))
+        return ChestnutTuple(CHESTNUT_NULL, ChestnutError(f"File I/O Error: Failed to delete file: {e}"))
+    return ChestnutTuple(ChestnutBoolean(True), CHESTNUT_NULL)
 
 def __internal_close_file__(handle):
     if not isinstance(handle, ChestnutFileHandle):
@@ -178,3 +182,7 @@ def __internal_get_bit_width__(v):
     if hasattr(v[0], "BIT_WIDTH"):
         return ChestnutInteger(v[0].BIT_WIDTH)
     return ChestnutInteger(v[0].value.bit_length())
+
+def __internal_get_time__():
+    import time
+    return ChestnutInteger(time.time())

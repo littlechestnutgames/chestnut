@@ -133,7 +133,11 @@ fn reverse_string(s : String) returns String
 endfn
 
 fn print(variadic a : Any)
-    __internal_print__(spread a)
+    return __internal_print__(spread a)
+endfn
+
+fn printline(variadic a : Any)
+    return __internal_printline__(spread a)
 endfn
 
 fn length(a : List) returns Integer
@@ -372,8 +376,15 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
     return working
 endfn
 
-fn assert(condition : Boolean, ctx : Any)
+fn assert(condition : Boolean, ctx : Any = null)
     if not condition then
-        halt("Assertion failed: {{ ctx }}")
+        if ctx != null then
+            halt("Assertion failed: {{ ctx }}")
+        endif
+        halt("Assertion failed.")
     endif
+endfn
+
+fn get_time() returns Integer
+    return __internal_get_time__()
 endfn

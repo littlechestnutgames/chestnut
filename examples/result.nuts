@@ -10,7 +10,7 @@ let final_result = initial_result
     .and_then(add_one)
 
 # Expected Output: The number 7
-print("Final value: {{ final_result.value }}")
+printline("Final value: {{ final_result.value }}")
 
 # Expected Output: null
-print("Error value: {{ final_result.error }}")
+printline("Error value: {{ final_result.error }}")

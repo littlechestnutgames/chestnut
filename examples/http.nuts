@@ -28,4 +28,4 @@ let my_headers = new_http_headers()
 my_headers.set_header("Content-Type", "text/html")
 my_headers.set_header("Accept", "application/json")
 
-print(my_headers.to_string())
+printline(my_headers.to_string())

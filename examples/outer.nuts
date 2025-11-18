@@ -28,5 +28,5 @@ fn level_one (b : Integer) returns Integer
 endfn
 
 let final_result = level_one(5)
-print("Final result (Expected 45): {{ final_result }}")
+printline("Final result (Expected 45): {{ final_result }}")
 
