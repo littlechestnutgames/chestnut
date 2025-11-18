@@ -5,7 +5,7 @@ fn display_result(operator : String, left : Any, right : Any, result : Any)
     else
         output = "({{ left }} {{ operator }} {{ right }}) -> {{ result }}"
     endif
-    print(output)
+    printline(output)
 endfn
 
 let A = 10 # Binary: ...00001010

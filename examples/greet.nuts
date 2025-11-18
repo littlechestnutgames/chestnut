@@ -1,5 +1,5 @@
 fn greet()
-    print("Enter one name per line as many times as you like, then a blank line.")
+    printline("Enter one name per line as many times as you like, then a blank line.")
     let names = []
     let str = ""
     let running = true
@@ -25,7 +25,7 @@ fn greet()
 	endif
         str = str + n
     endwhile
-    print("Hello {{ str }}")
+    printline("Hello {{ str }}")
 endfn
 
 greet()

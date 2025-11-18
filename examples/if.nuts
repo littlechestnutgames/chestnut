@@ -1,5 +1,5 @@
 if not true then
-    print("Here 1")
+    printline("Here 1")
 elif true then
-    print("Here 2")
+    printline("Here 2")
 endif

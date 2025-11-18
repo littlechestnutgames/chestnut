@@ -1,6 +1,6 @@
 __internal_print__("ABc");
 
-(fn (n : String) print(n) endfn)("test")
+(fn (n : String) printline(n) endfn)("test")
 ###
 
 struct Thing
@@ -12,5 +12,5 @@ fn (t : Thing) get_name() returns Thing
     return t.name
 endfn
 
-print(t.get_name())
+printline(t.get_name())
 ###

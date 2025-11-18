@@ -10,10 +10,10 @@ fn make_counter (start_value : Number) returns Function
 endfn
 
 let counter_a = make_counter(10)
-print(counter_a()) # Should print 11
-print(counter_a())
-print(counter_a())
-print(counter_a())
-print(counter_a())
-print(counter_a())
-print(counter_a()) # 17
+printline(counter_a()) # Should print 11
+printline(counter_a())
+printline(counter_a())
+printline(counter_a())
+printline(counter_a())
+printline(counter_a())
+printline(counter_a()) # 17

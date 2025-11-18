@@ -1,3 +1,3 @@
 let str = "This \\\"is\\\" a test of my\" test"
 
-print(span(str, "\""))
+printline(span(str, "\""))

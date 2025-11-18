@@ -1,1 +1,1 @@
-print(null)
+printline(null)

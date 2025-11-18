@@ -1,5 +1,3 @@
-let a = "Hello {{ (fn () returns String print("Test") return "world" endfn)() }}!"
-print(a)
+let a = "Hello {{ (fn () returns String print("Testing ") return "world" endfn)() }}!"
+printline(a)
 
-let bug = "X\n{{ 1 }}"
-print(bug)

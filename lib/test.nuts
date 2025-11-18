@@ -1,0 +1,152 @@
+struct Test
+    label : String
+    expect : Any
+    actual : Any
+    skipped : Boolean
+endstruct
+
+struct TestSuite
+    name : String
+    tests : List
+    passed_tests : List
+    skipped_tests : List
+    failed_tests : List
+    mixed_tests : List
+endstruct
+
+struct TestResult
+    test : Test
+    result : String
+endstruct
+
+fn new_test(lable: String, expect : Any, actual : Any, skip : Boolean = false) returns Test
+    let test = Test()
+    test.label = label
+    test.expect = expect
+    test.actual = actual
+    return test
+endfn
+
+fn new_test_suite(suite_name : String)
+    let test_suite = TestSuite()
+    test_suite.name = suite_name
+    test_suite.tests = []
+    test_suite.passed_tests = []
+    test_suite.skipped_tests = []
+    test_suite.failed_tests = []
+    test_suite.mixed_tests = []
+
+    return test_suite
+endfn
+
+fn new_test_result(test : Test, result : result)
+    let test_result = TestResult()
+    test_result.test = test
+    test_result.result = result
+
+    return test_result
+endfn
+
+fn (ts : TestSuite) add_test(label : String, expect :Any, actual : Any, skipped : Boolean = false)
+    let test = new_test(label, expect, actual, skipped)
+    push(ts.tests, test)
+endfn
+
+fn (t : Test) run() returns TestResult
+    let res = perform_test(t.label, t.expect, t.actual, t.skipped)
+
+    return new_test_result(t, res)
+endfn
+
+fn (ts : TestSuite) run_tests()
+    ts.passed_tests = []
+    ts.skipped_tests = []
+    ts.failed_tests = []
+    ts.mixed_tests = []
+    iterate ts.tests with test
+        let test_result = test.run()
+        case test_result.result
+        when "."
+            push(ts.passed_tests, test_result)
+            push(ts.mixed_tests, test_result)
+        when "-"
+            push(ts.skipped_tests, test_result)
+            push(ts.mixed_tests, test_result)
+        when "F"
+            push(ts.failed_tests, test_result)
+            push(ts.mixed_tests, test_result)
+        otherwise
+            halt("Unknown report result \"{{ test_result }}\"")
+        endcase
+    enditerate
+endfn
+
+fn (tr : TestResult) display_test_result()
+    printline("* \"{{ tr.test.label }}\"")
+endfn
+
+fn (ts : TestSuite) display_simple()
+    if length(ts.tests) > 0 then
+        if length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0 then
+            ts.run_tests()
+        endif
+        iterate ts.mixed_tests with test_result
+            print(test_result.result)
+        enditerate
+        print("\n")
+    endif
+endfn
+
+fn (ts : TestSuite) display_results(show_skipped : Boolean = true, show_passed : Boolean = true)
+    let header = "###############################################################################\n{{ ts.name }}\n###############################################################################\n"
+    let footer = "###############################################################################\n"
+
+    let left_equals = length(ts.name)
+    if length(ts.tests) == 0 then
+        printline("No tests to run!")
+        return null
+    elif length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0 then
+        # Run the tests if they've not been run yet.
+        ts.run_tests()
+    endif
+
+    printline(header)
+    if show_passed then
+        printline("Passed : {{ length(ts.passed_tests) }}")
+        iterate ts.passed_tests with passed_test_result
+            passed_test_result.display_test_result()
+        enditerate
+        print("\n")
+    endif
+    if show_skipped then
+        printline("Skipped: {{ length(ts.skipped_tests) }}")
+        iterate ts.skipped_tests with skipped_test_result
+            skipped_test_result.display_test_result()
+        enditerate
+        print("\n")
+    endif
+    printline("Failed : {{ length(ts.failed_tests) }}")
+    iterate ts.failed_tests with failed_test_result
+        failed_test_result.display_test_result()
+    enditerate
+    print("\n")
+    printline(footer)
+endfn
+
+fn perform_test(label : String, expect : Any, actual : Any, skipped : Boolean = false) returns String
+    if skipped then
+        return "-"
+    elif expect == actual then
+        return "."
+    endif
+
+    printline("label {{ label }}. expect {{ expect }} == {{ actual }}")
+    return "F"
+endfn
+
+fn assert_test(label : String, expect : Any, actual : Any)
+    print("\nLabel: {{ label }}\n===============================================================================\nExpect: {{ expect }}\nActual: {{ actual }}\n")
+    assert(expect, actual)
+endfn
+
+

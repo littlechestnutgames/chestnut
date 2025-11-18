@@ -11,5 +11,5 @@ fn new_func_with_shadow() returns Function
 endfn
 
 let closed_func = new_func_with_shadow()
-print("Test 1 (Expected 55): {{ closed_func(5) }}")
-print("Test 2 (Expected 10): {{ capture_target }}")
+printline("Test 1 (Expected 55): {{ closed_func(5) }}")
+printline("Test 2 (Expected 10): {{ capture_target }}")
