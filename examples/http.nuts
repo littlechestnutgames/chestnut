@@ -1,4 +1,4 @@
-import "lib/collections.nuts"
+import "collections"
 struct HttpHeaders
     headers : HashMap
 endstruct
@@ -16,16 +16,18 @@ endfn
 fn (hh : HttpHeaders) to_string() returns String
     let headers_str = ""
     let keys = hh.headers.get_keys() 
-    iterate keys with k
+    for keys as k
         let value = hh.headers.get(k)
         headers_str += "{{ k }}: {{ value }}\r\n"
-    enditerate
+    endfor
     headers_str += "\r\n"
     return headers_str
 endfn
 
-let my_headers = new_http_headers()
-my_headers.set_header("Content-Type", "text/html")
-my_headers.set_header("Accept", "application/json")
+fn main(variadic args : String)
+    let my_headers = new_http_headers()
+    my_headers.set_header("Content-Type", "text/html")
+    my_headers.set_header("Accept", "application/json")
 
-printline(my_headers.to_string())
+    printline(my_headers.to_string())
+endfn

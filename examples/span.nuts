@@ -1,3 +1,5 @@
-let str = "This \\\"is\\\" a test of my\" test"
+fn main (variadic args : String)
+    let str = "This \\\"is\\\" a test of my\" test"
 
-printline(span(str, "\""))
+    printline(span(str, "\""))
+endfn

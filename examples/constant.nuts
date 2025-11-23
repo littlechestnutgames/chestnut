@@ -1,2 +1,5 @@
-constant PI = 3.14
-printline("{{ PI }}")
+fn main(variadic args : String)
+    constant PI = 3.14
+    printline("{{ PI }}")
+endfn
+

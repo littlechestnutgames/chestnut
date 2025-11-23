@@ -54,22 +54,22 @@ fn sha256(message : String) returns List
         
         # Add on the zeros.
         let padding_bytes = padding_bits / 8
-        while loop_index < padding_bytes repeat
+        while loop_index < padding_bytes
             push(message_bytes, uint8(0))
         endwhile
         # Append the original message length in Big-Endian bits.
-        iterate [56, 48, 40, 32, 24, 16, 8, 0] with shr_num
+        for [56, 48, 40, 32, 24, 16, 8, 0] as shr_num
             push(message_bytes, uint8(bit_length >> shr_num))
-        enditerate
+        endfor
 
         # Convert the padded original message into 512 bit blocks.
         let blocks = []
         let total_bytes = length(message_bytes)
 
-        iterate range(0, total_bytes / 64) with idx
+        for range(0, total_bytes / 64) as idx
             let words = []
             let start_byte = idx * 64
-            iterate range(0, 16) with word_idx
+            for range(0, 16) as word_idx
                 # Calculate the start position of the word.
                 let bidx = start_byte + (word_idx * 4)
                 push(
@@ -82,10 +82,10 @@ fn sha256(message : String) returns List
                         message_bytes[bidx + 3]
                     )
                 )
-            enditerate
+            endfor
             # Finally, push the 512-bit word block onto our blocks list.
             push(blocks, words)
-        enditerate
+        endfor
 
         return blocks
     endfn
@@ -103,7 +103,7 @@ fn sha256(message : String) returns List
     let H6 = uint32(0x1f83d9ab)
     let H7 = uint32(0x5be0cd19)
 
-    iterate M with block
+    for M as block
         # Here are our working values.
         let a = H0
         let b = H1
@@ -116,16 +116,16 @@ fn sha256(message : String) returns List
 
         # Message schedule creation.
         let W = []
-        iterate range(0, 16) with t
+        for range(0, 16) as t
             push(W, block[t])
-        enditerate
-        iterate range(16, 64) with t
+        endfor
+        for range(16, 64) as t
             let w_t = σ1(W[t-2]) + W[t-7] + σ0(W[t-15]) + W[t-16]
             push(W, w_t)
-        enditerate
+        endfor
 
         # Compression loop
-        iterate range(0, 64) with t
+        for range(0, 64) as t
             # Setup temporary values
             let T1 = h + Σ1(e) + Ch(e, f, g) + K[t] + W[t]
             let T2 = Σ0(a) + Maj(a, b, c)
@@ -138,7 +138,7 @@ fn sha256(message : String) returns List
             c = b
             b = a
             a = T1 + T2
-        enditerate
+        endfor
 
         # Update our hash values.
         H0 = H0 + a
@@ -149,7 +149,7 @@ fn sha256(message : String) returns List
         H5 = H5 + f
         H6 = H6 + g
         H7 = H7 + h
-    enditerate
+    endfor
 
     # Return the raw hash value.
     return [ H0, H1, H2, H3, H4, H5, H6, H7 ]

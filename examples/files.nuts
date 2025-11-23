@@ -1,17 +1,12 @@
 fn write_my_file(handle : FileHandle)
     return write_file_handle(handle, "This is a test")
 endfn
-open_file("examples/my_file2", "w").and_then(write_my_file).and_then(print)
-delete_file("examples/my_file2").catching(print).and_then(print)
-###
 fn read_whole_file(path : String) returns String
     let handle_result = open_file(path, "r")
-    if handle_result.error != null then
-        halt(handle_result.error)
-    endif
+                            .catching(halt)
     let handle = handle_result.value
     let str = ""
-    while true repeat
+    loop
         let c = read_file_handle(handle, 1)
         if c.error != null then
             halt(c.error)
@@ -20,28 +15,34 @@ fn read_whole_file(path : String) returns String
             break
         endif
         str += c.value
-    endwhile
+    endloop
     close_file(handle)
     return str
 endfn
 
 fn read_line(handle : FileHandle) returns Result
     let str = ""
-    while true repeat
+    loop
         let c = read_file_handle(handle, 1)
         if c.error != null then
-            return new_result(null, c.error)
+            return Result(null, c.error)
         endif
         if length(c.value) == 0 or c.value == "\n" then
             break
         endif
         str += c.value
-    endwhile
-    return new_result(str, null)
+    endloop
+    return Result(str, null)
 endfn
 
-let result = open_file("examples/bitwise.nuts", "r")
-                  .and_then(read_line)
-                  .and_then(print)
-###
-
+fn main(variadic args: String)
+    open_file("examples/my_file2", "w")
+        .and_then(write_my_file)
+        .and_then(printline)
+    delete_file("examples/my_file2")
+        .catching(printline)
+        .and_then(printline)
+    let result = open_file("examples/bitwise.nuts", "r")
+        .and_then(read_line)
+        .and_then(printline)
+endfn

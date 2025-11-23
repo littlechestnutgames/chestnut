@@ -8,25 +8,27 @@ fn display_result(operator : String, left : Any, right : Any, result : Any)
     printline(output)
 endfn
 
-let A = 10 # Binary: ...00001010
-let B = 3  # Binary: ...00000011
-let R = 2147483649 # 0x80000001
-let S = 8
+fn main(variadic args : String)
+    let A = 10 # Binary: ...00001010
+    let B = 3  # Binary: ...00000011
+    let R = 2147483649 # 0x80000001
+    let S = 8
 
-display_result("Not (~)", A, null, ~A)
-display_result("And (&)", A, B, A & B)
-display_result("Or (|)", A, B, A | B)
-display_result("Xor (^)", A, B, A ^ B)
-display_result("Shift left (<<)", A, 2, A << 2)
-display_result("Shift right (>>)", A, 1, A >> 1)
-display_result("Nand (~&)", A, B, A ~& B)
-display_result("Nor (~|)", A, B, A ~| B)
-display_result("Xnor (~^)", A, B, A ~^ B)
+    display_result("Not (~)", A, null, ~A)
+    display_result("And (&)", A, B, A & B)
+    display_result("Or (|)", A, B, A | B)
+    display_result("Xor (^)", A, B, A ^ B)
+    display_result("Shift left (<<)", A, 2, A << 2)
+    display_result("Shift right (>>)", A, 1, A >> 1)
+    display_result("Nand (~&)", A, B, A ~& B)
+    display_result("Nor (~|)", A, B, A ~| B)
+    display_result("Xnor (~^)", A, B, A ~^ B)
 
-# Bitwise rotate functions are not yet implemented.
+    # Bitwise rotate functions are not yet implemented.
 
-let R_rotated_left = uint8(R) <<< S
-display_result("<<<", uint8(R), S, R_rotated_left)
+    let R_rotated_left = uint8(R) <<< S
+    display_result("<<<", uint8(R), S, R_rotated_left)
 
-let R_rotated_right = uint8(R) >>> S
-display_result(">>>", uint8(R), S, R_rotated_right)
+    let R_rotated_right = uint8(R) >>> S
+    display_result(">>>", uint8(R), S, R_rotated_right)
+endfn

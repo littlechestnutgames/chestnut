@@ -16,7 +16,7 @@ endfn
 fn (h : Heap) heapify_up(idx : Integer)
     let p_idx = use (idx - 1) / 2 over 0 unless idx == 0
     let compare_fn = h.compare
-    while idx > 0 and compare_fn(h.data[idx], h.data[p_idx]) > 0 repeat
+    while idx > 0 and compare_fn(h.data[idx], h.data[p_idx]) > 0
         let tmp = h.data[idx]
         h.data[idx] = h.data[p_idx]
         h.data[p_idx] = tmp
@@ -69,7 +69,7 @@ endfn
 
 fn (h : Heap) peek(idx : Integer) returns Result
     if idx < 0 or idx > length(h.data) - 1 then
-        return Result(null, error("Heap is empty."))
+        return Result(null, Error("Heap is empty."))
     endif
     return Result(h.data[idx], null)
 endfn
@@ -96,8 +96,3 @@ fn str_cmp (a : String, b : String) returns Integer
         return 1
     endif
 endfn
-
-
-let my_heap = new_heap(str_cmp)
-my_heap.insert("Test")
-my_heap.insert("Banana")

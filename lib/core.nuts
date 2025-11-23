@@ -2,88 +2,8 @@ fn gettype(o : Any) returns String
     return __internal_type__(o)
 endfn
 
-struct Error
-    message : String
-    error: Error
-endstruct
-
-fn error(message : String, err : Error = null) returns Error
-    let e = Error()
-    e.message = message
-    e.error = err
-    return e
-endfn
-
-struct Result
-    value : Any
-    error : Error
-endstruct
-
-fn new_result(value : Any, err: Any) returns Result
-    let result = Result()
-    result.value = value
-    result.error = err
-    return result
-endfn
-
-fn new_result_from_tuple(tuple : Any) returns Result
-    if length(tuple) < 2 then
-        return new_result(null, error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
-    endif
-    let success, err = tuple
-    return new_result(success, err)
-endfn
-
-fn (result : Result) unwrap (default_value : Any) returns Any
-    return use result.value
-               over default_value
-               unless result.error != null
-endfn
-
-fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
-    if result.error != null or result.value == null then
-        return result
-    endif
-    let call_result = func(result.value, spread params)
-    if gettype(call_result) == "Result" then
-        return call_result
-    else
-        return Result(call_result, null)
-    endif
-endfn
-
-fn (result : Result) tap (func : Function, variadic params : Any) returns Result
-    if result.error != null or result.value == null then
-        return result
-    endif
-    let call_result = func(spread params)
-    if gettype(call_result) == "Result" then
-        return call_result
-    else
-        return Result(call_result, null)
-    endif
-endfn
-
-fn (result: Result) catching (func : Function, variadic params : Any) returns Result
-    if result.error != null then
-        let call_result = func(result.error, spread params)
-        if gettype(call_result) == "Result" then
-            return call_result
-        else
-            return Result(null, call_result)
-        endif
-    else
-        return result
-    endif
-endfn
-
-fn (result : Result) unwrap_or_fallback (func : Function) returns Any
-   if result.error == null then
-       return result.value
-   endif
-   return func(result.error)
-endfn
-
+import "result"
+import "error"
 fn xor(left : Any, right : Any) returns Boolean
     return (left or right) and not (left and right)
 endfn
@@ -110,14 +30,14 @@ endfn
 
 fn pop(l : List) returns (Any, Error)
     if length(l) == 0 then
-        return (null, error("Attempt to pop an empty list"))
+        return (null, Error("Attempt to pop an empty list"))
     endif
     return (remove(l, length(l)-1), null)
 endfn
 
 fn shift(l : List) returns (Any, Error)
     if length(l) == 0 then
-        return (null, error("Attempt to shift an empty list"))
+        return (null, Error("Attempt to shift an empty list"))
     endif
     return (remove(l, 0), null)
 endfn
@@ -125,10 +45,10 @@ endfn
 fn reverse_string(s : String) returns String
     let i = length(s)-1
     let str = ""
-    until i < 0 repeat
+    do
         str += s[i]
         i -= 1
-    enduntil
+    until i < 0
     return str
 endfn
 
@@ -166,30 +86,33 @@ endfn
 
 fn index_of(l : List, value : Any) returns Integer
     let found_idx = -1
-    iterate l with item
+    for l as item
         if item == value then
             found_idx = loop_index
             break
         endif
-    enditerate
+    endfor
     return found_idx
 endfn
 
 fn range (start : Integer, end : Integer) returns List
     let r = []
-    let l = start
-    let use_addition = true
-    if start > end then
-        use_addition = false
+
+    if start < end then
+        let i = start
+        while i < end
+            push(r, i)
+            i += 1
+        endwhile
+    elif start > end then
+        let i = start
+        while i > end
+            push(r, i)
+            i -= 1
+        endwhile
+    else
+        push(r, start)
     endif
-    while l < end repeat
-       push(r, l)
-       if use_addition then
-           l += 1
-       else
-           l -= 1
-       endif
-    endwhile
     return r
 endfn
 
@@ -199,9 +122,9 @@ fn slice (input : String, position_start : Integer, position_end : Integer = -1)
     let start = use position_start over 0 unless position_start < 0
     let r = range(start, end)
     let sliced = ""
-    iterate r with index
+    for r as index
         sliced += input[index]
-    enditerate
+    endfor
     return sliced
 endfn
 
@@ -213,7 +136,7 @@ fn split(input : String, delimiter : String, number : Integer = -1) returns List
     let parts = []
     let i = 0
     let built_str = ""
-    while i < length(input) repeat
+    while i < length(input)
         if length(parts) < number or number < 0 then
             if input[i] != delimiter or
                (
@@ -241,7 +164,7 @@ endfn
 fn span (input : String, terminator : String) returns String
     let spanned_str = ""
     let i = 0
-    while i < length(input) repeat
+    while i < length(input)
         if input[i] == terminator then
 	   if i == 0 or (i != 0 and input[i - 1] != "\\") then
 	       break
@@ -362,7 +285,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
     let prev_type = null
     let working = cast_fn(0)
 
-    iterate original_bytes with byte
+    for original_bytes as byte
         # To keep things uniform and simple, all bytes must be the same length.
         if prev_type != null and gettype(byte) != prev_type then
             halt("All bytes must be the same size.")
@@ -371,7 +294,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
         working = working | (cast_fn(byte) << (target_bit_width - bit_len * (loop_index + 1)))
 
         prev_type = gettype(byte)
-    enditerate
+    endfor
 
     return working
 endfn
@@ -387,4 +310,8 @@ endfn
 
 fn get_time() returns Integer
     return __internal_get_time__()
+endfn
+
+fn round(v : Float, d : Integer = null) returns Float
+    return __internal_round__(v, d)
 endfn

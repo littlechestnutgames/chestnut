@@ -5,4 +5,6 @@ fn count_down (n : Integer)
     endif
 endfn
 
-count_down(3)
+fn main(variadic args : String)
+    count_down(3)
+endfn
