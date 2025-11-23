@@ -8,10 +8,10 @@ fn read_whole_file(path : String) returns String
     let str = ""
     loop
         let c = read_file_handle(handle, 1)
-        if c.error != null then
+        if c.error != null
             halt(c.error)
         endif
-        if length(c.value) == 0 then
+        if length(c.value) == 0
             break
         endif
         str += c.value
@@ -24,10 +24,10 @@ fn read_line(handle : FileHandle) returns Result
     let str = ""
     loop
         let c = read_file_handle(handle, 1)
-        if c.error != null then
+        if c.error != null
             return Result(null, c.error)
         endif
-        if length(c.value) == 0 or c.value == "\n" then
+        if length(c.value) == 0 or c.value == "\n"
             break
         endif
         str += c.value

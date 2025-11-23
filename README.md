@@ -61,7 +61,7 @@ let my_var = 1               # This is an illegal shadowing of my_var.
 
 # shadow syntax
 shadow my_var = 1            # This is an illegal shadowing. It took place in the same scope as declaration.
-if condition_expression then
+if condition_expression
     shadow my_var = 1        # This sets my_var in this scope to 1 with an inferred type of Integer.
     shadow my_var2 = false   # This sets my_var2 in this scope to false with an inferred type of Boolean.
 endif
@@ -144,10 +144,10 @@ if statements begin with `if` and end with `endif`. In between there are optiona
 #### Usage
 
 ```
-if condition_expression then
+if condition_expression
     # Inside these blocks is an isolated scope.
     # This is where your statements go.
-elif condition_expression2 then
+elif condition_expression2
     # More statements
 else
     # Even more statements
@@ -218,16 +218,16 @@ let my_string = "let my_string = \"Hello, world\" "
 let tokens = []
 let collected = ""
 for my_string as chr
-    if chr == " " then
-        if collected == "let" then
+    if chr == " "
+        if collected == "let"
             push(tokens, ["let", collected])
             collected = ""
             continue
-        elif collected[0] == "\"" and collected[length(collected)-1] == "\"" then
+        elif collected[0] == "\"" and collected[length(collected)-1] == "\""
             push(tokens, ["string", collected])
             collected = ""
             continue
-        elif collected == "=" then
+        elif collected == "="
             push(tokens, ["equals", collected])
             collected = ""
             continue
@@ -458,7 +458,7 @@ let a = [1]
 
 # pop's return is (Any, Error). How can we deal with it without destructuring?
 let b = pop(a)
-if b[1] != null then
+if b[1] != null
     print(b[1].message)
 endif
 
@@ -467,7 +467,7 @@ print(b[0]) # Prints 1
 
 # Let's pop again so an error happens, but this time use destructuring.
 let c, err = pop(a)
-if err != null then
+if err != null
     print(err.message)
 end
 

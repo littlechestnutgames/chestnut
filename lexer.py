@@ -82,7 +82,6 @@ token_trie.insert("elif", "Elif")
 token_trie.insert("else", "Else")
 token_trie.insert("loop", "Loop")
 token_trie.insert("over", "Over")
-token_trie.insert("then", "Then")
 token_trie.insert("true", "Boolean", ChestnutBoolean(True))
 token_trie.insert("when", "When")
 

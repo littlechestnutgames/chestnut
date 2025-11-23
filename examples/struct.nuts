@@ -32,7 +32,7 @@ endfn
 
 fn (mineral : Mineral) get_property_value(name : String) returns (Any, Error)
     for mineral.properties as property
-        if property.name == name then
+        if property.name == name
 	    return (property.value, null)
 	endif
     endfor
@@ -42,7 +42,7 @@ endfn
 
 fn (mineral : Mineral) get_property_value2(name : String) returns Result
     for mineral.properties as property
-        if property.name == name then
+        if property.name == name
 	    return Result(property.value, null)
 	endif
 	return Result(null, Error("Fall through case."))
@@ -96,10 +96,10 @@ fn main (variadic args : String)
     for minerals as mineral
         let properties = ""
         for mineral.properties as property
-            if properties != "" then
+            if properties != ""
 	        properties += ", "
 	    endif
-	    if loop_index == length(mineral.properties) - 1 then
+	    if loop_index == length(mineral.properties) - 1
 	        properties += "and "
 	    endif
 	    properties += "{{ property.name }}: {{ property.value }}"
@@ -120,7 +120,7 @@ fn main (variadic args : String)
     )
 
     let amethyst_special, err = amethyst.get_property_value("Special")
-    if err != null then
+    if err != null
         printline(err.message)
     else
         printline(amethyst_special(8.0))
@@ -129,7 +129,7 @@ fn main (variadic args : String)
     let amethyst_spocial, err2 = amethyst.get_property_value("Spocial")
     printline("err2 is {{ err2 }}")
     printline("null is {{ null }}")
-    if err2 != null then
+    if err2 != null
         printline(err2.message)
     else
         printline(amethyst_spocial(8.0))

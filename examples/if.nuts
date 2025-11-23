@@ -1,7 +1,7 @@
 fn main (variadic args : String)
-    if not true then
+    if not true
         printline("Here 1")
-    elif true then
+    elif true
         printline("Here 2")
     endif
 endfn

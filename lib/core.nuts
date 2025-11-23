@@ -29,14 +29,14 @@ fn unshift(l : List, item : Any)
 endfn
 
 fn pop(l : List) returns (Any, Error)
-    if length(l) == 0 then
+    if length(l) == 0
         return (null, Error("Attempt to pop an empty list"))
     endif
     return (remove(l, length(l)-1), null)
 endfn
 
 fn shift(l : List) returns (Any, Error)
-    if length(l) == 0 then
+    if length(l) == 0
         return (null, Error("Attempt to shift an empty list"))
     endif
     return (remove(l, 0), null)
@@ -87,7 +87,7 @@ endfn
 fn index_of(l : List, value : Any) returns Integer
     let found_idx = -1
     for l as item
-        if item == value then
+        if item == value
             found_idx = loop_index
             break
         endif
@@ -98,13 +98,13 @@ endfn
 fn range (start : Integer, end : Integer) returns List
     let r = []
 
-    if start < end then
+    if start < end
         let i = start
         while i < end
             push(r, i)
             i += 1
         endwhile
-    elif start > end then
+    elif start > end
         let i = start
         while i > end
             push(r, i)
@@ -129,7 +129,7 @@ fn slice (input : String, position_start : Integer, position_end : Integer = -1)
 endfn
 
 fn split(input : String, delimiter : String, number : Integer = -1) returns List
-    if number == 0 then
+    if number == 0
         return [input]
     endif
 
@@ -137,13 +137,13 @@ fn split(input : String, delimiter : String, number : Integer = -1) returns List
     let i = 0
     let built_str = ""
     while i < length(input)
-        if length(parts) < number or number < 0 then
+        if length(parts) < number or number < 0
             if input[i] != delimiter or
                (
                    i != 0 and
                    input[i] == delimiter and
                    input[i-1] == "\\"
-               ) then
+               )
                built_str += input[i]
             else
                 push(parts, built_str)
@@ -154,7 +154,7 @@ fn split(input : String, delimiter : String, number : Integer = -1) returns List
         endif
         i = i + 1
     endwhile
-    if built_str != "" then
+    if built_str != ""
         push(parts, built_str)
     endif
 
@@ -165,8 +165,8 @@ fn span (input : String, terminator : String) returns String
     let spanned_str = ""
     let i = 0
     while i < length(input)
-        if input[i] == terminator then
-	   if i == 0 or (i != 0 and input[i - 1] != "\\") then
+        if input[i] == terminator
+	   if i == 0 or (i != 0 and input[i - 1] != "\\")
 	       break
 	   endif
 	endif
@@ -270,14 +270,14 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
     endfn
     let cast_fn = get_cast_fn(target_bit_width)
     let original_len = length(original_bytes)
-    if original_len == 0 then
+    if original_len == 0
         return cast_fn(0)
     endif
 
     let bit_len = get_bit_width(original_bytes)
 
     # Guard from bits that won't fit into the target size.
-    if (bit_len * original_len) > target_bit_width then
+    if (bit_len * original_len) > target_bit_width
         halt("Original bytes cannot fit into target bit width.")
     endif
 
@@ -287,7 +287,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
 
     for original_bytes as byte
         # To keep things uniform and simple, all bytes must be the same length.
-        if prev_type != null and gettype(byte) != prev_type then
+        if prev_type != null and gettype(byte) != prev_type
             halt("All bytes must be the same size.")
         endif
 
@@ -300,8 +300,8 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
 endfn
 
 fn assert(condition : Boolean, ctx : Any = null)
-    if not condition then
-        if ctx != null then
+    if not condition
+        if ctx != null
             halt("Assertion failed: {{ ctx }}")
         endif
         halt("Assertion failed.")

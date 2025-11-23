@@ -67,14 +67,14 @@ fn (test : Test) run() returns TestResult
     let test_f = test.actual_fn
     let res = null
 
-    if not test.skipped then
+    if not test.skipped
         res = test_f()
     endif
 
     let mark = "F"
-    if test.skipped then
+    if test.skipped
         mark = "-"
-    elif test.expect == res then
+    elif test.expect == res
         mark = "."
     endif
 
@@ -111,8 +111,8 @@ fn (tr : TestResult) display_test_result()
 endfn
 
 fn (ts : TestSuite) display_simple()
-    if length(ts.tests) > 0 then
-        if length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0 then
+    if length(ts.tests) > 0
+        if length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0
             ts.run_tests()
         endif
         for ts.mixed_tests as test_result
@@ -127,23 +127,23 @@ fn (ts : TestSuite) display_results(show_skipped : Boolean = true, show_passed :
     let footer = "###############################################################################\n"
 
     let left_equals = length(ts.name)
-    if length(ts.tests) == 0 then
+    if length(ts.tests) == 0
         printline("No tests to run!")
         return null
-    elif length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0 then
+    elif length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0
         # Run the tests if they've not been run yet.
         ts.run_tests()
     endif
 
     printline(header)
-    if show_passed then
+    if show_passed
         printline("Passed : {{ length(ts.passed_tests) }}")
         for ts.passed_tests as passed_test_result
             passed_test_result.display_test_result()
         endfor
         print("\n")
     endif
-    if show_skipped then
+    if show_skipped
         printline("Skipped: {{ length(ts.skipped_tests) }}")
         for ts.skipped_tests as skipped_test_result
             skipped_test_result.display_test_result()

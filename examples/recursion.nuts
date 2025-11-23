@@ -1,5 +1,5 @@
 fn count_down (n : Integer)
-    if n > 0 then
+    if n > 0
 	printline(n)
         count_down(n - 1)
     endif

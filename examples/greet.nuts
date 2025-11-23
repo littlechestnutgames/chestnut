@@ -1,11 +1,11 @@
 fn greet()
-    printline("Enter one name per line as many times as you like, then a blank line.")
+    printline("Enter one name per line as many times as you like, a blank line.")
     let names = []
     let str = ""
     let running = true
     while running
         let name = readline()
-        if name == "" then
+        if name == ""
             running = false
         else
             push(names, name)
@@ -13,14 +13,14 @@ fn greet()
     endwhile
 
     while length(names) > 0
-        if str != "" then
+        if str != ""
             str += ", "
         endif
-        if length(names) == 1 then
+        if length(names) == 1
             str += "and "
         endif
         let n, err = shift(names)
-	if err != null then
+	if err != null
 	    return (null, err)
 	endif
         str = str + n

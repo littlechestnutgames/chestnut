@@ -551,11 +551,6 @@ class Parser:
         self.consume()
 
         if_condition_expression = self.parse_expression()
-        if not self.check_label("Then"):
-            raise SyntaxException("`then` missing after condition in if statement", self.peek())
-
-        # Consume then.
-        self.consume()
 
         if_statements = []
         while not self.check_labels(['Elif', 'Else', 'Endif']):
@@ -570,12 +565,6 @@ class Parser:
             self.consume()
             
             condition_expression = self.parse_expression()
-
-            if not self.check_label("Then"):
-                raise SyntaxException("`then` missing after condition in elif statement", self.peek())
-
-            # Consume then
-            self.consume()
 
             elif_statements = []
             while not self.check_labels(['Elif', 'Else', 'Endif']):

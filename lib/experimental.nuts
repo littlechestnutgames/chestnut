@@ -33,15 +33,15 @@ fn (h : Heap) heapify_down(idx : Integer)
    let heap_length = length(h.data)
    let compare_fn = h.compare
 
-   if lc_idx < heap_length and compare_fn(h.data[lc_idx], h.data[l_idx]) > 0 then
+   if lc_idx < heap_length and compare_fn(h.data[lc_idx], h.data[l_idx]) > 0
        l_idx = lc_idx
    endif
 
-   if rc_idx < heap_length and compare_fn(h.data[rc_idx], h.data[l_idx]) > 0 then
+   if rc_idx < heap_length and compare_fn(h.data[rc_idx], h.data[l_idx]) > 0
        l_idx = rc_idx
    endif
 
-   if l_idx != idx then
+   if l_idx != idx
        let tmp = h.data[idx]
        h.data[idx] = h.data[l_idx]
        h.data[l_idx] = tmp
@@ -51,12 +51,12 @@ endfn
 
 fn (h : Heap) extract() returns Result
     let heap_length = length(h.data)
-    if heap_length == 0 then
+    if heap_length == 0
         return Result(null, "Heap is empty.")
     endif
 
     let element = h.data[0]
-    if length(h.data) > 1 then
+    if length(h.data) > 1
         let last = remove(h.data, length(h.data)-1)
         h.data[0] = last
         h.heapify_down(0)
@@ -68,14 +68,14 @@ fn (h : Heap) extract() returns Result
 endfn
 
 fn (h : Heap) peek(idx : Integer) returns Result
-    if idx < 0 or idx > length(h.data) - 1 then
+    if idx < 0 or idx > length(h.data) - 1
         return Result(null, Error("Heap is empty."))
     endif
     return Result(h.data[idx], null)
 endfn
 
 fn new_heap(compare_fn : Function) returns Heap
-    if compare_fn == null then
+    if compare_fn == null
         halt("A compare function is required for the heap")
     endif
 
@@ -86,13 +86,13 @@ fn new_heap(compare_fn : Function) returns Heap
 endfn
 
 fn str_cmp (a : String, b : String) returns Integer
-    if a == b then
+    if a == b
         return 0
     endif
-    if a > b then
+    if a > b
         return -1
     endif
-    if a < b then
+    if a < b
         return 1
     endif
 endfn

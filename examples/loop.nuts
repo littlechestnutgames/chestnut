@@ -30,11 +30,11 @@ fn main (variadic args : String)
         loop
             printline("Outer {{ outer loop_index }}")
             printline("Inner {{ loop_index }}")
-            if loop_index == 1 then
+            if loop_index == 1
                 break
             endif
         endloop
-        if loop_index == 1 then
+        if loop_index == 1
             break
         endif
     endloop

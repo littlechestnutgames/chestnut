@@ -47,7 +47,7 @@ fn sha256(message : String) returns List
         let current_bit_length = length(message_bytes) * 8
         let remainder = current_bit_length % 512
         let padding_bits = 448 - remainder
-        if remainder > 448 then
+        if remainder > 448
             # This is in case we need to add a whole block of padding.
             padding_bits = 448 + (512 - remainder)
         endif
