@@ -190,7 +190,7 @@ class StructNode:
             params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL))
         self.function_register.register(BridgeFunction(Token("Identifier", "constructor", None, None), params))
         
-    def constructor(self):
+    def constructor(self, *args):
         name = self.definition.identifier.data
         properties = self.definition.properties
         struct_class = type(name, (ChestnutStruct,), {
@@ -198,7 +198,7 @@ class StructNode:
             "__init__": generate_struct_init(properties),
             "gettype": lambda self: name
         })
-        struct_instance = struct_class()
+        struct_instance = struct_class(*args)
         return struct_instance
 
 class StructMethodCall:
@@ -305,6 +305,12 @@ class SpreadArgs(ChestnutAny):
     def __repr__(self):
         return f"SpreadArgs(<{self.args}>)"
 
+    def __len__(self):
+        return len(self.args)
+
+    def __getitem__(self, index):
+        return self.args[index]
+
 class ReturnValue(BaseException):
     def __init__(self, value):
         self.value = value
@@ -342,12 +348,25 @@ class Evaluator:
             if varargs:
                 core_spec[mod]["varargs"] = varargs
         return core_spec
-    def get_local_script(self, script_name):
+    def resolve_module_path(self, script_name):
+        if isinstance(script_name, ChestnutString):
+            script_name = script_name.value
+        has_nuts = script_name.lower().endswith(".nuts")
+        script_name = script_name if has_nuts else script_name + ".nuts"
+        if script_name.startswith("./") or script_name.startswith("../"):
+            if not os.path.exists(script_name):
+                raise InternalException(f"Module at path {script_name} does not exist")
+            return script_name
         dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Resolve Chestnut library files first
+        if os.path.exists(f"{dir_path}{os.sep}lib{os.sep}{script_name}"):
+            return f"{dir_path}{os.sep}lib{os.sep}{script_name}"
+        elif not os.path.exists(f"{dir_path}{os.sep}{script_name}"):
+            raise InternalException(f"Module at path {script_name} does not exist")
         return f"{dir_path}{os.sep}{script_name}"
 
     def eval_library(self, path):
-        with open(self.get_local_script(path)) as new_import:
+        with open(self.resolve_module_path(path)) as new_import:
             tokens = lex("".join(new_import.readlines()))
             parser = Parser(tokens)
             ast = parser.parse_program()
@@ -509,7 +528,7 @@ class Evaluator:
     def visit_ImportStatementNode(self, node):
         if not isinstance(node, ImportStatementNode):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ImportStatementNode", node)
-        import_path = f"{os.getcwd()}{os.sep}{node.location.data}"
+        import_path = self.resolve_module_path(node.location.data)
         with open(import_path) as new_import:
             tokens = lex("".join(new_import.readlines()))
             parser = Parser(tokens)
@@ -768,6 +787,8 @@ class Evaluator:
         identifier = None
         func = None
         instance = None
+        receiver_name = None
+
         # if isinstance(callable, StructNode):
         #     method = "constructor"
         #     func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
@@ -775,9 +796,11 @@ class Evaluator:
             instance = callable.instance
             func = callable.func_object
             identifier = func.statement.target_struct.name.data
-            scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
-            first_scope = self.find_first_scope_containing(scope_key)
-            first_scope[identifier] = instance
+            receiver_name = identifier
+
+            # scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
+            # first_scope = self.find_first_scope_containing(scope_key)
+            # first_scope[identifier] = instance
 
         if isinstance(node.identifier, AnonymousFnExpressionNode):
             func = AnonymousFunction(node.identifier)
@@ -805,7 +828,7 @@ class Evaluator:
                 # We found a constant function, save the function reference.
                 func = func_scope["constant " + identifier]
         if isinstance(func, StructNode):
-            return func.constructor()
+            return func.constructor(*[self.evaluate(x) for x in node.params])
 
         if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, BridgeFunction):
             # Block function calls to other stored data.
@@ -854,11 +877,13 @@ class Evaluator:
 
         self.push_scope() 
 
+        if instance is not None and receiver_name is not None:
+            self.current_scope()[receiver_name] = instance
+
         params = []
         try:
             params = func.reconcile_parameters(self, node.params)
         except RuntimeException as e:
-            print(node.identifier.__class__.__name__)
             raise RuntimeException(e.message, node.identifier)
         for p in func.statement.parameters:
             self.current_scope()[p.name.data] = params[p.name.data]
@@ -944,7 +969,28 @@ class Evaluator:
             self.pop_scope()
         return
 
-    def visit_IterateStatementNode(self, node):
+    def visit_LoopStatementNode(self, node):
+        self.push_scope()
+        root_loop_scope = self.current_scope()
+        self.current_scope()["loop index"] = ChestnutInteger(0)
+        while True:
+            self.push_scope()
+            try:
+                for statement in node.statements:
+                    self.evaluate(statement)
+            except BreakLoop:
+                self.pop_scope()
+                break
+            except ContinueLoop:
+                root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
+                self.pop_scope()
+                continue
+            self.pop_scope()
+            root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
+        self.pop_scope()
+        del root_loop_scope["loop index"]
+
+    def visit_ForStatementNode(self, node):
         self.push_scope()
         subject = self.evaluate(node.subject)
         identifier = node.identifier
@@ -994,7 +1040,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
-        while not self.evaluate(node.condition):
+        while self.current_scope()["loop index"].value == 0 or not self.evaluate(node.condition):
             self.push_scope()
             try:
                 for statement in node.statements:

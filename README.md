@@ -13,19 +13,30 @@ Chestnut is a general-purpose programming language that aims to be robust and pr
 
 ## II Types
 
-| Type    | Example(s)               | Notes                                    |
-| ------- | ------------------------ | ---------------------------------------- |
-| Any     | 0                        | Represents ANY value. Even null.         |
-| Null    | null                     | For now. Maybe Removed later.            |
-| String  | "Hello"                  |                                          |
-| Boolean | true, false              |                                          |
-| Integer | 10                       | Inferred type of any non-decimal number. |
-| Float   | 3.14                     | Inferred type of any decimal number.     |
-| List    | [1, 2, 3]                | Provides index access and assignment     |
-| Tuple   | (1, 2, 3)                | Provides index access. Immutable.        |
-| Struct  | See struct section below | Provides a way to structure data.        | 
-| Result  | See error reporting      | Allows returning values and errors       | 
-| Error   | error("Error")           | A struct used for error reporting.       |
+| Type            | Example(s)               | Notes                                    |
+| --------------- | ------------------------ | ---------------------------------------- |
+| Any             | 0                        | Represents ANY value. Even null.         |
+| Null            | null                     | For now. Maybe Removed later.            |
+| String          | "Hello"                  |                                          |
+| Boolean         | true, false              |                                          |
+| Integer         | 10                       | Inferred type of any non-decimal number. |
+| Int8            | 10                       | Explicit type listing or cast            |
+| Int16           | 10                       | Explicit type listing or cast            |
+| Int32           | 10                       | Explicit type listing or cast            |
+| Int64           | 10                       | Explicit type listing or cast            |
+| Int128          | 10                       | Explicit type listing or cast            |
+| UnsignedInteger | N/A                      | Hierarchical classification only.        |
+| UInt8           | 10                       | Explicit type listing or cast            |
+| UInt16          | 10                       | Explicit type listing or cast            |
+| UInt32          | 10                       | Explicit type listing or cast            |
+| UInt64          | 10                       | Explicit type listing or cast            |
+| UInt128         | 10                       | Explicit type listing or cast            |
+| Float           | 3.14                     | Inferred type of any decimal number.     |
+| List            | [1, 2, 3]                | Provides index access and assignment     |
+| Tuple           | (1, 2, 3)                | Provides index access. Immutable.        |
+| Struct          | See struct section below | Provides a way to structure data.        | 
+| Result          | See error reporting      | Allows returning values and errors       | 
+| Error           | error("Error")           | A struct used for error reporting.       |
 
 
 ## III. Variable declaration
@@ -183,9 +194,9 @@ let d = use a over b unless b >= 10
 
 ## VI. Looping
 
-### iterate / with / enditerate & continue
+### for / as / endfor & continue
 
-An **iterate** statement loops over a List, Tuple, or String type. The `with` keyword specifies the local reference.
+A **for** block loops over a List, Tuple, or String type. The `as` keyword specifies the local reference.
 
 The following example also introduces the **continue** keyword, which skips the rest of the loop and goes to the next iteration.
 
@@ -193,20 +204,20 @@ The following example also introduces the **continue** keyword, which skips the 
 
 ```
 let my_numbers = [3, 2, 1]
-iterate my_numbers with number
+for my_numbers as number
     print(number)
-enditerate
+endfor
 
 let my_numbers2 = (1, 2, 3)
-iterate my_numbers2 with number
+for my_numbers2 as number
     print(number)
-enditerate
+endfor
 
 # An extremely simplistic lexer.
 let my_string = "let my_string = \"Hello, world\" "
 let tokens = []
 let collected = ""
-iterate my_string with chr
+for my_string as chr
     if chr == " " then
         if collected == "let" then
             push(tokens, ["let", collected])
@@ -227,7 +238,7 @@ iterate my_string with chr
         endif
     endif
     collected += chr
-enditerate
+endfor
 print(tokens[3]) # Prints "Hello, world"
 ```
 ### while & break
@@ -240,19 +251,19 @@ The following example also introduces the **break** keyword, which is used to br
 
 ```
 let i = 10
-while i > 0 repeat
+while i > 0
     print(i)
     i -= 1
 endwhile
 
-while true repeat
+while true
     print("Looping")
     break
 endwhile
 ```
 ### until & loop_index
 
-The **until** loop is the invert of the while loop, where it loops until a condition is true.
+The **until** loop is the invert of the while loop, where it loops until a condition is true. It is also guaranteed to execute at least once.
 
 The following example also introduces the **loop_index** keyword, as well as the **outer** unary as well as string interpolation.
 
@@ -271,11 +282,11 @@ Without further adieu, the usage.
 #### Usage:
 
 ```
-until loop_index == 1 repeat
-    until loop_index == 1 repeat
+do
+    do
         print("Outer loop_index: {{ outer loop_index }}, Inner loop_index: {{ loop_index }} ")
-    enduntil
-enduntil
+    until loop_index == 1
+until loop_index == 1
 ```
 
 ## VII. Structs
@@ -355,9 +366,9 @@ Variadic values allow the developer to use as many arguments of one type as they
 ### Example
 ```
 fn greet(variadic names : String)
-    iterate names with name
+    for names as name
         print("Hello {{ name }}. ")
-    enditerate
+    endfor
 endfn
 greet("Chestnut", "User") # Prints Hello Chestnut. Hello User.
 ```
@@ -367,9 +378,9 @@ Anonymous functions are specified by leaving off the variable label. These are c
 ### Example
 ```
 let a = fn (variadic names : String)
-    iterate names with name
+    for names as name
         print("Hello {{ name }}. ")
-    enditerate
+    endfor
 endfn
 
 a()
@@ -408,9 +419,9 @@ diamond.add_property("Hardness", 10)
 ruby.add_property("Hardness", 7)
 
 let minerals = [diamond, ruby]
-iterate minerals with mineral
+for minerals as mineral
     print("{{ mineral.name }}: {{ mineral.properties[0].name }} - {{ mineral.properties[0].value }}")
-enditerate
+endfor
 ```
 
 Ok. So, functions can have parameters that can default or be variadic return values, and even do a receiver pattern. What else?

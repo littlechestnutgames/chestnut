@@ -10,23 +10,23 @@ level_one calls level 2, which also shadows `a`.
 We are able to retrieve the value in global `a` by using `outer a`
 because functions capture their defining scopes.
 ###
+fn main (variadic args : String)
+    let a = 10 
 
-let a = 10 
+    fn level_two (b : Integer) returns Integer
+        shadow a = 30 
 
-fn level_two (b : Integer) returns Integer
-    shadow a = 30 
-
-    let global_a = outer a
+        let global_a = outer a
     
-    return global_a + a + b
-endfn
+        return global_a + a + b
+    endfn
 
-fn level_one (b : Integer) returns Integer
-    shadow a = 20
+    fn level_one (b : Integer) returns Integer
+        shadow a = 20
     
-    return level_two(b)
+        return level_two(b)
+    endfn
+
+    let final_result = level_one(5)
+    printline("Final result (Expected 45): {{ final_result }}")
 endfn
-
-let final_result = level_one(5)
-printline("Final result (Expected 45): {{ final_result }}")
-

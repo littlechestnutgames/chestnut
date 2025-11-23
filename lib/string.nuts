@@ -1,0 +1,14 @@
+fn repeat(s : String, times : Integer = 0) returns String
+    let str = s
+    while loop_index < more_times
+        str += s
+    endwhile
+    return str
+endfn
+
+fn wrap(s : String, string_len : Integer) returns String
+    let i = 0
+    while i < length(s)
+        
+    endwhile
+endfn

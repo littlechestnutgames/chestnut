@@ -1,0 +1,4 @@
+fn main(variadic args : String)
+    let x : UInt8 = 0
+    let y, z = (0, 0)
+endfn

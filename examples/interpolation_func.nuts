@@ -1,3 +1,5 @@
-let a = "Hello {{ (fn () returns String print("Testing ") return "world" endfn)() }}!"
-printline(a)
+fn main (variadic args : String)
+    let a = "Hello {{ (fn () returns String print("Testing ") return "world" endfn)() }}!"
+    printline(a)
+endfn
 

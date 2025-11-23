@@ -1,16 +1,18 @@
-let res = 0
-fn add_one(val : Integer) returns Result
-    return new_result(val + 1, null)
+fn main(variadic args : String)
+    let res = 0
+    fn add_one(val : Integer) returns Result
+        return Result(val + 1, null)
+    endfn
+
+    let initial_result = Result(5, null)
+
+    let final_result = initial_result
+        .and_then(add_one)
+        .and_then(add_one)
+
+    # Expected Output: The number 7
+    printline("Final value: {{ final_result.value }}")
+
+    # Expected Output: null
+    printline("Error value: {{ final_result.error }}")
 endfn
-
-let initial_result = new_result(5, null)
-
-let final_result = initial_result
-    .and_then(add_one)
-    .and_then(add_one)
-
-# Expected Output: The number 7
-printline("Final value: {{ final_result.value }}")
-
-# Expected Output: null
-printline("Error value: {{ final_result.error }}")

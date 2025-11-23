@@ -1,26 +1,45 @@
-printline("Iterate loop:")
-let a = ["Zero", "One"]
-iterate a with item
-    iterate a with item2
-        printline("Items: {{ item }} {{ item2 }}")
-        printline("Outer: {{ outer loop_index }}")
-	printline("Inner: {{ loop_index }}")
-    enditerate
-enditerate
+fn main (variadic args : String)
+    printline("For loop:")
+    let a = ["Zero", "One"]
+    for a as item
+        for a as item2
+            printline("Items: {{ item }} {{ item2 }}")
+            printline("Outer: {{ outer loop_index }}")
+	    printline("Inner: {{ loop_index }}")
+        endfor
+    endfor
 
-printline("While loop:")
-while loop_index < 2 repeat
-    while loop_index < 2 repeat
-         printline("Outer {{ outer loop_index }}")
-         printline("Inner {{ loop_index }}")
+    printline("While loop:")
+    while loop_index < 2
+        while loop_index < 2
+            printline("Outer {{ outer loop_index }}")
+            printline("Inner {{ loop_index }}")
+        endwhile
     endwhile
-endwhile
 
-printline("Until Loop")
-until loop_index > 1 repeat
-    until loop_index > 1 repeat
-         printline("Outer {{ outer loop_index }}")
-         printline("Inner {{ loop_index }}")
-    enduntil
-enduntil
+    printline("Until Loop")
+    do
+        do
+            printline("Outer {{ outer loop_index }}")
+            printline("Inner {{ loop_index }}")
+        until loop_index > 1
+    until loop_index > 1
 
+    printline("Loop loop")
+    loop
+        loop
+            printline("Outer {{ outer loop_index }}")
+            printline("Inner {{ loop_index }}")
+            if loop_index == 1 then
+                break
+            endif
+        endloop
+        if loop_index == 1 then
+            break
+        endif
+    endloop
+
+    do
+        printline("Until looped.")
+    until loop_index > -1
+endfn

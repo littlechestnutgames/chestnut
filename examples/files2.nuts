@@ -2,17 +2,17 @@ fn log_error(e : Error) returns Error
     printline("[ERROR] {{ e.message }}")
     return e
 endfn
+fn main(variadic args : String)
+    open_file("examples/my_file2", "w")
+        .catching(printline)
+        .and_then(write_file_handle, "This is a test")
+        .tap(printline, "Done writing examples/my_file2.")
 
-open_file("examples/my_file2", "w")
-    .catching(printline)
-    .and_then(write_file_handle, "This is a test")
-    .tap(printline, "Done writing examples/my_file2.")
+    delete_file("examples/my_file2")
+        .catching(log_error)
+        .tap(printline, "Done deleting my_file2")
 
-delete_file("examples/my_file2")
-    .catching(log_error)
-    .tap(printline, "Done deleting my_file2")
-
-delete_file("examples/my_file2")
-    .catching(log_error)
-    .tap(print, "This line won't happen")
-
+    delete_file("examples/my_file2")
+        .catching(log_error)
+        .tap(print, "This line won't happen")
+endfn

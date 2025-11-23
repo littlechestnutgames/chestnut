@@ -251,17 +251,27 @@ class WhileStatementNode:
     def get_name(self):
         return "while"
 
-class IterateStatementNode:
+class ForStatementNode:
     def __init__(self, subject, identifier, statements):
         self.subject = subject
         self.identifier = identifier
         self.statements = statements
 
     def __repr__(self):
-        return f"IterateStatementNode(<{self.subject}>, <{self.identifier}>, <{self.statements}>)"
+        return f"ForStatementNode(<{self.subject}>, <{self.identifier}>, <{self.statements}>)"
 
     def get_name(self):
-        return "iterate"
+        return "for"
+
+class LoopStatementNode:
+    def __init__(self, statements):
+        self.statements = statements
+
+    def __repr__(self):
+        return f"LoopStatementNode(<{self.statements}>)"
+
+    def get_name(self):
+        return "loop"
 
 class ListLiteralNode:
     def __init__(self, elements):
@@ -381,6 +391,7 @@ class Parser:
         self.current = None
         self.next = None
         self.consume()
+        self.execution_scope_level = 0
 
     def consume(self):
         token = self.current
@@ -420,10 +431,12 @@ class Parser:
             statement = self.parse_case_statement()
         elif token and token.label == "While":
             statement = self.parse_while_statement()
-        elif token and token.label == "Until":
+        elif token and token.label == "Do":
             statement = self.parse_until_statement()
-        elif token and token.label == "Iterate":
-            statement = self.parse_iterate_statement()
+        elif token and token.label == "Loop":
+            statement = self.parse_loop_statement()
+        elif token and token.label == "For":
+            statement = self.parse_for_statement()
         elif token and token.label == "Return":
             statement = self.parse_return_statement()
         elif token and token.label == "Break":
@@ -442,6 +455,8 @@ class Parser:
         return statement
 
     def parse_let_statement(self):
+        if not self.check_label("Constant") and self.execution_scope_level < 1:
+            raise SyntaxException("let cannot be used outside of fn statements.", self.peek())
         let_token = self.consume()
         name_token = None
         explicit_type = None
@@ -530,6 +545,8 @@ class Parser:
         return ImportStatementNode(keyword, location, imports)
 
     def parse_if_statement(self):
+        if self.execution_scope_level < 1:
+            raise SyntaxException("If statements cannot be in global scope", self.peek())
         # Consume the if
         self.consume()
 
@@ -724,6 +741,7 @@ class Parser:
     def parse_fn_statement(self):
         # Consume fn token
         self.consume()
+        self.execution_scope_level += 1
         struct_params = None
         if self.check_label("LParen"):
             struct_params = self.pull_params()
@@ -757,6 +775,7 @@ class Parser:
             raise SyntaxException(f"Unexpected end of input, expected endfn for fn {name.data}", self.peek())
         self.consume() # Consume Endfn
 
+        self.execution_scope_level -= 1
         if struct_params is not None and struct_params != fn_params:
             if name is None:
                 raise SyntaxException("Expected function identifier for struct method", struct_params)
@@ -768,6 +787,11 @@ class Parser:
         return FnStatementNode(name, fn_params, statements, return_types, brings)
     
     def parse_case_statement(self):
+        if self.execution_scope_level < 1:
+            raise SyntaxException(
+                f"Case statements are not allowed in global scope'{identifier.data}'", 
+                identifier
+            )
         self.consume()
 
         subject = self.parse_expression()
@@ -803,14 +827,14 @@ class Parser:
         return CaseStatementNode(subject, when_blocks, otherwise)
     
     def parse_while_statement(self):
+        if self.execution_scope_level < 1:
+            raise SyntaxException(
+                f"While statements must be nested in functions", 
+                self.peek()
+            )
         self.consume()
 
         condition = self.parse_expression()
-
-        if not self.check_label("Repeat"):
-            raise SyntaxException("Expected repeat after condition in until statement", self.peek())
-
-        self.consume()
 
         statements = []
         while not self.check_label("Endwhile"):
@@ -824,23 +848,23 @@ class Parser:
         return WhileStatementNode(condition, statements)
 
     def parse_until_statement(self):
-        self.consume()
-
-        condition = self.parse_expression()
-
-        if self.peek() and self.peek().label != "Repeat":
-            raise SyntaxException("Expected repeat after condition in until statement", self.peek())
-
-        self.consume()
+        if self.execution_scope_level < 1:
+            raise SyntaxException(
+                f"Until statements must be nested in functions", 
+                self.peek()
+            )
+        self.consume() # Consume the do token.
 
         statements = []
-        while self.peek() and self.peek().label != "Enduntil":
+        while self.peek() and self.peek().label != "Until":
             statements.append(self.parse_statement())
         
-        if self.peek() and self.peek().label != "Enduntil":
+        if self.peek() and self.peek().label != "Until":
             raise SyntaxException("Unexpected end of input, unterminated until block", self.peek())
         
         self.consume()
+
+        condition = self.parse_expression()
 
         return UntilStatementNode(condition, statements)
     
@@ -853,27 +877,38 @@ class Parser:
     def check_next_label(self, label):
         return self.peek_next() and self.peek_next().label == label
 
-    def parse_iterate_statement(self):
-        self.consume() # consume iterate
+    def parse_loop_statement(self):
+        self.consume()
+
+        statements = []
+        while not self.check_label("Endloop"):
+            statements.append(self.parse_statement())
+        if not self.check_label("Endloop"):
+            raise SyntaxException("Unexpected end of input, loop block missing endloop", self.peek())
+        self.consume()
+        return LoopStatementNode(statements)
+
+    def parse_for_statement(self):
+        self.consume() # consume for
 
         subject = self.parse_expression()
 
-        if not self.check_label("With"):
-            raise SyntaxException("Expected keyword with in iterate block", self.peek())
-        self.consume() # consume with.
+        if not self.check_label("As"):
+            raise SyntaxException("Expected keyword as in for block", self.peek())
+        self.consume() # consume as.
 
         if not self.check_label("Identifier"):
-            raise SyntaxException(f"Expected identifier after with, got {self.peek().label}", self.peek())
+            raise SyntaxException(f"Expected identifier after as, got {self.peek().label}", self.peek())
         
         identifier = self.consume()
         statements = []
-        while not self.check_label("Enditerate"):
+        while not self.check_label("Endfor"):
             statements.append(self.parse_statement())
 
-        if not self.check_label("Enditerate"):
-            raise SyntaxException("Unexpected end of input, iterate block missing enditerate", self.peek())
+        if not self.check_label("Endfor"):
+            raise SyntaxException("Unexpected end of input, for block missing endfor", self.peek())
         self.consume()
-        return IterateStatementNode(subject, identifier, statements)
+        return ForStatementNode(subject, identifier, statements)
     
     def parse_return_statement(self):
         self.consume() # Consume return
@@ -1071,6 +1106,11 @@ class Parser:
         return LoopindexExpressionNode()
 
     def parse_readline(self):
+        if self.execution_scope_level < 1:
+            raise SyntaxException(
+                f"While statements must be nested in functions", 
+                self.peek()
+            )
         self.consume()
         if not self.check_label("LParen"):
             raise SyntaxException(f"Expected '(' in readline call, get {self.peek().label}", self.peek())
@@ -1156,6 +1196,12 @@ class Parser:
             identifier = self.consume()
 
             if self.check_label("LParen"):
+
+                if self.execution_scope_level < 1:
+                    raise SyntaxException(
+                        f"Function calls must be nested in functions", 
+                        self.peek()
+                    )
                 self.consume()
                 params = []
                 while not self.check_label("RParen"):

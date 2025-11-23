@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 from lexer import lex
-from parser import Parser
-from evaluator import Evaluator
+from parser import (Parser, CallStatementNode, UnaryOperationNode, ListLiteralNode)
+from evaluator import (Evaluator, SpreadArgs)
 from analyzer import Analyzer
+from chestnut_types import (ChestnutString, ChestnutList)
+from token_types import(Token, TokenType)
 
 import sys
 
@@ -27,6 +29,26 @@ if __name__ == "__main__":
             evaluator = Evaluator()
             for node in ast:
                 evaluator.evaluate(node)
+
+            # If we had a main function defined, execute it.
+            main_scope = evaluator.find_first_scope_containing("main")
+            if main_scope != None:
+                main = main_scope["main"]
+                identifier = main.statement.name
+
+                tokens = [Token("Spread", "spread", 0, 0), Token("LBrace", "[", 0, 0)]
+                for x in sys.argv:
+                    if len(tokens) > 2:
+                        tokens.append(Token("Comma", ",", 0, 0))
+                    tokens.append(Token("String", ChestnutString(x), 0, 0))
+                tokens.append(Token("RBrace", "]", 0, 0))
+                p = Parser(tokens)
+
+                expr = p.parse_expression()
+
+                evaluator.evaluate(CallStatementNode(identifier, [expr]))
+            else:
+                print("No main function defined.")
 
     else:
         print("Nothing to evaluate")

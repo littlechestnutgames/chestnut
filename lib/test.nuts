@@ -1,8 +1,9 @@
 struct Test
     label : String
     expect : Any
-    actual : Any
+    actual_fn : Function 
     skipped : Boolean
+    iterations : Integer
 endstruct
 
 struct TestSuite
@@ -17,13 +18,18 @@ endstruct
 struct TestResult
     test : Test
     result : String
+    mark : String
+    start_time : Integer
+    end_time : Integer
 endstruct
 
-fn new_test(lable: String, expect : Any, actual : Any, skip : Boolean = false) returns Test
+fn new_test(label: String, expect : Any, actual_fn : Any, skip : Boolean = false, iterations : Integer = 1) returns Test
     let test = Test()
     test.label = label
     test.expect = expect
-    test.actual = actual
+    test.actual_fn = actual_fn
+    test.iterations = iterations
+
     return test
 endfn
 
@@ -39,23 +45,42 @@ fn new_test_suite(suite_name : String)
     return test_suite
 endfn
 
-fn new_test_result(test : Test, result : result)
+fn new_test_result(test : Test, result : String, mark : String, start_time : Integer, end_time : Integer)
     let test_result = TestResult()
     test_result.test = test
     test_result.result = result
+    test_result.mark = mark
+    test_result.start_time = start_time
+    test_result.end_time = end_time
 
     return test_result
 endfn
 
-fn (ts : TestSuite) add_test(label : String, expect :Any, actual : Any, skipped : Boolean = false)
-    let test = new_test(label, expect, actual, skipped)
+fn (ts : TestSuite) add_test_fn(label : String, expect : Any, actual_fn : Any, skipped : Boolean = false, iterations : Integer = 1)
+    let test = new_test(label, expect, actual_fn, skipped, iterations)
     push(ts.tests, test)
 endfn
 
-fn (t : Test) run() returns TestResult
-    let res = perform_test(t.label, t.expect, t.actual, t.skipped)
+fn (test : Test) run() returns TestResult
+    let start_time = get_time()
 
-    return new_test_result(t, res)
+    let test_f = test.actual_fn
+    let res = null
+
+    if not test.skipped then
+        res = test_f()
+    endif
+
+    let mark = "F"
+    if test.skipped then
+        mark = "-"
+    elif test.expect == res then
+        mark = "."
+    endif
+
+    let end_time = get_time()
+
+    return new_test_result(test, res, mark, start_time, end_time)
 endfn
 
 fn (ts : TestSuite) run_tests()
@@ -63,9 +88,9 @@ fn (ts : TestSuite) run_tests()
     ts.skipped_tests = []
     ts.failed_tests = []
     ts.mixed_tests = []
-    iterate ts.tests with test
+    for ts.tests as test
         let test_result = test.run()
-        case test_result.result
+        case test_result.mark
         when "."
             push(ts.passed_tests, test_result)
             push(ts.mixed_tests, test_result)
@@ -78,11 +103,11 @@ fn (ts : TestSuite) run_tests()
         otherwise
             halt("Unknown report result \"{{ test_result }}\"")
         endcase
-    enditerate
+    endfor
 endfn
 
 fn (tr : TestResult) display_test_result()
-    printline("* \"{{ tr.test.label }}\"")
+    printline("* \"{{ tr.test.label }}\" - took {{ round(tr.end_time - tr.start_time, 4) }}s")
 endfn
 
 fn (ts : TestSuite) display_simple()
@@ -90,9 +115,9 @@ fn (ts : TestSuite) display_simple()
         if length(ts.passed_tests) + length(ts.skipped_tests) + length(ts.failed_tests) == 0 then
             ts.run_tests()
         endif
-        iterate ts.mixed_tests with test_result
-            print(test_result.result)
-        enditerate
+        for ts.mixed_tests as test_result
+            print(test_result.mark)
+        endfor
         print("\n")
     endif
 endfn
@@ -113,40 +138,29 @@ fn (ts : TestSuite) display_results(show_skipped : Boolean = true, show_passed :
     printline(header)
     if show_passed then
         printline("Passed : {{ length(ts.passed_tests) }}")
-        iterate ts.passed_tests with passed_test_result
+        for ts.passed_tests as passed_test_result
             passed_test_result.display_test_result()
-        enditerate
+        endfor
         print("\n")
     endif
     if show_skipped then
         printline("Skipped: {{ length(ts.skipped_tests) }}")
-        iterate ts.skipped_tests with skipped_test_result
+        for ts.skipped_tests as skipped_test_result
             skipped_test_result.display_test_result()
-        enditerate
+        endfor
         print("\n")
     endif
     printline("Failed : {{ length(ts.failed_tests) }}")
-    iterate ts.failed_tests with failed_test_result
+    for ts.failed_tests as failed_test_result
         failed_test_result.display_test_result()
-    enditerate
+    endfor
     print("\n")
     printline(footer)
 endfn
 
-fn perform_test(label : String, expect : Any, actual : Any, skipped : Boolean = false) returns String
-    if skipped then
-        return "-"
-    elif expect == actual then
-        return "."
-    endif
-
-    printline("label {{ label }}. expect {{ expect }} == {{ actual }}")
-    return "F"
-endfn
-
-fn assert_test(label : String, expect : Any, actual : Any)
-    print("\nLabel: {{ label }}\n===============================================================================\nExpect: {{ expect }}\nActual: {{ actual }}\n")
-    assert(expect, actual)
+fn assert_test(label : String, expect : Any, actual_fn : Any)
+    print("\nLabel: {{ label }}\n===============================================================================\nExpect: {{ expect }}\nactual_fn: {{ actual_fn }}\n")
+    assert(expect, actual_fn)
 endfn
 
 

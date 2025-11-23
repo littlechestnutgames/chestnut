@@ -1,35 +1,30 @@
-# Quick Test for CaseStatementNode Visitor Refactor
+fn main(variadic args : String)
+    let favorite_fruit = "Apple"
+    let result_color = ""
 
-# 1. Setup the main expression and result variable
-let favorite_fruit = "Apple"
-let result_color = ""
+    case favorite_fruit
+        when "Banana"
+            result_color = "Yellow"
+        when "Apple"
+            result_color = "Red"
+        when "Orange"
+            result_color = "Orange"
+        otherwise
+            result_color = "Unknown"
+    endcase
 
-# 2. Test the case block for a match ("Apple" -> "Red")
-case favorite_fruit
-    when "Banana"
-        result_color = "Yellow"
-    when "Apple"
-        # This is the expected match path
-        result_color = "Red"
-    when "Orange"
-        result_color = "Orange"
-    otherwise
-        result_color = "Unknown"
-endcase
+    let favorite_number = 42
+    let number_category = ""
 
-# 3. Test the otherwise fallback (42 falls through to "High")
-let favorite_number = 42
-let number_category = ""
+    case favorite_number
+        when 10
+            number_category = "Low"
+        when 20
+            number_category = "Medium"
+        otherwise
+            number_category = "High"
+    endcase
 
-case favorite_number
-    when 10
-        number_category = "Low"
-    when 20
-        number_category = "Medium"
-    otherwise
-        number_category = "High"
-endcase
-
-# Output the results
-printline("Fruit color: {{ result_color }}")
-printline("Number category: {{ number_category }}")
+    printline("Fruit color: {{ result_color }}")
+    printline("Number category: {{ number_category }}")
+endfn

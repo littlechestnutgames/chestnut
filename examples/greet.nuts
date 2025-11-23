@@ -3,7 +3,7 @@ fn greet()
     let names = []
     let str = ""
     let running = true
-    while running repeat
+    while running
         let name = readline()
         if name == "" then
             running = false
@@ -12,7 +12,7 @@ fn greet()
         endif
     endwhile
 
-    while length(names) > 0 repeat
+    while length(names) > 0
         if str != "" then
             str += ", "
         endif
@@ -28,4 +28,6 @@ fn greet()
     printline("Hello {{ str }}")
 endfn
 
-greet()
+fn main (variadic args : String)
+    greet()
+endfn

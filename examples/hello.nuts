@@ -1,1 +1,3 @@
-printline("Hello")
+fn main(variadic args : String)
+    printline("Hello")
+endfn

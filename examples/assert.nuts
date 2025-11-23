@@ -1,4 +1,6 @@
-let a = 5
-let b = 2
-assert(b < 6, "b isn't less than 6")
-assert(a > 6, "a isn't greater than 6")
+fn main(variadic args : String)
+    let a = 5
+    let b = 2
+    assert(b < 6, "b isn't less than 6")
+    assert(a > 6, "a isn't greater than 6")
+endfn
