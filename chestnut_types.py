@@ -204,7 +204,7 @@ class ChestnutString(ChestnutAny):
         return len(self.value)
 
     def __repr__(self):
-        return f"ChestnutString({self.value})"
+        return '"' + self.value + '"'
 
     def __bool__(self):
         return len(self.value) > 0
@@ -331,6 +331,9 @@ class ChestnutNumber(ChestnutAny):
 
     def rightside_greater_than_or_equal_to(self, other):
         return ChestnutBoolean(self.__rge__(other))
+
+    def __repr__(self):
+        return str(self.value)
 
 class ChestnutInteger(ChestnutNumber):
     BIT_WIDTH = -1

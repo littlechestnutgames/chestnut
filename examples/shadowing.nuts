@@ -1,15 +1,17 @@
-let capture_target = 10
+fn main (variadic args : String)
+    let capture_target = 10
 
-fn new_func_with_shadow() returns Function
-    return fn (local_val : Integer) brings(capture_target) returns Integer
-        # This shadow should override the brings variable.
-        shadow capture_target = 50 
+    fn new_func_with_shadow() returns Function
+        return fn (local_val : Integer) brings(capture_target) returns Integer
+            # This shadow should override the brings variable.
+            shadow capture_target = 50 
         
-        # This ensures the internal reference to the captured variable is used.
-        return capture_target + local_val
+            # This ensures the internal reference to the captured variable is used.
+            return capture_target + local_val
+        endfn
     endfn
-endfn
 
-let closed_func = new_func_with_shadow()
-printline("Test 1 (Expected 55): {{ closed_func(5) }}")
-printline("Test 2 (Expected 10): {{ capture_target }}")
+    let closed_func = new_func_with_shadow()
+    printline("Test 1 (Expected 55): {{ closed_func(5) }}")
+    printline("Test 2 (Expected 10): {{ capture_target }}")
+endfn

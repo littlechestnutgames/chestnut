@@ -54,9 +54,9 @@ fn (h : HashMap) resize(new_size : Integer)
 
     # Initialize new buckets at 2 ** new_size size.
     let buckets = []
-    iterate range(0, 2**new_size) with bucket
+    for range(0, 2**new_size) as bucket
         push(buckets, [])
-    enditerate
+    endfor
 
     # Reset metadata and set buckets.
     h.size = new_size
@@ -65,11 +65,11 @@ fn (h : HashMap) resize(new_size : Integer)
 
     # Insert the old bucket data.
     if old_buckets != null then
-        iterate old_buckets with bucket
-            iterate bucket with entry
+        for old_buckets as bucket
+            for bucket as entry
                 h.set(entry.key, entry.value)
-            enditerate
-        enditerate
+            endfor
+        endfor
     endif
 endfn
 
@@ -80,10 +80,10 @@ fn (h : HashMap) hash(key : String) returns Integer
     constant FNV_prime = uint64(1099511628211)
 
     # Calculate the hash
-    iterate uint64(key) with byte
+    for uint64(key) as byte
         idx = uint64(idx ^ byte)
         idx = idx * FNV_prime
-    enditerate
+    endfor
 
     # Apply the mask.
     return idx & (uint64(2 ** h.size) - uint64(1))
@@ -101,14 +101,14 @@ fn (h : HashMap) set(key : String, value : Any)
     let found = false
 
     # Find an existing key
-    iterate h.buckets[bucket_index] with item
+    for h.buckets[bucket_index] as item
         if item.key == key then
             # Update the key and mark it as found so we don't insert a duplicate
             item.value = value
             found = true
             break
         endif
-    enditerate
+    endfor
 
     # If now found, we have to insert a new key.
     if not found then
@@ -125,11 +125,11 @@ fn (h : HashMap) unset(key : String) returns Result
     let idx = -1
 
     # Fine the key in the bucket
-    iterate h.buckets[bucket_index] with item
+    for h.buckets[bucket_index] as item
         if item.key == key then
             idx = loop_index
         endif
-    enditerate
+    endfor
     
     if idx != -1 then
         # If we found the key, pop it from the bucket
@@ -151,7 +151,7 @@ fn (h : HashMap) unset(key : String) returns Result
         return Result(res, null)
     else
         # Tell them we couldn't find it.
-        return Result(null, error("Key not found"))
+        return Result(null, Error("Key not found"))
     endif
 endfn
 
@@ -163,13 +163,13 @@ fn (h : HashMap) get(key : String, default : Any = null) returns Any
     let found = false
 
     # Find the key in the bucket
-    iterate h.buckets[bucket_index] with item
+    for h.buckets[bucket_index] as item
         if item.key == key then
             kv_value = item.value
             found = true
             break
         endif
-    enditerate
+    endfor
     
     # Return the KV or the default value.
     return use kv_value over default unless not found

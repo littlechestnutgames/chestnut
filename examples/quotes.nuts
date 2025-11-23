@@ -1,0 +1,12 @@
+fn main(variadic args : String)
+    let str1 = "Test ` Wow"
+    let str2 = 'Test2"this is cool.'
+    let str3 = `"Test3 Pretty heckin' awesome" - Some guy`
+    let str4 = `'"\``
+    let str5 = '\'"`'
+    let str6 = "'\"`"
+    printline(str1, str2, str3)
+    printline(str4)
+    printline(str5)
+    printline(str6)
+endfn

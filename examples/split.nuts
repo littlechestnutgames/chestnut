@@ -1,3 +1,5 @@
-let s = "This,is,a,split"
-let p = split(s, ",", 2)
-printline(p)
+fn main (variadic args : String)
+    let s = "This,is,a,split"
+    let p = split(s, ",", 2)
+    printline(p)
+endfn

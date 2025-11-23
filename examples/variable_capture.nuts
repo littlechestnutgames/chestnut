@@ -9,11 +9,13 @@ fn make_counter (start_value : Number) returns Function
     return increment
 endfn
 
-let counter_a = make_counter(10)
-printline(counter_a()) # Should print 11
-printline(counter_a())
-printline(counter_a())
-printline(counter_a())
-printline(counter_a())
-printline(counter_a())
-printline(counter_a()) # 17
+fn main (variadic args : String)
+    let counter_a = make_counter(10)
+    printline(counter_a()) # Should print 11
+    printline(counter_a())
+    printline(counter_a())
+    printline(counter_a())
+    printline(counter_a())
+    printline(counter_a())
+    printline(counter_a()) # 17
+endfn

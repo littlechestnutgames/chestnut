@@ -1,0 +1,63 @@
+struct Result
+    value : Any
+    error : Error
+endstruct
+
+fn new_result_from_tuple(tuple : Any) returns Result
+    if length(tuple) < 2 then
+        return Result(null, Error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
+    endif
+    let success, err = tuple
+    return Result(success, err)
+endfn
+
+fn (result : Result) unwrap (default_value : Any) returns Any
+    return use result.value
+               over default_value
+               unless result.error != null
+endfn
+
+fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
+    if result.error != null or result.value == null then
+        return result
+    endif
+    let call_result = func(result.value, spread params)
+    if gettype(call_result) == "Result" then
+        return call_result
+    else
+        return Result(call_result, null)
+    endif
+endfn
+
+fn (result : Result) tap (func : Function, variadic params : Any) returns Result
+    if result.error != null or result.value == null then
+        return result
+    endif
+    let call_result = func(spread params)
+    if gettype(call_result) == "Result" then
+        return call_result
+    else
+        return Result(call_result, null)
+    endif
+endfn
+
+fn (result: Result) catching (func : Function, variadic params : Any) returns Result
+    if result.error != null then
+        let call_result = func(result.error, spread params)
+        if gettype(call_result) == "Result" then
+            return call_result
+        else
+            return Result(null, call_result)
+        endif
+    else
+        return result
+    endif
+endfn
+
+fn (result : Result) unwrap_or_fallback (func : Function) returns Any
+   if result.error == null then
+       return result.value
+   endif
+   return func(result.error)
+endfn
+

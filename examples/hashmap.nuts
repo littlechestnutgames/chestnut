@@ -1,8 +1,10 @@
-import "lib/collections.nuts"
+import "collections"
 
-let hm = new_hashmap()
-hm.set("Hello", "World")
+fn main (variadic args : String)
+    let hm = new_hashmap()
+    hm.set("Hello", "World")
 
-printline(hm.get("Hello"))
-hm.unset("Hello")
-printline(hm.get("Hello"))
+    printline(hm.get("Hello"))
+    hm.unset("Hello")
+    printline(hm.get("Hello"))
+endfn

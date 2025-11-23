@@ -1,10 +1,12 @@
-let a = use true over false
-printline(a) # Should be true
+fn main (variadic args : String)
+    let a = use true over false
+    printline(a) # Should be true
 
-let b = null
-let c = use b over a
-printline(c) # Should be true
+    let b = null
+    let c = use b over a
+    printline(c) # Should be true
 
-let d = 5
-let e = use 100 over d unless d > 10
-printline(e) # Should be 100
+    let d = 5
+    let e = use 100 over d unless d > 10
+    printline(e) # Should be 100
+endfn

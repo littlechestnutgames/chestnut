@@ -40,7 +40,6 @@ class Trie:
 token_trie = Trie()
 
 # 10 character sequences
-token_trie.insert("enditerate", "Enditerate")
 token_trie.insert("loop_index", "Loopindex")
 
 # 9 character sequences
@@ -50,19 +49,18 @@ token_trie.insert("otherwise", "Otherwise")
 # 8 character sequences
 token_trie.insert("constant", "Constant")
 token_trie.insert("continue", "Continue")
-token_trie.insert("enduntil", "Enduntil")
 token_trie.insert("endwhile", "Endwhile")
 token_trie.insert("variadic", "Variadic")
 
 # 7 character sequences
 token_trie.insert("endcase", "Endcase")
-token_trie.insert("iterate", "Iterate")
+token_trie.insert("endloop", "Endloop")
 token_trie.insert("returns", "Returns")
 
 # 6 character sequences
 token_trie.insert("brings", "Brings")
+token_trie.insert("endfor", "Endfor")
 token_trie.insert("import", "Import")
-token_trie.insert("repeat", "Repeat")
 token_trie.insert("return", "Return")
 token_trie.insert("shadow", "Shadow")
 token_trie.insert("spread", "Spread")
@@ -82,16 +80,17 @@ token_trie.insert("while", "While")
 token_trie.insert("case", "Case")
 token_trie.insert("elif", "Elif")
 token_trie.insert("else", "Else")
+token_trie.insert("loop", "Loop")
 token_trie.insert("over", "Over")
 token_trie.insert("then", "Then")
 token_trie.insert("true", "Boolean", ChestnutBoolean(True))
 token_trie.insert("when", "When")
-token_trie.insert("with", "With")
 
 # 3 character sequences
 token_trie.insert("<<<", "BitwiseRotateLeft")
 token_trie.insert(">>>", "BitwiseRotateRight")
 token_trie.insert("and", "And")
+token_trie.insert("for", "For")
 token_trie.insert("let", "Let")
 token_trie.insert("not", "Not")
 token_trie.insert("null", "Null", CHESTNUT_NULL)
@@ -100,12 +99,14 @@ token_trie.insert("use", "Use")
 # 2 character sequences
 token_trie.insert("+=", "Addassign")
 token_trie.insert("&&", "And")
+token_trie.insert("as", "As")
 token_trie.insert("~&", "BitwiseNand")
 token_trie.insert("~|", "BitwiseNor")
 token_trie.insert("<<", "BitwiseShiftLeft")
 token_trie.insert(">>", "BitwiseShiftRight")
 token_trie.insert("~^", "BitwiseXnor")
 token_trie.insert("/=", "Divassign")
+token_trie.insert("do", "Do")
 token_trie.insert("==", "Eq")
 token_trie.insert("**", "Exponent")
 token_trie.insert("fn", "Fn")
@@ -226,7 +227,8 @@ def lex(input):
                 state.advance_column()
 
         # Strings
-        elif input[state.pos] == '"':
+        elif input[state.pos] == '"' or input[state.pos] == "'" or input[state.pos] == '`':
+            end_chr = input[state.pos]
             state.advance_column() # move past the start quote
             end_quote_pos = None
             line_ends = 0
@@ -242,7 +244,7 @@ def lex(input):
                 if char == "}" and input[state.pos + quo_ind + 1] == "}":
                     if not is_escaped and interpolation_depth > 0:
                         interpolation_depth = interpolation_depth - 1
-                if char == '"' and not is_escaped and interpolation_depth == 0:
+                if char == end_chr and not is_escaped and interpolation_depth == 0:
                     end_quote_pos = quo_ind
                     break
                 if char == "\n":

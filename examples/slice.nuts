@@ -1,3 +1,5 @@
-let astr = "Hello, world"
-let b = slice(astr, 0, 5)
-printline(b)
+fn main (variadic args : String)
+    let astr = "Hello, world"
+    let b = slice(astr, 0, 5)
+    printline(b)
+endfn

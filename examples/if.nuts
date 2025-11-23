@@ -1,5 +1,7 @@
-if not true then
-    printline("Here 1")
-elif true then
-    printline("Here 2")
-endif
+fn main (variadic args : String)
+    if not true then
+        printline("Here 1")
+    elif true then
+        printline("Here 2")
+    endif
+endfn

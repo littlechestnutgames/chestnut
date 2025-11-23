@@ -1,2 +1,3 @@
-printline(3.14)
-printline(gettype(3.14))
+fn main(variadic args : String)
+    printline(3.14)
+endfn
