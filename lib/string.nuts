@@ -1,6 +1,6 @@
 fn repeat(s : String, times : Integer = 0) returns String
     let str = s
-    while loop_index < more_times
+    while loop_index < times
         str += s
     endwhile
     return str

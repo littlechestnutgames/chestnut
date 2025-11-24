@@ -212,6 +212,34 @@ fn env_set(var_name : String, value : String)
     __internal_env_set__(var_name, value) 
 endfn
 
+fn float(a : Any) returns Float
+    return __internal_to_float__(a)
+endfn
+
+fn int(a : Any) returns Integer
+    return __internal_to_int__(a)
+endfn
+
+fn int8(a : Any) returns Integer
+    return __internal_to_int8__(a)
+endfn
+
+fn int16(a : Any) returns Integer
+    return __internal_to_int16__(a)
+endfn
+
+fn int32(a : Any) returns Integer
+    return __internal_to_int32__(a)
+endfn
+
+fn int64(a : Any) returns Integer
+    return __internal_to_int64__(a)
+endfn
+
+fn int128(a : Any) returns Integer
+    return __internal_to_int128__(a)
+endfn
+
 fn bytes(a : Any) returns List
     return __internal_to_uint8__(a)
 endfn
@@ -314,4 +342,25 @@ endfn
 
 fn round(v : Float, d : Integer = null) returns Float
     return __internal_round__(v, d)
+endfn
+
+fn ceil(v : Float) returns Float
+    return __internal_ceil__(v)
+endfn
+
+fn floor(v : Float) returns Float
+    return __internal_floor__(v)
+endfn
+
+fn average (variadic numbers : Number)
+    let sum = 0
+    for numbers as num
+        sum += num
+    endfor
+
+    return sum / length(numbers)
+endfn
+
+fn will_halt (func : Function, variadic params : Any) returns Boolean
+    return __internal_will_halt__(func, spread params)
 endfn

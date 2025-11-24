@@ -32,6 +32,8 @@ def numeric_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
         def wrapper(self, other):
+            if not isinstance(other, self.__class__):
+                other = self.__class__(other)
             if func.__name__ == "__add__" and isinstance(other, ChestnutString):
                 return NotImplemented
             self.__typecheck__(other, op_name)

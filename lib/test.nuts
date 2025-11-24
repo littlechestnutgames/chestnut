@@ -62,23 +62,29 @@ fn (ts : TestSuite) add_test_fn(label : String, expect : Any, actual_fn : Any, s
 endfn
 
 fn (test : Test) run() returns TestResult
-    let start_time = get_time()
-
-    let test_f = test.actual_fn
-    let res = null
-
-    if not test.skipped
-        res = test_f()
-    endif
-
     let mark = "F"
-    if test.skipped
-        mark = "-"
-    elif test.expect == res
-        mark = "."
-    endif
+    let res = null
+    let start_time = null
+    let end_time = null
+    for range(0, test.iterations) as num
+        start_time = get_time()
 
-    let end_time = get_time()
+        let test_f = test.actual_fn
+        res = null
+
+        if not test.skipped
+            res = test_f()
+        endif
+
+        if test.skipped
+            mark = "-"
+        elif test.expect == res
+            mark = "."
+        endif
+
+        end_time = get_time()
+    endfor
+    print(mark)
 
     return new_test_result(test, res, mark, start_time, end_time)
 endfn
@@ -122,10 +128,28 @@ fn (ts : TestSuite) display_simple()
     endif
 endfn
 
+import "string" (repeat)
+
+fn make_header(str : String)
+    let slen = int(ceil(length(str) / 2))
+    let left_len = 40 - slen - 2
+    let right_len = 40 - slen - 1
+
+    return "{{ repeat("#", left_len) }} {{ str }} {{ repeat("#", right_len) }}"
+endfn
+
 fn (ts : TestSuite) display_results(show_skipped : Boolean = true, show_passed : Boolean = true)
-    let header = "###############################################################################\n{{ ts.name }}\n###############################################################################\n"
+    let header = ""
+    if length(ts.name) >= 78
+        header = "###############################################################################\n{{ ts.name }}\n###############################################################################\n"
+    else
+        header = make_header(ts.name)
+    endif
+    printline(header)
+
     let footer = "###############################################################################\n"
 
+    print("Results: ")
     let left_equals = length(ts.name)
     if length(ts.tests) == 0
         printline("No tests to run!")
@@ -134,10 +158,10 @@ fn (ts : TestSuite) display_results(show_skipped : Boolean = true, show_passed :
         # Run the tests if they've not been run yet.
         ts.run_tests()
     endif
+    printline("\n")
 
-    printline(header)
     if show_passed
-        printline("Passed : {{ length(ts.passed_tests) }}")
+        printline("Passed: {{ length(ts.passed_tests) }}")
         for ts.passed_tests as passed_test_result
             passed_test_result.display_test_result()
         endfor

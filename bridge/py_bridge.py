@@ -2,7 +2,7 @@ from chestnut_types import *
 from error import *
 
 def __internal_print__(*args):
-    print(*args, end='')
+    print(*args, end='', flush=True)
     return CHESTNUT_NULL
 
 def __internal_printline__(*args):
@@ -132,6 +132,30 @@ def __internal_env_get__(var_name, default=CHESTNUT_NULL):
         return ChestnutString(os.environ[vname])
     return default
 
+def __internal_to_int__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInteger(int(v.value))
+
+def __internal_to_int8__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt8(int(v.value))
+
+def __internal_to_int16__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt16(int(v.value))
+
+def __internal_to_int32__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt32(int(v.value))
+
+def __internal_to_int64__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt64(int(v.value))
+
+def __internal_to_int128__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt128(int(v.value))
+
 def __internal_to_uint8__(v):
     if isinstance(v, ChestnutInteger):
         return ChestnutUInt8(v.value)
@@ -160,6 +184,11 @@ def __internal_to_uint64__(v):
 
     if isinstance(v, ChestnutString):
         return [ ChestnutUInt64(x.value) for x in __internal_to_uint8__(v) ]
+
+def __internal_to_float__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutFloat(float(v.value))
+    raise RuntimeException(f"Cannot convert {v.__class__.__name__} to Float")
 
 def __internal_to_uint128__(v):
     if isinstance(v, ChestnutInteger):
@@ -193,3 +222,17 @@ def __internal_round__(v, d=CHESTNUT_NULL):
     else:
         return v.__class__(round(v.value, d.value))
 
+def __internal_floor__(v):
+    from math import floor
+    return v.__class__(floor(v.value))
+
+def __internal_ceil__(v):
+    from math import ceil
+    return v.__class__(ceil(v.value))
+
+def __internal_will_halt__(func, *args):
+    try:
+        func(*args)
+        return ChestnutBoolean(False)
+    except:
+        return ChestnutBoolean(True)

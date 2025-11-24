@@ -1,0 +1,14 @@
+import "test"
+import "string"
+
+fn repeat_test () returns String
+    return repeat("#", 7)
+endfn
+
+fn main (variadic args : String)
+    let ts = new_test_suite("Strings")
+
+    ts.add_test_fn("Repeat", "########", repeat_test, false, 1)
+
+    ts.display_results()
+endfn

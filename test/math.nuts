@@ -1,0 +1,230 @@
+import "test"
+
+fn avg_test() returns Float
+    let numbers = [1, 2, 2, 2, 3, 4, 5]
+    let avg = floor(float(average(spread numbers)))
+    return avg
+endfn
+
+fn add_test() returns Integer
+    return 2 + 2
+endfn
+
+fn sub_test() returns Integer
+    return 8 - 4
+endfn
+
+fn mul_test() returns Integer
+    return 8 * 4
+endfn
+
+fn div_test() returns Integer
+    return 64 / 2
+endfn
+
+fn pow_test() returns Integer
+    return 2 ** 7
+endfn
+
+fn mod_test() returns Integer
+    return 10 % 3
+endfn
+
+fn xor_test() returns Integer
+    return 10 ^ 6
+endfn
+
+fn negation_test () returns Integer
+    return ~5
+endfn
+
+fn or_test () returns Integer
+    return 5 | 2
+endfn
+
+fn and_test () returns Integer
+    return 5 & 1
+endfn
+
+fn nand_test () returns Integer
+    return 5 ~& 1
+endfn
+
+fn nor_test () returns Integer
+    return 5 ~| 1
+endfn
+
+fn xnor_test () returns Integer
+    return 17 ~^ 23
+endfn
+
+fn add_float_test () returns Float
+    return 2.5 + 2.625
+endfn
+
+fn sub_float_test () returns Float
+    return 7.5 - 0.5
+endfn
+
+fn mul_float_test () returns Float
+    return 100.0 * 0.2
+endfn
+
+fn div_float_test () returns Float
+    return round(100.5 / 80.5, 2)
+endfn
+
+fn pow_float_test () returns Float
+    return round(2.5 ** 4.2)
+endfn
+
+fn mod_float_test () returns Float
+    return 15.0 % 3.0
+endfn
+
+fn int_plus_float() returns Booelan
+    return will_halt(1 + 1.5)
+endfn
+
+fn float_plus_int() returns Booelan
+    return will_halt(1.5 + 1)
+endfn
+
+fn cast_float_to_int() returns Integer
+    return int(2.5)
+endfn
+
+fn cast_int_to_float() returns Integer
+    return float(2)
+endfn
+
+fn uint8_add_test() returns UInt8
+    let a = uint8(255)
+    let b = uint8(2)
+
+    return a + b
+endfn
+
+fn uint8_sub_test() returns UInt8
+    let a = uint8(2)
+    let b = uint8(3)
+
+    return a - b
+endfn
+
+fn uint8_mul_test() returns UInt8
+    let a = uint8(2)
+    let b = uint8(3)
+
+    return a * b
+endfn
+
+fn uint8_div_test() returns UInt8
+    let a = uint8(15)
+    let b = uint8(3)
+
+    return a / b
+endfn
+
+fn uint8_pow_test() returns UInt8
+    let a = uint8(2)
+    let b = uint8(4)
+
+    return a ** b
+endfn
+
+fn uint8_mod_test() returns UInt8
+    let a = uint8(8)
+    let b = uint8(2)
+
+    return a % b
+endfn
+
+fn uint8_lshift_test() returns UInt8
+    let a = uint8(1)
+    return a << 1
+endfn
+
+fn uint8_rshift_test() returns UInt8
+    let a = uint8(1)
+
+    return a >> 1
+endfn
+
+fn uint8_lrotate_test() returns UInt8
+    let a = uint8(255)
+
+    return a <<< 1
+endfn
+
+fn uint8_rrotate_test() returns UInt8
+    let a = uint8(0)
+
+    return a >>> 1
+endfn
+
+fn int_divide_by_0_test() returns Boolean
+    return will_halt(fn () return 100 / 0 endfn)
+endfn
+
+fn uint8_divide_by_0_test() returns Boolean
+    return will_halt(fn () return uint8(100) / uint8(0) endfn)
+endfn
+
+fn float_divide_by_0_test() returns Boolean
+    return will_halt(fn () return 100.0 / 0.0 endfn)
+endfn
+
+fn main (variadic args : String)
+    let its = new_test_suite("Integer Operations")
+    its.add_test_fn("Addition", 4, add_test, false, 10000)
+    its.add_test_fn("Subtraction", 4, sub_test, false, 10000)
+    its.add_test_fn("Multiplication", 32, mul_test, false, 10000)
+    its.add_test_fn("Division", 32, div_test, false, 10000)
+    its.add_test_fn("Exponentiation", 128, pow_test, false, 10000)
+    its.add_test_fn("Modulos", 1, mod_test, false, 10000)
+    its.add_test_fn("Average", 2.0, avg_test, false, 10000)
+    its.add_test_fn("Halts on divide by 0", true, int_divide_by_0_test, false, 10000)
+    its.display_results()
+
+    let ui8ts = new_test_suite("UInt8 Operations")
+    ui8ts.add_test_fn("Addition", uint8(1), uint8_add_test, false, 10000)
+    ui8ts.add_test_fn("Subtraction", uint8(255), uint8_sub_test, false, 10000)
+    ui8ts.add_test_fn("Multiplication", uint8(6), uint8_mul_test, false, 10000)
+    ui8ts.add_test_fn("Division", uint8(5), uint8_div_test, false, 10000)
+    ui8ts.add_test_fn("Exponentiation", uint8(16), uint8_pow_test, false, 10000)
+    ui8ts.add_test_fn("Modulos", uint8(0), uint8_mod_test, false, 10000)
+    ui8ts.add_test_fn("Left Shift", uint8(2), uint8_lshift_test, false, 10000)
+    ui8ts.add_test_fn("Right Shift", uint8(0), uint8_rshift_test, false, 10000) 
+    ui8ts.add_test_fn("Left Rotate", uint8(255), uint8_lrotate_test, false, 10000)
+    ui8ts.add_test_fn("Right Rotate", uint8(0), uint8_rrotate_test, false, 10000)
+    ui8ts.add_test_fn("Halts on divide by 0", true, uint8_divide_by_0_test, false, 10000)
+    ui8ts.display_results()
+
+    let fts = new_test_suite("Float Operations")
+    fts.add_test_fn("Addition", 5.125, add_float_test, false, 10000)
+    fts.add_test_fn("Subtraction", 7.0, sub_float_test, false, 10000)
+    fts.add_test_fn("Multiplication", 20.0, mul_float_test, false, 10000)
+    fts.add_test_fn("Division", 1.25, div_float_test, false, 10000)
+    fts.add_test_fn("Exponentiation", 47.0, pow_float_test, false, 10000)
+    fts.add_test_fn("Modulos", 0.0, mod_float_test, false, 10000)
+    fts.add_test_fn("Halts on divide by 0", true, float_divide_by_0_test, false, 10000)
+    fts.display_results()
+
+    let bwts = new_test_suite("Bitwise Operations")
+    bwts.add_test_fn("And", 1, and_test, false, 10000)
+    bwts.add_test_fn("Or", 7, or_test, false, 10000)
+    bwts.add_test_fn("Xor", 12, xor_test, false, 10000)
+    bwts.add_test_fn("Not", -6, negation_test, false, 10000)
+    bwts.add_test_fn("Nand", -2, nand_test, false, 10000)
+    bwts.add_test_fn("Nor", -6, nor_test, false, 10000)
+    bwts.add_test_fn("Xnor", -7, xnor_test, false, 10000)
+    bwts.display_results()
+
+    let cts = new_test_suite("Type Interactions")
+    cts.add_test_fn("Halts on Integer + Float", true, int_plus_float, false, 10000)
+    cts.add_test_fn("Halts on Float + Integer", true, float_plus_int, false, 10000)
+    cts.add_test_fn("Cast Float to Integer", 2, cast_float_to_int, false, 10000)
+    cts.add_test_fn("Cast Integer to Float", 2.0, cast_int_to_float, false, 10000)
+    cts.display_results()
+endfn
