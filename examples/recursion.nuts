@@ -1,10 +1,11 @@
 fn count_down (n : Integer)
     if n > 0
-	printline(n)
+	printline("n: {{ n }}, call_depth: {{ call_depth }}")
         count_down(n - 1)
     endif
 endfn
 
 fn main(variadic args : String)
     count_down(3)
+    printline("Final call depth expected 2: {{ call_depth }}")
 endfn

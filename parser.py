@@ -92,6 +92,13 @@ class LoopindexExpressionNode():
     def get_name(self):
         return "loop_index"
 
+class CallDepthExpressionNode():
+    def __repr__(self):
+        return "CallDepthExpressionNode"
+
+    def get_name(self):
+        return "call_depth"
+
 class ImportStatementNode:
     def __init__(self, token, location, imports=None):
         self.token = token
@@ -386,12 +393,12 @@ class PropertyAssignmentNode():
         return f"PropertyAssignmentNode(<{self.identifier}>, <{self.property_identifier}>, <{self.op}>, <{self.value_expression}>)"
 
 class Parser:
-    def __init__(self, tokens):
+    def __init__(self, tokens, execution_scope_level=0):
         self.tokens = iter(tokens)
         self.current = None
         self.next = None
         self.consume()
-        self.execution_scope_level = 0
+        self.execution_scope_level = execution_scope_level
 
     def consume(self):
         token = self.current
@@ -1094,6 +1101,10 @@ class Parser:
         self.consume() # `Consume the Loopindex
         return LoopindexExpressionNode()
 
+    def parse_call_depth(self):
+        self.consume() # `Consume the CallDepth
+        return CallDepthExpressionNode()
+
     def parse_readline(self):
         if self.execution_scope_level < 1:
             raise SyntaxException(
@@ -1181,6 +1192,8 @@ class Parser:
             return self.parse_fn_expression()
         elif token and token.label == "Loopindex":
             return self.parse_loopindex()
+        elif token and token.label == "Calldepth":
+            return self.parse_call_depth()
         elif self.check_label("Identifier"):
             identifier = self.consume()
 

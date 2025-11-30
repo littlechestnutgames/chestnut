@@ -1,0 +1,5 @@
+fn main (variadic args : String)
+    for args as arg
+        printline("{{ arg }} - {{ gettype(arg) }}")
+    endfor
+endfn

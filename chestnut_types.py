@@ -13,21 +13,6 @@ def comparison_operation(op_symbol, op_name, reverse=False):
         return wrapper
     return decorator
 
-def chestnut_wrapper(magic_method_name, chestnut_type_wrapper):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, other):
-            chestnut_type = eval(chestnut_type_wrapper)
-            magic_method = getattr(self, magic_method_name)
-            raw_result = magic_method(other)
-            if magic_method_name in ("__and__", "__or__"):
-                raw_result = bool(raw_result)
-            if not isinstance(raw_result, ChestnutAny):
-                return chestnut_type(raw_result)
-            return raw_result
-        return wrapper
-    return decorator
-
 def numeric_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
@@ -125,14 +110,8 @@ class ChestnutAny:
     def __ne__(self, other):
         return ChestnutBoolean(not self.__eq__(other))
 
-    @chestnut_wrapper("__or__", "ChestnutBoolean")
-    def wrapped_or(self, other): pass
-
     def __or__(self, other):
         return self.value or other.value
-
-    @chestnut_wrapper("__and__", "ChestnutBoolean")
-    def wrapped_and(self, other): pass
 
     def __and__(self, other):
         return self.value and other.value

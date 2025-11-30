@@ -4,13 +4,14 @@ from lexer import lex
 from parser import (Parser, CallStatementNode, UnaryOperationNode, ListLiteralNode)
 from evaluator import (Evaluator, SpreadArgs)
 from analyzer import Analyzer
-from chestnut_types import (ChestnutString, ChestnutList)
+from chestnut_types import (ChestnutString, ChestnutInteger, ChestnutBoolean, ChestnutFloat, ChestnutNull, ChestnutList)
 from token_types import(Token, TokenType)
 
 import sys
 
 if __name__ == "__main__":
-    file = sys.argv[len(sys.argv)-1] if ".nuts" in sys.argv[len(sys.argv)-1] else None
+    file = sys.argv[1] if ".nuts" in sys.argv[1] else None
+    args = sys.argv[2:]
     if file:
         with open(file) as hello:
             # Lexing
@@ -31,24 +32,48 @@ if __name__ == "__main__":
                 evaluator.evaluate(node)
 
             # If we had a main function defined, execute it.
+            argtokens = []
+            for x in args:
+                t = Token("Placeholder", x, 0, 0)
+                if len(argtokens) > 0:
+                    argtokens.append(Token("Comma", ",", 0, 0))
+
+                if x == "false" or x == "true":
+                    t.label = "Boolean"
+                    t.data = ChestnutBoolean(t.data == "true")
+                    argtokens.append(t)
+                elif x == "null":
+                    t.label = "Null"
+                    t.data = ChestnutNull(None)
+                    argtokens.append(t)
+                elif x.isnumeric():
+                    t.label = "Integer"
+                    t.data = ChestnutInteger(int(t.data))
+                    argtokens.append(t)
+                else:
+                    try:
+                        fval = float(t.data)
+                        t.label = "Float"
+                        t.data = ChestnutFloat(fval)
+                        argtokens.append(t)
+                    except:
+                        t.label = "String"
+                        t.data = ChestnutString(t.data)
+                        argtokens.append(t)
+
             main_scope = evaluator.find_first_scope_containing("main")
             if main_scope != None:
                 main = main_scope["main"]
                 identifier = main.statement.name
-
-                tokens = [Token("Spread", "spread", 0, 0), Token("LBrace", "[", 0, 0)]
-                for x in sys.argv:
-                    if len(tokens) > 2:
-                        tokens.append(Token("Comma", ",", 0, 0))
-                    tokens.append(Token("String", ChestnutString(x), 0, 0))
-                tokens.append(Token("RBrace", "]", 0, 0))
-                p = Parser(tokens)
-
+                lparen = Token("LParen", "(", 0, 0)
+                rparen = Token("RParen", ")", 0, 0)
+                tokens = [identifier, lparen]
+                tokens.extend(argtokens)
+                tokens.append(rparen)
+                p = Parser(tokens, 1)
                 expr = p.parse_expression()
-
-                evaluator.evaluate(CallStatementNode(identifier, [expr]))
+                evaluator.evaluate(expr)
             else:
                 print("No main function defined.")
-
     else:
         print("Nothing to evaluate")

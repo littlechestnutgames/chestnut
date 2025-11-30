@@ -37,5 +37,4 @@ The process begins by padding the input message so its length is a multiple of 5
         endfn
     )
     suite.display_results()
-    suite.display_simple()
 endfn

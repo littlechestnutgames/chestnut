@@ -1,8 +1,10 @@
 fn main (variadic args : String)
+    printline("Call depth: {{ call_depth }}")
     printline("For loop:")
     let a = ["Zero", "One"]
     for a as item
         for a as item2
+            printline("Call depth: {{ call_depth }}")
             printline("Items: {{ item }} {{ item2 }}")
             printline("Outer: {{ outer loop_index }}")
 	    printline("Inner: {{ loop_index }}")

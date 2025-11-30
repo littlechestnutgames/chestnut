@@ -490,6 +490,8 @@ class Evaluator:
         identifier = None
         if isinstance(ref, LoopindexExpressionNode):
             identifier = "loop index"
+        elif isinstance(ref, CallDepthExpressionNode):
+            identifier = "call depth"
         else:
             identifier = ref.data
         for scope in reversed(self.scopes[:]):
@@ -780,6 +782,9 @@ class Evaluator:
         return AnonymousFunction(node)
 
     def visit_CallStatementNode(self, node):
+        if "call depth" not in self.scopes[0]:
+            self.scopes[0]["call depth"] = ChestnutInteger(0)
+        self.scopes[0]["call depth"] += ChestnutInteger(1)
         callable = self.evaluate(node.identifier)
         if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
@@ -828,6 +833,7 @@ class Evaluator:
                 # We found a constant function, save the function reference.
                 func = func_scope["constant " + identifier]
         if isinstance(func, StructNode):
+            self.scopes[0]["call depth"] -= ChestnutInteger(1)
             return func.constructor(*[self.evaluate(x) for x in node.params])
 
         if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, BridgeFunction):
@@ -857,6 +863,7 @@ class Evaluator:
                 *final_args
             )
 
+            self.scopes[0]["call depth"] -= ChestnutInteger(1)
             return result
 
         fn = func.statement
@@ -898,10 +905,12 @@ class Evaluator:
 
                 while len(self.scopes) > base_stack_length:
                     self.pop_scope()
+                self.scopes[0]["call depth"] -= ChestnutInteger(1)
                 return val.value
 
         while len(self.scopes) > base_stack_length:
             self.pop_scope()
+        self.scopes[0]["call depth"] -= ChestnutInteger(1)
         return False
 
     def visit_BreakStatementNode(self, node):
@@ -1062,6 +1071,9 @@ class Evaluator:
         if scope is None:
             raise Exception(f"`loop_index` keyword must be used inside a loop")
         return scope["loop index"]
+
+    def visit_CallDepthExpressionNode(self, node):
+        return self.scopes[0]["call depth"]
 
     def visit_UseExpressionNode(self, node):
         if not node.condition is None:

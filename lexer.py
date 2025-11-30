@@ -41,6 +41,7 @@ token_trie = Trie()
 
 # 10 character sequences
 token_trie.insert("loop_index", "Loopindex")
+token_trie.insert("call_depth", "Calldepth")
 
 # 9 character sequences
 token_trie.insert("endstruct", "Endstruct")
