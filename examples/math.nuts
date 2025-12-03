@@ -17,4 +17,12 @@ fn main (variadic args : String)
     printline("69609650 & 2 ** 7 - 1 == {{ 69609650 & 2 ** 7 - 1 }}")
     printline("1 + 2 * 3 == 7 == {{ 1 + 2 * 3 }}")
     printline("1 + 6 / 2 == 3 == {{ 1 + 6 / 3 }}")
+    let g = int1024(2**1023-1)
+    let h = int1024(1)
+    printline(g)
+    printline(gettype(g))
+    printline(gettype(h))
+    printline(g+h)
+
+    printline(uint1024(2**1023-1) >>> 1 <<< 1)
 endfn 

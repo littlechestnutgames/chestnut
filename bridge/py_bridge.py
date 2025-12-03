@@ -156,6 +156,18 @@ def __internal_to_int128__(v):
     if isinstance(v, ChestnutNumber):
         return ChestnutInt128(int(v.value))
 
+def __internal_to_int256__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt256(int(v.value))
+
+def __internal_to_int512__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt512(int(v.value))
+
+def __internal_to_int1024__(v):
+    if isinstance(v, ChestnutNumber):
+        return ChestnutInt1024(int(v.value))
+
 def __internal_to_uint8__(v):
     if isinstance(v, ChestnutInteger):
         return ChestnutUInt8(v.value)
@@ -184,6 +196,34 @@ def __internal_to_uint64__(v):
 
     if isinstance(v, ChestnutString):
         return [ ChestnutUInt64(x.value) for x in __internal_to_uint8__(v) ]
+
+def __internal_to_uint128__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt128(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt128(x.value) for x in __internal_to_uint8__(v) ]
+
+def __internal_to_uint256__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt256(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt256(x.value) for x in __internal_to_uint8__(v) ]
+
+def __internal_to_uint512__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt512(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt512(x.value) for x in __internal_to_uint8__(v) ]
+
+def __internal_to_uint1024__(v):
+    if isinstance(v, ChestnutInteger):
+        return ChestnutUInt1024(v.value)
+
+    if isinstance(v, ChestnutString):
+        return [ ChestnutUInt1024(x.value) for x in __internal_to_uint8__(v) ]
 
 def __internal_to_float__(v):
     if isinstance(v, ChestnutNumber):

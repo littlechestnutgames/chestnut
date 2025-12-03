@@ -213,20 +213,19 @@ class BridgeFunction:
         self.name = identifier
         self.parameters = params
 
-    def reconcile_parameters(self, evaluator, call_parameters):
+    def reconcile_parameters(self, evaluator, evaluated_args):
         name = self.identifier
         required_count = 0
         has_variadic = False
+
         for param in self.params:
             if param.default_value is None and not param.variadic:
                 required_count += 1
             if param.variadic:
                 has_variadic = True
         # Test
-        if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(self.params)):
-            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
-
-        evaluated_args = [evaluator.evaluate(param) for param in call_parameters]
+        if (len(evaluated_args) < required_count) or (not has_variadic and len(evaluated_args) > len(self.params)):
+            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(evaluated_args)}")
 
         values = {}
         arg_index = 0
@@ -246,7 +245,7 @@ class Function(ChestnutAny):
         self.token = Token("Null", CHESTNUT_NULL, None, None)
         self.value = CHESTNUT_NULL
 
-    def reconcile_parameters(self, evaluator, call_parameters):
+    def reconcile_parameters(self, evaluator, evaluated_args):
         statement = self.statement
         name = None
         struct_identifier = None
@@ -254,12 +253,6 @@ class Function(ChestnutAny):
             name = statement.name.data
         elif isinstance(statement, AnonymousFnExpressionNode):
             name = self.name
-
-        if len(call_parameters) > 0 and isinstance(call_parameters[-1], UnaryOperationNode) and call_parameters[-1].op.label == "Spread":
-            op_node = call_parameters.pop(-1)
-            evaluated_spread = evaluator.evaluate(op_node)
-            for arg in evaluated_spread.args:
-                call_parameters.append(arg)
 
         required_count = 0
         has_variadic = False
@@ -269,10 +262,8 @@ class Function(ChestnutAny):
             if param.variadic:
                 has_variadic = True
 
-        if (len(call_parameters) < required_count) or (not has_variadic and len(call_parameters) > len(statement.parameters)):
-            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(call_parameters)}")
-
-        evaluated_args = [evaluator.evaluate(param) for param in call_parameters]
+        if (len(evaluated_args) < required_count) or (not has_variadic and len(evaluated_args) > len(statement.parameters)):
+            raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(evaluated_args)}")
 
         values = {}
         arg_index = 0
@@ -353,10 +344,13 @@ class Evaluator:
             script_name = script_name.value
         has_nuts = script_name.lower().endswith(".nuts")
         script_name = script_name if has_nuts else script_name + ".nuts"
-        if script_name.startswith("./") or script_name.startswith("../"):
+        if script_name.startswith(f".{os.sep}") or script_name.startswith(f"..{os.sep}"):
             if not os.path.exists(script_name):
                 raise InternalException(f"Module at path {script_name} does not exist")
             return script_name
+        elif os.path.exists("." + os.sep + "packages" + os.sep + script_name):
+            return f".{os.sep}vendor{os.sep}{script_name}"
+            
         dir_path = os.path.dirname(os.path.realpath(__file__))
         # Resolve Chestnut library files first
         if os.path.exists(f"{dir_path}{os.sep}lib{os.sep}{script_name}"):
@@ -574,7 +568,7 @@ class Evaluator:
         property = node.property_identifier.data
 
         if not hasattr(target_object, property):
-            raise RuntimeException("Target has no attribute {property}", node.property_identifier)
+            raise RuntimeException(f"Target has no attribute {property}", node.property_identifier)
 
         op = node.op
         value = self.evaluate(node.value_expression)
@@ -785,6 +779,15 @@ class Evaluator:
         if "call depth" not in self.scopes[0]:
             self.scopes[0]["call depth"] = ChestnutInteger(0)
         self.scopes[0]["call depth"] += ChestnutInteger(1)
+        finalized_args = []
+        for param in node.params:
+            evaluated_value = self.evaluate(param)
+            if isinstance(evaluated_value, SpreadArgs):
+                for val in evaluated_value.args:
+                    finalized_args.append(val)
+            else:
+                finalized_args.append(evaluated_value)
+
         callable = self.evaluate(node.identifier)
         if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
@@ -842,7 +845,7 @@ class Evaluator:
         if isinstance(func, BridgeFunction):
             params = []
             try:
-                reconciled_values = func.reconcile_parameters(self, node.params)
+                reconciled_values = func.reconcile_parameters(self, finalized_args)
             except RuntimeException as e:
                 raise RuntimeException(e.message, node.identifier)
 
@@ -889,7 +892,7 @@ class Evaluator:
 
         params = []
         try:
-            params = func.reconcile_parameters(self, node.params)
+            params = func.reconcile_parameters(self, finalized_args)
         except RuntimeException as e:
             raise RuntimeException(e.message, node.identifier)
         for p in func.statement.parameters:

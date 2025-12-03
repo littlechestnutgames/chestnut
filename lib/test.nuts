@@ -29,6 +29,7 @@ fn new_test(label: String, expect : Any, actual_fn : Any, skip : Boolean = false
     test.expect = expect
     test.actual_fn = actual_fn
     test.iterations = iterations
+    test.skipped = skip
 
     return test
 endfn

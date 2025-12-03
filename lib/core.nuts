@@ -220,24 +220,36 @@ fn int(a : Any) returns Integer
     return __internal_to_int__(a)
 endfn
 
-fn int8(a : Any) returns Integer
+fn int8(a : Any) returns Int8
     return __internal_to_int8__(a)
 endfn
 
-fn int16(a : Any) returns Integer
+fn int16(a : Any) returns Int16
     return __internal_to_int16__(a)
 endfn
 
-fn int32(a : Any) returns Integer
+fn int32(a : Any) returns Int32
     return __internal_to_int32__(a)
 endfn
 
-fn int64(a : Any) returns Integer
+fn int64(a : Any) returns Int64
     return __internal_to_int64__(a)
 endfn
 
-fn int128(a : Any) returns Integer
+fn int128(a : Any) returns Int128
     return __internal_to_int128__(a)
+endfn
+
+fn int256(a : Any) returns Int256
+    return __internal_to_int256__(a)
+endfn
+
+fn int512(a : Any) returns Int512
+    return __internal_to_int512__(a)
+endfn
+
+fn int1024(a : Any) returns Integer
+    return __internal_to_int1024__(a)
 endfn
 
 fn bytes(a : Any) returns List
@@ -264,8 +276,20 @@ fn uint64(a : Any) returns UInt64
     return __internal_to_uint64__(a)
 endfn
 
-fn uint128(a : Any) returns UInt8
+fn uint128(a : Any) returns UInt128
     return __internal_to_uint128__(a)
+endfn
+
+fn uint256(a : Any) returns UInt256
+    return __internal_to_uint256__(a)
+endfn
+
+fn uint512(a : Any) returns UInt512
+    return __internal_to_uint512__(a)
+endfn
+
+fn uint1024(a : Any) returns UInt1024
+    return __internal_to_uint1024__(a)
 endfn
 
 fn int_list_to_hex_string(l : List) returns String
@@ -363,4 +387,8 @@ endfn
 
 fn will_halt (func : Function, variadic params : Any) returns Boolean
     return __internal_will_halt__(func, spread params)
+endfn
+
+fn contains (l : List, v: Any) returns Boolean
+    return index_of(l, v) >= 0
 endfn
