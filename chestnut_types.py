@@ -17,7 +17,7 @@ def numeric_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
         def wrapper(self, other):
-            if not isinstance(other, self.__class__):
+            if not isinstance(other, ChestnutAny):
                 other = self.__class__(other)
             if func.__name__ == "__add__" and isinstance(other, ChestnutString):
                 return NotImplemented
@@ -139,8 +139,9 @@ class ChestnutString(ChestnutAny):
         return len(self.value)
 
     def __getitem__(self, item):
+        if isinstance(item, int):
+            item = ChestnutInteger(item)
         if not isinstance(item, ChestnutInteger):
-            raise Exception(item.__repr__())
             raise RuntimeException("Attempt to access a non-Integer index on a string", self.token)
         return self.value[item.value]
 
@@ -234,12 +235,6 @@ class ChestnutNumber(ChestnutAny):
 
     @numeric_operation("__rsub__", "sub", reverse=True)
     def __rsub__(self, other): pass
-
-    @numeric_operation("__truediv__", "divide")
-    def __truediv__(self, other): pass
-
-    @numeric_operation("__rtruediv__", "divide", reverse=True)
-    def __rtruediv__(self, other): pass
 
     @numeric_operation("__mod__", "mod")
     def __mod__(self, other): pass
@@ -342,6 +337,12 @@ class ChestnutInteger(ChestnutNumber):
 
     def __int__(self):
         return self.value
+
+    @numeric_operation("__floordiv__", "divide")
+    def __floordiv__(self, other): pass
+
+    @numeric_operation("__rfloordiv__", "divide", reverse=True)
+    def __rfloordiv__(self, other): pass
 
     def __bitwise_shift_lengthcheck__(self, shift_amount_operand):
         if shift_amount_operand.value < 0:
@@ -590,6 +591,12 @@ class ChestnutFloat(ChestnutNumber):
     def isfloat(self):
         return True
 
+    @numeric_operation("__truediv__", "divide")
+    def __truediv__(self, other): pass
+
+    @numeric_operation("__rtruediv__", "divide", reverse=True)
+    def __rtruediv__(self, other): pass
+
 class ChestnutFloat32(ChestnutFloat):
     MIN = -3.4028235 * 10**38
     MAX = 3.4028235 * 10**38
@@ -617,8 +624,10 @@ class ChestnutList(ChestnutAny):
             value = var_name.value
         if isinstance(value, float):
             value = int(value)
+        if value is None:
+            value = var_name
         if not isinstance(value, int):
-            raise Exception(type(value))
+            raise Exception(f"Non-integer { value } given for list index {var_name}")
         return self.value[value]
 
     def __setitem__(self, var_name, value):
@@ -705,3 +714,4 @@ class ChestnutSocket(ChestnutAny):
     def __init__(self, sock):
         self.token = ChestnutNull(null)
         self.sock = sock
+

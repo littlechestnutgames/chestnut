@@ -26,9 +26,9 @@ fn main(variadic args : String)
 
     # Bitwise rotate functions are not yet implemented.
 
-    let R_rotated_left = uint8(R) <<< S
-    display_result("<<<", uint8(R), S, R_rotated_left)
+    let R_rotated_left = uint8(1) <<< 1
+    display_result("<<<", uint8(1), 1, R_rotated_left)
 
-    let R_rotated_right = uint8(R) >>> S
-    display_result(">>>", uint8(R), S, R_rotated_right)
+    let R_rotated_right = uint8(1) >>> 1
+    display_result(">>>", uint8(1), 1, R_rotated_right)
 endfn

@@ -1,5 +1,5 @@
 struct Result
-    value : Any
+    success : Any
     error : Error
 endstruct
 
@@ -12,16 +12,16 @@ fn new_result_from_tuple(tuple : Any) returns Result
 endfn
 
 fn (result : Result) unwrap (default_value : Any) returns Any
-    return use result.value
+    return use result.success
                over default_value
                unless result.error != null
 endfn
 
 fn (result : Result) and_then (func : Function, variadic params : Any) returns Result
-    if result.error != null or result.value == null
+    if result.error != null or result.success == null
         return result
     endif
-    let call_result = func(result.value, spread params)
+    let call_result = func(result.success, spread params)
     if gettype(call_result) == "Result"
         return call_result
     else
@@ -30,7 +30,7 @@ fn (result : Result) and_then (func : Function, variadic params : Any) returns R
 endfn
 
 fn (result : Result) tap (func : Function, variadic params : Any) returns Result
-    if result.error != null or result.value == null
+    if result.error != null or result.success == null
         return result
     endif
     let call_result = func(spread params)
@@ -56,7 +56,7 @@ endfn
 
 fn (result : Result) unwrap_or_fallback (func : Function) returns Any
    if result.error == null
-       return result.value
+       return result.success
    endif
    return func(result.error)
 endfn

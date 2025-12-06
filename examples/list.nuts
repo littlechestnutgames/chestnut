@@ -1,0 +1,4 @@
+fn main()
+    let l = ["A"]
+    printline(l[0])
+endfn

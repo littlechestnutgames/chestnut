@@ -248,6 +248,8 @@ def __internal_int_list_to_hex__(v):
     return ''.join('{:08x}'.format(a) for a in l)
 
 def __internal_get_bit_width__(v):
+    if isinstance(v, ChestnutInteger) and hasattr(v, "BIT_WIDTH"):
+        return ChestnutInteger(v.BIT_WIDTH)
     if hasattr(v[0], "BIT_WIDTH"):
         return ChestnutInteger(v[0].BIT_WIDTH)
     return ChestnutInteger(v[0].value.bit_length())

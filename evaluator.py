@@ -25,7 +25,7 @@ class FunctionRegister:
     def is_registered(self, name):
         return name in self.functions
 
-    def register(self, func):
+    def register(self, func, call_depth=0):
         fname = ""
         if isinstance(func, BridgeFunction):
             fname = func.identifier.data
@@ -43,12 +43,21 @@ class FunctionRegister:
                 # if the code below the return were enabled.
                 return
                 # raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
-        
+        if not hasattr(func, "call_depth"):
+            setattr(func, "call_depth", call_depth)
+
         registry["candidates"].insert(0, func)
+
+    def prune(self, call_depth):
+        for k, f in self.functions:
+            if hasattr(f, "call_depth"):
+                depth = getattr(f, "call_depth")
+                if depth >= call_depth:
+                    self.functions[k].remove(f)
 
     def resolve(self, name, call_parameters=[]):
         if name not in self.functions:
-            raise RuntimeException(f"Call to undefined function {name}")
+            return None
 
         call_params = call_parameters
         num_call_params = len(call_params)
@@ -59,12 +68,13 @@ class FunctionRegister:
         registry = self.functions[name]
         
         for candidate in registry["candidates"]:
-            candidate_params = candidate.parameters 
+            candidate_params = candidate.get_params()
+            is_variadic_func = False
+            if len(candidate_params) > 0 and candidate_params[-1].variadic:
+                is_variadic_func = True
             num_candidate_params = len(candidate_params)
             current_score = 0
             is_feasible = True
-
-            is_variadic_func = num_candidate_params > 0 and candidate_params[-1].variadic
             
             required_count = 0
             for param in candidate_params:
@@ -86,11 +96,11 @@ class FunctionRegister:
             
             for i in range(min(num_call_params, num_fixed_params)):
                 param = candidate_params[i]
-                expected_type = eval("Chestnut" + param.paramtype.data)
+                expected_type = TYPE_MAPPING[param.paramtype.data] if param.paramtype.data in TYPE_MAPPING else eval(param.paramtype.data)
                 runtime_arg = call_params[i]
-                runtime_type_name = runtime_arg.__class__.__name__.replace("Chestnut", "")
-                
-                if isinstance(runtime_arg, expected_type):
+                if runtime_arg is expected_type:
+                    current_score += 5
+                elif isinstance(runtime_arg, expected_type) and expected_type is not None:
                     current_score += 3
                 elif expected_type == ChestnutAny:
                     current_score += 1
@@ -103,12 +113,14 @@ class FunctionRegister:
 
             if is_variadic_func and num_call_params > num_fixed_params:
                 variadic_param = candidate_params[-1]
-                variadic_type = eval("Chestnut" + variadic_param.paramtype.data)
+                variadic_type = TYPE_MAPPING[variadic_param.paramtype.data] if variadic_param.paramtype.data in TYPE_MAPPING else eval(variadic_param.paramtype.data)
                 
                 for i in range(num_fixed_params, num_call_params):
                     runtime_arg = call_params[i]
 
-                    if isinstance(runtime_arg, variadic_type):
+                    if runtime_arg is variadic_type:
+                        current_score += 5
+                    elif isinstance(runtime_arg, variadic_type) and variadic_type is not None:
                         current_score += 3
                     elif variadic_type == ChestnutAny:
                         current_score += 1 
@@ -119,9 +131,6 @@ class FunctionRegister:
             if is_feasible and current_score > best_score:
                 best_score = current_score
                 best_match_candidate = candidate
-
-        if best_match_candidate is None:
-            raise RuntimeException(f"No call signature for {name} is compatible with given parameters" + str(call_parameters))
 
         return best_match_candidate
 
@@ -189,12 +198,16 @@ class StructNode:
         for param in  self.definition.properties:
             params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL))
         self.function_register.register(BridgeFunction(Token("Identifier", "constructor", None, None), params))
+
+    def get_name(self):
+        return self.definition.identifier.data
         
     def constructor(self, *args):
         name = self.definition.identifier.data
         properties = self.definition.properties
         struct_class = type(name, (ChestnutStruct,), {
             "__repr__": lambda self: name + "(" + str(properties) + ")",
+            "__str__": lambda self: name + "(" + str(properties) + ")",
             "__init__": generate_struct_init(properties),
             "gettype": lambda self: name
         })
@@ -212,6 +225,12 @@ class BridgeFunction:
         self.params = params
         self.name = identifier
         self.parameters = params
+
+    def get_name(self):
+        return self.identifier.data
+
+    def get_params(self):
+        return self.parameters
 
     def reconcile_parameters(self, evaluator, evaluated_args):
         name = self.identifier
@@ -244,6 +263,12 @@ class Function(ChestnutAny):
         self.scopes = parent_scopes if parent_scopes is not None else []
         self.token = Token("Null", CHESTNUT_NULL, None, None)
         self.value = CHESTNUT_NULL
+
+    def get_params(self):
+        return self.statement.parameters
+
+    def get_name(self):
+        return self.statement.name.data
 
     def reconcile_parameters(self, evaluator, evaluated_args):
         statement = self.statement
@@ -287,6 +312,47 @@ class AnonymousFunction(Function):
     def __init__(self, statement, name=None, parent_scopes=None):
         super().__init__(statement, parent_scopes)
         self.name = name
+
+    def get_name(self):
+        return "AnonymousFunction"
+
+    def get_params(self):
+        return self.statement.parameters
+
+TYPE_MAPPING = {
+    "Any": ChestnutAny,
+    "Number": ChestnutNumber,
+    "Integer": ChestnutInteger,
+    "Int8": ChestnutInt8,
+    "Int16": ChestnutInt16,
+    "Int32": ChestnutInt32,
+    "Int64": ChestnutInt64,
+    "Int128": ChestnutInt128,
+    "Int256": ChestnutInt256,
+    "Int512": ChestnutInt512,
+    "Int1024": ChestnutInt1024,
+    "UnsignedInteger": ChestnutUnsignedInteger,
+    "UInt8": ChestnutUInt8,
+    "UInt16": ChestnutUInt16,
+    "UInt32": ChestnutUInt32,
+    "UInt64": ChestnutUInt64,
+    "UInt128": ChestnutUInt128,
+    "UInt256": ChestnutUInt256,
+    "UInt512": ChestnutUInt512,
+    "UInt1024": ChestnutUInt1024,
+    "Float": ChestnutFloat,
+    "Float32": ChestnutFloat32,
+    "Float64": ChestnutFloat64,
+    "String": ChestnutString,
+    "Boolean": ChestnutBoolean,
+    "List": ChestnutList,
+    "Tuple": ChestnutTuple,
+    "Error": ChestnutError,
+    "Struct": ChestnutStruct,
+    "Function": (AnonymousFunction, Function),
+    "FileHandle": ChestnutFileHandle,
+    "Socket": ChestnutSocket
+}
 
 class SpreadArgs(ChestnutAny):
     def __init__(self, args):
@@ -541,6 +607,8 @@ class Evaluator:
         if not scope is None:
             raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
         struct_node = StructNode(node)
+        struct_instance = struct_node.constructor()
+        TYPE_MAPPING[label] = struct_instance.__class__
         self.current_scope()[label] = struct_node
 
     def _handle_prop_Assignment(self, target_object, property, value):
@@ -661,6 +729,8 @@ class Evaluator:
             index = index.__class__(len(target_value) - 1)
         if index < index.__class__(0) or index >= index.__class__(len(target_value)):
             raise Exception(f"Index out of bounds")
+        if isinstance(index, ChestnutInteger):
+            index = index.value
         return target_value[index]
 
     def visit_ExpressionStatementNode(self, node):
@@ -779,6 +849,7 @@ class Evaluator:
         if "call depth" not in self.scopes[0]:
             self.scopes[0]["call depth"] = ChestnutInteger(0)
         self.scopes[0]["call depth"] += ChestnutInteger(1)
+        callable = self.evaluate(node.identifier)
         finalized_args = []
         for param in node.params:
             evaluated_value = self.evaluate(param)
@@ -787,13 +858,14 @@ class Evaluator:
                     finalized_args.append(val)
             else:
                 finalized_args.append(evaluated_value)
+        func = None
+        if not isinstance(callable, StructMethodCall) and not isinstance(callable, AnonymousFunction):
+            func = self.function_register.resolve(node.identifier.data, finalized_args)
 
-        callable = self.evaluate(node.identifier)
         if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
         self.calling_builtin = False
         identifier = None
-        func = None
         instance = None
         receiver_name = None
 
@@ -835,6 +907,7 @@ class Evaluator:
 
                 # We found a constant function, save the function reference.
                 func = func_scope["constant " + identifier]
+
         if isinstance(func, StructNode):
             self.scopes[0]["call depth"] -= ChestnutInteger(1)
             return func.constructor(*[self.evaluate(x) for x in node.params])
@@ -861,7 +934,6 @@ class Evaluator:
                 
             if not hasattr(core,func.identifier.data):
                 raise InternalException(f"{func.identifier.data} does not exist in the core built-ins", node)
-
             result = core.__dict__[func.identifier.data](
                 *final_args
             )
@@ -1195,6 +1267,8 @@ class Evaluator:
         return left * right
 
     def _handle_binary_Division(self, left, right):
+        if isinstance(left, ChestnutInteger) and isinstance(right, ChestnutInteger):
+            return left // right
         return left / right
 
     def _handle_binary_Modulo(self, left, right):
