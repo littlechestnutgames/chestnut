@@ -1,0 +1,127 @@
+#include "chestnut_types.h"
+#ifndef CHESTNUT_TOKEN_H
+#define CHESTNUT_TOKEN_H
+
+typedef enum {
+    // Type token types
+    CHESTNUT_TK_NULL,
+    CHESTNUT_TK_INT,
+    CHESTNUT_TK_INT8,
+    CHESTNUT_TK_INT16,
+    CHESTNUT_TK_INT32,
+    CHESTNUT_TK_INT64,
+    CHESTNUT_TK_UINT8,
+    CHESTNUT_TK_UINT16,
+    CHESTNUT_TK_UINT32,
+    CHESTNUT_TK_UINT64,
+    CHESTNUT_TK_FLOAT,
+    CHESTNUT_TK_FLOAT32,
+    CHESTNUT_TK_FLOAT64,
+    CHESTNUT_TK_BOOL,
+    CHESTNUT_TK_STR,
+    CHESTNUT_TK_CALL_DEPTH,
+    CHESTNUT_TK_LOOP_INDEX,
+    CHESTNUT_TK_ENDSTRUCT,
+    CHESTNUT_TK_OTHERWISE,
+    CHESTNUT_TK_CONSTANT,
+    CHESTNUT_TK_CONTINUE,
+    CHESTNUT_TK_ENDWHILE,
+    CHESTNUT_TK_VARIADIC,
+    CHESTNUT_TK_ENDCASE,
+    CHESTNUT_TK_ENDLOOP,
+    CHESTNUT_TK_RETURNS,
+    CHESTNUT_TK_BRINGS,
+    CHESTNUT_TK_ENDFOR,
+    CHESTNUT_TK_IMPORT,
+    CHESTNUT_TK_RETURN,
+    CHESTNUT_TK_SHADOW,
+    CHESTNUT_TK_SPREAD,
+    CHESTNUT_TK_STRUCT,
+    CHESTNUT_TK_UNLESS,
+    CHESTNUT_TK_BREAK,
+    CHESTNUT_TK_ENDFN,
+    CHESTNUT_TK_ENDIF,
+    CHESTNUT_TK_OUTER,
+    CHESTNUT_TK_UNTIL,
+    CHESTNUT_TK_WHILE,
+    CHESTNUT_TK_CASE,
+    CHESTNUT_TK_ELIF,
+    CHESTNUT_TK_ELSE,
+    CHESTNUT_TK_LOOP,
+    CHESTNUT_TK_OVER,
+    CHESTNUT_TK_WHEN,
+    CHESTNUT_TK_FOR,
+    CHESTNUT_TK_LET,
+    CHESTNUT_TK_USE,
+    CHESTNUT_TK_DO,
+    CHESTNUT_TK_IF,
+    CHESTNUT_TK_OP_IPA_ADD,
+    CHESTNUT_TK_OP_IPA_SUB,
+    CHESTNUT_TK_OP_IPA_MUL,
+    CHESTNUT_TK_OP_IPA_DIV,
+    CHESTNUT_TK_OP_IPA_EXP,
+    CHESTNUT_TK_OP_IPA_MOD,
+    CHESTNUT_TK_OP_NOT,
+    CHESTNUT_TK_OP_AND,
+    CHESTNUT_TK_OP_OR,
+    CHESTNUT_TK_OP_LTE,
+    CHESTNUT_TK_OP_LT,
+    CHESTNUT_TK_OP_EQ,
+    CHESTNUT_TK_OP_NEQ,
+    CHESTNUT_TK_OP_GT,
+    CHESTNUT_TK_OP_GTE,
+    CHESTNUT_TK_OP_EXP,
+    CHESTNUT_TK_OP_BIN_ROTL,
+    CHESTNUT_TK_OP_BIN_ROTR,
+    CHESTNUT_TK_OP_BIN_SHTL,
+    CHESTNUT_TK_OP_BIN_SHTR,
+    CHESTNUT_TK_OP_BIN_AND,
+    CHESTNUT_TK_OP_BIN_OR,
+    CHESTNUT_TK_OP_BIN_XOR,
+    CHESTNUT_TK_OP_BIN_NOT,
+    CHESTNUT_TK_OP_BIN_NAND,
+    CHESTNUT_TK_OP_BIN_NOR,
+    CHESTNUT_TK_OP_BIN_XNOR,
+} CHESTNUT_TokenType;
+
+typedef union {
+    // Integer    
+    int8_t i8;
+    int16_t i16;
+    int32_t i32;
+    int64_t i64;
+    chestnut_int128_t i128;
+    chestnut_int256_t i256;
+    chestnut_int512_t i512;
+    chestnut_int1024_t i1024;
+
+    // UnsignedInteger
+    uint8_t u8;
+    uint16_t u16;
+    uint32_t u32;
+    uint64_t u64;
+    chestnut_uint128_t u128;
+    chestnut_uint256_t u256;
+    chestnut_uint512_t u512;
+    chestnut_uint1024_t u1024;
+
+    // Boolean
+    bool boolean;
+
+    // String
+    char[] str;
+} CHESTNUT_TokenData;
+
+typedef struct {
+    uint64_t line;
+    uint64_t col;
+    char[] sourcefile;
+} CHESTNUT_Location;
+
+typedef struct {
+    CHESTNUT_TokenType type;
+    CHESTNUT_TokenData data;
+    CHESTNUT_Location location;
+} CHESTNUT_Token;
+
+#endif // CHESTNUT_TOKEN_H
