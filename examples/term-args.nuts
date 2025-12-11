@@ -1,4 +1,7 @@
 fn main (variadic args : String)
+    if length(args) == 0
+        printline('Usage - chestnut examples/term-args.nuts "Some" "arguments" "for" "the" "program."')
+    endif
     for args as arg
         printline("{{ arg }} - {{ gettype(arg) }}")
     endfor

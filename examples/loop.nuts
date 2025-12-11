@@ -42,6 +42,6 @@ fn main (variadic args : String)
     endloop
 
     do
-        printline("Until looped.")
+        printline("Loop looped.")
     until loop_index > -1
 endfn

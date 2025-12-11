@@ -399,6 +399,7 @@ class Parser:
         self.next = None
         self.consume()
         self.execution_scope_level = execution_scope_level
+        self.in_constant_definition = False
 
     def consume(self):
         token = self.current
@@ -462,6 +463,8 @@ class Parser:
         return statement
 
     def parse_let_statement(self):
+        if self.check_label("Constant"):
+            self.in_constant_definition = True
         if not self.check_label("Constant") and self.execution_scope_level < 1:
             raise SyntaxException("let cannot be used outside of fn statements.", self.peek())
         let_token = self.consume()
@@ -493,7 +496,7 @@ class Parser:
             raise SyntaxException(f"Expected '=' after identifier {name_token.data} in let statement", self.peek())
 
         expression = self.parse_expression()
-
+        self.in_constant_definition = False
         if let_token.label == "Shadow":
             return ShadowStatementNode(name_token, expression, explicit_type)
         elif let_token.label == "Constant":
@@ -600,7 +603,7 @@ class Parser:
 
         return IfStatementNode(if_condition_expression, if_statements, elif_blocks, else_block)
 
-    def pull_params(self):
+    def pull_params(self, allow_missing_label=False):
         self.consume() # Consume the (
         params = []
 
@@ -622,6 +625,11 @@ class Parser:
         if not self.check_label("Identifier"):
             raise SyntaxException(f"Expected identifier in function parameters, got {self.peek().label}", self.peek())
         identifier = self.consume() # Consume identifier
+
+        if allow_missing_label and self.check_label("RParen"):
+            self.consume()
+            params.append(FnParameter(Token("String", " ", 0, 0), identifier, None, False))
+            return params
 
         # Parse type delimiter
         if not self.check_label("Colon"):
@@ -740,7 +748,7 @@ class Parser:
         self.execution_scope_level += 1
         struct_params = None
         if self.check_label("LParen"):
-            struct_params = self.pull_params()
+            struct_params = self.pull_params(True)
 
         name = None
         if self.check_label("Identifier"):
@@ -1199,7 +1207,7 @@ class Parser:
 
             if self.check_label("LParen"):
 
-                if self.execution_scope_level < 1:
+                if self.execution_scope_level < 1 and not self.in_constant_definition:
                     raise SyntaxException(
                         f"Function calls must be nested in functions", 
                         self.peek()

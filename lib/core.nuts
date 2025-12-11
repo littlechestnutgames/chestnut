@@ -60,6 +60,14 @@ fn printline(variadic a : Any)
     return __internal_printline__(spread a)
 endfn
 
+fn printline(variadic a : String)
+    return __internal_printline__(spread a)
+endfn
+
+fn printline(f : Float)
+    return __internal_printline__(f)
+endfn
+
 fn length(a : List) returns Integer
     return __internal_length__(a)
 endfn
@@ -300,7 +308,7 @@ fn get_bit_width(v : Integer) returns Integer
     return __internal_get_bit_width__(v)
 endfn
 
-fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteger) returns UnsignedInteger
+fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns UnsignedInteger
     let get_cast_fn = fn (bit_width : Integer) returns Function
         let func = null
         case bit_width
@@ -326,7 +334,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : UnsignedInteg
         return cast_fn(0)
     endif
 
-    let bit_len = get_bit_width(original_bytes)
+    let bit_len = get_bit_width(original_bytes[0])
 
     # Guard from bits that won't fit into the target size.
     if (bit_len * original_len) > target_bit_width
@@ -366,6 +374,10 @@ endfn
 
 fn round(v : Float, d : Integer = null) returns Float
     return __internal_round__(v, d)
+endfn
+
+fn ceil(v : Number) returns Float
+    return __internal_ceil__(v)
 endfn
 
 fn ceil(v : Float) returns Float

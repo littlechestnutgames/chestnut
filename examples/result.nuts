@@ -11,7 +11,7 @@ fn main(variadic args : String)
         .and_then(add_one)
 
     # Expected Output: The number 7
-    printline("Final value: {{ final_result.value }}")
+    printline("Final value: {{ final_result.success }}")
 
     # Expected Output: null
     printline("Error value: {{ final_result.error }}")
