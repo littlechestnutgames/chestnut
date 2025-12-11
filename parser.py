@@ -603,7 +603,7 @@ class Parser:
 
         return IfStatementNode(if_condition_expression, if_statements, elif_blocks, else_block)
 
-    def pull_params(self):
+    def pull_params(self, allow_missing_label=False):
         self.consume() # Consume the (
         params = []
 
@@ -625,6 +625,11 @@ class Parser:
         if not self.check_label("Identifier"):
             raise SyntaxException(f"Expected identifier in function parameters, got {self.peek().label}", self.peek())
         identifier = self.consume() # Consume identifier
+
+        if allow_missing_label and self.check_label("RParen"):
+            self.consume()
+            params.append(FnParameter(Token("String", " ", 0, 0), identifier, None, False))
+            return params
 
         # Parse type delimiter
         if not self.check_label("Colon"):
@@ -743,7 +748,7 @@ class Parser:
         self.execution_scope_level += 1
         struct_params = None
         if self.check_label("LParen"):
-            struct_params = self.pull_params()
+            struct_params = self.pull_params(True)
 
         name = None
         if self.check_label("Identifier"):
