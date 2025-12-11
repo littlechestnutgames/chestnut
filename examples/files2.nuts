@@ -2,6 +2,7 @@ fn log_error(e : Error) returns Error
     printline("[ERROR] {{ e.message }}")
     return e
 endfn
+
 fn main(variadic args : String)
     open_file("examples/my_file2", "w")
         .catching(printline)

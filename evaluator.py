@@ -492,8 +492,6 @@ class Evaluator:
         func_object = Function(node)
         struct_type_object.function_register.register(func_object)
 
-        if self.exists_in_any_scope(scope_key):
-            raise RuntimeError(f"{method_name} for struct {struct_name} already exists", node)
         self.current_scope()[scope_key] = func_object
 
         return 1
@@ -855,17 +853,26 @@ class Evaluator:
         if not isinstance(callable, StructMethodCall) and not isinstance(callable, AnonymousFunction):
             func = self.function_register.resolve(node.identifier.data, finalized_args)
 
-        if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
-            raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
-        self.calling_builtin = False
         identifier = None
         instance = None
         receiver_name = None
+        if isinstance(callable, StructMethodCall):
+            instance = callable.instance 
+            struct_type_name = instance.__class__.__name__
+            struct_scope = self.find_first_scope_containing(struct_type_name)
+            struct_type = struct_scope[struct_type_name]
+            func = struct_type.function_register.resolve(callable.func_object.statement.name.data, finalized_args)
+            identifier = func.statement.target_struct.name.data 
+            receiver_name = identifier
 
+        if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
+            raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
+
+        self.calling_builtin = False
         if isinstance(callable, StructNode):
             method = "constructor"
             func = callable.function_register.resolve(method, finalized_args)
-        if isinstance(callable, StructMethodCall):
+        if isinstance(callable, StructMethodCall) and func is None:
             instance = callable.instance
             func = callable.func_object
             identifier = func.statement.target_struct.name.data
