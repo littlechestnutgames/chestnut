@@ -25,7 +25,7 @@ class FunctionRegister:
     def is_registered(self, name):
         return name in self.functions
 
-    def register(self, func, call_depth=0):
+    def register(self, func):
         fname = ""
         if isinstance(func, BridgeFunction):
             fname = func.identifier.data
@@ -37,23 +37,10 @@ class FunctionRegister:
 
         for candidate in registry["candidates"]:
             if candidate.statement.mangled_key == func.statement.mangled_key:
-                # Function register is temporarily disabled until we get functions
-                # Registering in lexical scope instead of with the global FunctionRegister
-                # Any function that defines inner functions right now will error out
-                # if the code below the return were enabled.
+                registry["candidates"][registry["candidates"].index(candidate)] = func
                 return
-                # raise RuntimeException("Cannot define a function overload with the same parameters", func.statement.name)
-        if not hasattr(func, "call_depth"):
-            setattr(func, "call_depth", call_depth)
 
         registry["candidates"].insert(0, func)
-
-    def prune(self, call_depth):
-        for k, f in self.functions:
-            if hasattr(f, "call_depth"):
-                depth = getattr(f, "call_depth")
-                if depth >= call_depth:
-                    self.functions[k].remove(f)
 
     def resolve(self, name, call_parameters=[]):
         if name not in self.functions:
@@ -197,7 +184,6 @@ class StructNode:
         params = []
         for param in  self.definition.properties:
             params.append(FnParameter(param.identifier, param.value_type, CHESTNUT_NULL))
-        self.function_register.register(BridgeFunction(Token("Identifier", "constructor", None, None), params))
 
     def get_name(self):
         return self.definition.identifier.data
@@ -496,9 +482,16 @@ class Evaluator:
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructFnStatementNode", node)
 
         struct_name = node.target_struct.paramtype.data
+        struct_type_scope = self.find_first_scope_containing(struct_name)
+        if struct_type_scope is None:
+            raise TypeException("Struct {struct_name} could not be found", node)
+        struct_type_object = struct_type_scope[struct_name]
+
         method_name = node.name.data
         scope_key = f"{struct_name} {method_name}"
         func_object = Function(node)
+        struct_type_object.function_register.register(func_object)
+
         if self.exists_in_any_scope(scope_key):
             raise RuntimeError(f"{method_name} for struct {struct_name} already exists", node)
         self.current_scope()[scope_key] = func_object
@@ -869,9 +862,9 @@ class Evaluator:
         instance = None
         receiver_name = None
 
-        # if isinstance(callable, StructNode):
-        #     method = "constructor"
-        #     func = callable.function_register.resolve(method, [ self.evaluate(x) for x in node.params ])
+        if isinstance(callable, StructNode):
+            method = "constructor"
+            func = callable.function_register.resolve(method, finalized_args)
         if isinstance(callable, StructMethodCall):
             instance = callable.instance
             func = callable.func_object
@@ -910,7 +903,7 @@ class Evaluator:
 
         if isinstance(func, StructNode):
             self.scopes[0]["call depth"] -= ChestnutInteger(1)
-            return func.constructor(*[self.evaluate(x) for x in node.params])
+            return func.constructor(*finalized_args)
 
         if not isinstance(func, Function) and not isinstance(func, AnonymousFunction) and not isinstance(func, BridgeFunction):
             # Block function calls to other stored data.
@@ -932,7 +925,7 @@ class Evaluator:
                     final_args.append(value)
             from bridge import py_bridge as core
                 
-            if not hasattr(core,func.identifier.data):
+            if not hasattr(core, func.identifier.data):
                 raise InternalException(f"{func.identifier.data} does not exist in the core built-ins", node)
             result = core.__dict__[func.identifier.data](
                 *final_args

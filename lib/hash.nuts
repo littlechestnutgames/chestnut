@@ -1,10 +1,5 @@
 # Algorithm implemented from FIPS 180-4.
 
-# A function that takes the bits in A, B, C, and D and makes them into a single UInt32
-fn pack_uint8_to_uint32 (A : UInt8, B : UInt8, C : UInt8, D : UInt8) returns UInt32
-    return (uint32(A) << 24) | (uint32(B) << 16) | (uint32(C) << 8) | uint32(D)
-endfn
-
 fn sha256(message : String) returns List
     # Choice function - If x is 1, the output is y, if x is 0, the output is z.
     let Ch = fn (x : UInt32, y : UInt32, z : UInt32) return (x & y) ^ (~x & z) endfn
@@ -23,20 +18,8 @@ fn sha256(message : String) returns List
     # Small sigma 1 - Diffusion funciton used in message schedule Wt
     let σ1 = fn (x : UInt32) return (x >>> 17) ^ (x >>> 19) ^ (x >> 10) endfn
 
-    # The 64 round constants derived from the first 64 fractional cube roots, adding a non-linear salt to protect against mathematical attacks.
-    constant K = [
-        uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5), uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
-        uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3), uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7), uint32(0xc19bf174),
-        uint32(0xe49b69c1), uint32(0xefbe4786), uint32(0x0fc19dc6), uint32(0x240ca1cc), uint32(0x2de92c6f), uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
-        uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8), uint32(0xbf597fc7), uint32(0xc6e00bf3), uint32(0xd5a79147), uint32(0x06ca6351), uint32(0x14292967),
-        uint32(0x27b70a85), uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13), uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e), uint32(0x92722c85),
-        uint32(0xa2bfe8a1), uint32(0xa81a664b), uint32(0xc24b8b70), uint32(0xc76c51a3), uint32(0xd192e819), uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
-        uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c), uint32(0x34b0bcb5), uint32(0x391c0cb3), uint32(0x4ed8aa4a), uint32(0x5b9cca4f), uint32(0x682e6ff3),
-        uint32(0x748f82ee), uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208), uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)
-    ]
-
     # Pad the messages and divide them into blocks of 512 bits.
-    fn pad_message () returns List
+    let pad_message = fn () returns List
         let message_bytes = bytes(message)
         let bit_length = uint64(length(message_bytes) * 8)
 
@@ -89,6 +72,18 @@ fn sha256(message : String) returns List
 
         return blocks
     endfn
+
+    # The 64 round constants derived from the first 64 fractional cube roots, adding a non-linear salt to protect against mathematical attacks.
+    constant K = [
+        uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5), uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
+        uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3), uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7), uint32(0xc19bf174),
+        uint32(0xe49b69c1), uint32(0xefbe4786), uint32(0x0fc19dc6), uint32(0x240ca1cc), uint32(0x2de92c6f), uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
+        uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8), uint32(0xbf597fc7), uint32(0xc6e00bf3), uint32(0xd5a79147), uint32(0x06ca6351), uint32(0x14292967),
+        uint32(0x27b70a85), uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13), uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e), uint32(0x92722c85),
+        uint32(0xa2bfe8a1), uint32(0xa81a664b), uint32(0xc24b8b70), uint32(0xc76c51a3), uint32(0xd192e819), uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
+        uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c), uint32(0x34b0bcb5), uint32(0x391c0cb3), uint32(0x4ed8aa4a), uint32(0x5b9cca4f), uint32(0x682e6ff3),
+        uint32(0x748f82ee), uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208), uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)
+    ]
 
     # Get the padded blocks
     let M = pad_message()

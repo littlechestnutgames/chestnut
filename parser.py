@@ -399,6 +399,7 @@ class Parser:
         self.next = None
         self.consume()
         self.execution_scope_level = execution_scope_level
+        self.in_constant_definition = False
 
     def consume(self):
         token = self.current
@@ -462,6 +463,8 @@ class Parser:
         return statement
 
     def parse_let_statement(self):
+        if self.check_label("Constant"):
+            self.in_constant_definition = True
         if not self.check_label("Constant") and self.execution_scope_level < 1:
             raise SyntaxException("let cannot be used outside of fn statements.", self.peek())
         let_token = self.consume()
@@ -493,7 +496,7 @@ class Parser:
             raise SyntaxException(f"Expected '=' after identifier {name_token.data} in let statement", self.peek())
 
         expression = self.parse_expression()
-
+        self.in_constant_definition = False
         if let_token.label == "Shadow":
             return ShadowStatementNode(name_token, expression, explicit_type)
         elif let_token.label == "Constant":
@@ -1199,7 +1202,7 @@ class Parser:
 
             if self.check_label("LParen"):
 
-                if self.execution_scope_level < 1:
+                if self.execution_scope_level < 1 and not self.in_constant_definition:
                     raise SyntaxException(
                         f"Function calls must be nested in functions", 
                         self.peek()
