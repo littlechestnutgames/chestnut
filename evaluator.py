@@ -85,9 +85,13 @@ class FunctionRegister:
                 param = candidate_params[i]
                 expected_type = TYPE_MAPPING[param.paramtype.data] if param.paramtype.data in TYPE_MAPPING else eval(param.paramtype.data)
                 runtime_arg = call_params[i]
+                inheritance_mapping = {}
+                if isinstance(runtime_arg, ChestnutStruct):
+                    inheritance_mapping = getattr(runtime_arg.__struct_node__,"inheritance_mapping")
+
                 if runtime_arg is expected_type:
                     current_score += 5
-                elif isinstance(runtime_arg, expected_type) and expected_type is not None:
+                elif isinstance(runtime_arg, expected_type) and expected_type is not None or param.paramtype.data in inheritance_mapping:
                     current_score += 3
                 elif expected_type == ChestnutAny:
                     current_score += 1
@@ -105,9 +109,13 @@ class FunctionRegister:
                 for i in range(num_fixed_params, num_call_params):
                     runtime_arg = call_params[i]
 
+                    inheritance_mapping = {}
+                    if isinstance(runtime_arg, ChestnutStruct):
+                        inheritance_mapping = getattr(runtime_arg.__struct_node__,"inheritance_mapping")
+
                     if runtime_arg is variadic_type:
                         current_score += 5
-                    elif isinstance(runtime_arg, variadic_type) and variadic_type is not None:
+                    elif isinstance(runtime_arg, variadic_type) and variadic_type is not None or variadic_param.paramtype.data in inheritance_mapping:
                         current_score += 3
                     elif variadic_type == ChestnutAny:
                         current_score += 1 
@@ -195,7 +203,8 @@ class StructNode:
             "__repr__": lambda self: name + "(" + str(properties) + ")",
             "__str__": lambda self: name + "(" + str(properties) + ")",
             "__init__": generate_struct_init(properties),
-            "gettype": lambda self: name
+            "gettype": lambda self: name,
+            "__struct_node__": self
         })
         struct_instance = struct_class(*args)
         return struct_instance
@@ -594,10 +603,40 @@ class Evaluator:
         if not isinstance(node, StructDefinitionNode):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructDefinitionNode", node)
         label = node.identifier.data
+        
         scope = self.find_first_scope_containing(label)
         if not scope is None:
             raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
+
+        inherits = []
+        inserted = []
+        inheritance_mapping = {}
+        def collect_inheritance(definition):
+            for struct_label_tk in definition.inherits:
+                struct_label = struct_label_tk.data 
+                inheritor_scope = self.find_first_scope_containing(struct_label)
+                if inheritor_scope is None:
+                    raise TypeException(f"Struct {struct_label} does not exist", node)
+                struct_node = inheritor_scope[struct_label]
+                new_def = struct_node.definition
+                collect_inheritance(new_def)
+                if struct_label not in inserted:
+                    inheritance_mapping[struct_label] = struct_node
+                    inserted.append(struct_label)
+                    inherits.append(new_def)
+        collect_inheritance(node)
+        props = []
+        for inherited_definition in inherits:
+            for prop in inherited_definition.properties:
+                if prop not in props:
+                    props.append(prop)
+        for prop in node.properties:
+            if prop not in props:
+                props.append(prop)
+        node.properties = props
+
         struct_node = StructNode(node)
+        setattr(struct_node, "inheritance_mapping", inheritance_mapping)
         struct_instance = struct_node.constructor()
         TYPE_MAPPING[label] = struct_instance.__class__
         self.current_scope()[label] = struct_node
@@ -652,6 +691,21 @@ class Evaluator:
             scope = self.find_first_scope_containing(scope_key)
             if scope is not None:
                 func_object = scope[scope_key]
+                return StructMethodCall(target_object, func_object)
+        if isinstance(target_object, StructNode):
+            if property_name in target_object.function_register.functions:
+                return StructMethodCall(target_object, target_object.function_register.functions[property_name]["candidates"][0])
+        if not hasattr(target_object, property_name):
+            struct_node = target_object.__struct_node__
+            function_registers = [struct_node.function_register]
+            inheritance_mapping = getattr(struct_node, "inheritance_mapping")
+            for sn in inheritance_mapping.keys():
+                function_registers.append(inheritance_mapping[sn].function_register)
+            func_object = None
+            for fr in function_registers:
+                if property_name in fr.functions:
+                    func_object = fr.functions[property_name]["candidates"][0]
+            if func_object is not None:
                 return StructMethodCall(target_object, func_object)
         return getattr(target_object, property_name)
 
@@ -858,12 +912,39 @@ class Evaluator:
         receiver_name = None
         if isinstance(callable, StructMethodCall):
             instance = callable.instance 
-            struct_type_name = instance.__class__.__name__
-            struct_scope = self.find_first_scope_containing(struct_type_name)
-            struct_type = struct_scope[struct_type_name]
-            func = struct_type.function_register.resolve(callable.func_object.statement.name.data, finalized_args)
-            identifier = func.statement.target_struct.name.data 
-            receiver_name = identifier
+            if isinstance(instance, StructNode):
+                # Static method handling
+                func = instance.function_register.resolve(callable.func_object.statement.name.data)
+            else:
+                struct_type = instance.__struct_node__
+                inheritance_mapping = dict(getattr(struct_type,"inheritance_mapping"))
+                inheritance_mapping[callable.__class__.__name__] = instance.__class__
+                bfs = [callable.__class__.__name__]
+                visited = []
+                fname = callable.func_object.statement.name.data
+                identifier = None
+                receiver_name = None
+
+                while len(bfs) > 0:
+                    stype = bfs.pop(0)
+                    if stype in visited:
+                        continue
+                    visited.append(stype)
+                    if isinstance(stype, Token):
+                        stype = stype.data
+                    current_struct_type = inheritance_mapping[stype]
+                
+                    if isinstance(current_struct_type, StructNode):
+                        current_struct_node = current_struct_type
+                    else:
+                        current_struct_node = current_struct_type.__struct_node__
+                    func = current_struct_node.function_register.resolve(fname, finalized_args)
+                    if func is not None:
+                        identifier = func.statement.target_struct.name.data 
+                        receiver_name = identifier
+                        break
+
+                    bfs.extend(current_struct_node.definition.inherits)
 
         if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
@@ -872,6 +953,7 @@ class Evaluator:
         if isinstance(callable, StructNode):
             method = "constructor"
             func = callable.function_register.resolve(method, finalized_args)
+
         if isinstance(callable, StructMethodCall) and func is None:
             instance = callable.instance
             func = callable.func_object
