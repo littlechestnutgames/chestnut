@@ -1,0 +1,47 @@
+struct A
+    my_prop : String
+endstruct
+
+fn (a_struct : A) print_a(message : String)
+    printline("{{ a_struct.my_prop }}: {{ message }}")
+endfn
+
+fn (a_struct : A) my_func()
+    printline(a_struct.my_prop)
+endfn
+
+struct B inherits (A)
+    my_prop2 : Integer
+endstruct
+
+struct C inherits (A)
+    my_prop3 : Boolean
+endstruct
+
+struct D inherits (B, C)
+    my_prop4 : Result
+endstruct
+
+fn (d_struct : D) print_thing(a : A)
+    printline(d_struct.my_prop4.success)
+    printline(a.my_prop)
+endfn
+
+fn (D) my_static(a : String, b : Integer, c : Boolean)
+    return D(a, b, c, Result(true, null))
+endfn
+
+fn main()
+    let d = D("Test", 1, false, Result("Cool", null))
+    print("
+D my_prop is {{ d.my_prop }}
+D my_prop2 is {{ d.my_prop2 }}
+D my_prop3 is {{ d.my_prop3 }}
+D my_prop4 is {{ d.my_prop4.success }}
+")
+
+d.print_thing(d)
+d.print_a("Testing")
+let d2 = D.my_static("Test", 2, true)
+d2.print_a(" From STATIC")
+endfn

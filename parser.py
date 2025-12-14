@@ -356,12 +356,13 @@ class ExpressionStatementNode():
         return f"ExpressionStatementNode(<{self.expression}>)"
 
 class StructDefinitionNode():
-    def __init__(self, identifier, properties):
+    def __init__(self, identifier, properties, inherits=[]):
         self.identifier = identifier
         self.properties = properties
+        self.inherits = inherits
 
     def __repr__(self):
-        return f"StructDefinitionNode(<{self.identifier}>, <{self.properties}>)"
+        return f"StructDefinitionNode(<{self.identifier}>)"
 
     def get_name(self):
         return self.identifier.data
@@ -509,6 +510,23 @@ class Parser:
             raise SyntaxException(f"Expected identifier after struct", self.peek())
         identifier = self.consume()
 
+        inherits = []
+        if self.check_label("Inherits"):
+            self.consume() # Consume inherits
+            if not self.check_label("LParen"):
+                raise SyntaxException("Expected '(' after inherits in struct definition", self.peek())
+            self.consume() # Consume (
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+            inherits.append(self.consume()) # Consumes identifier
+            while self.check_label("Comma"):
+                self.consume() # Consumes ,
+                if not self.check_label("Identifier"):
+                    raise SyntaxException(f"Expected identifier, got {self.peek().label}", self.peek())
+                inherits.append(self.consume())
+            if not self.check_label("RParen"):
+                raise SyntaxException(f"Expected ')' after inherits list, got {self.peek().label}", self.peek())
+            self.consume() # Consume )
         properties = []
         while not self.check_label("Endstruct"):
             if not self.check_label("Identifier"):
@@ -530,7 +548,7 @@ class Parser:
 
         self.consume()
 
-        return StructDefinitionNode(identifier, properties)
+        return StructDefinitionNode(identifier, properties, inherits)
 
     def parse_import_statement(self):
         keyword = self.consume()
