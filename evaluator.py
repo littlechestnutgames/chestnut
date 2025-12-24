@@ -9,13 +9,12 @@ import os
 
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
+        if args:
+            raise TypeError(f"Struct constructor takes 0 positional arguments. Use static 'new' function instead")
         ChestnutStruct.__init__(self, CHESTNUT_NULL)
         i = 0
         for i, prop in enumerate(properties):
-            if i < len(args):
-                setattr(self, prop.identifier.data, args[i])
-            else:
-                setattr(self, prop.identifier.data, CHESTNUT_NULL)
+            setattr(self, prop.identifier.data, CHESTNUT_NULL)
     return struct_instance_init
 
 class FunctionRegister:
@@ -127,6 +126,8 @@ class FunctionRegister:
                 best_score = current_score
                 best_match_candidate = candidate
 
+        if best_match_candidate is not None:
+            print(best_match_candidate.get_params())
         return best_match_candidate
 
 class BringVariable:
@@ -283,6 +284,7 @@ class Function(ChestnutAny):
                 has_variadic = True
 
         if (len(evaluated_args) < required_count) or (not has_variadic and len(evaluated_args) > len(statement.parameters)):
+            print(statement)
             raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(evaluated_args)}")
 
         values = {}
@@ -950,19 +952,12 @@ class Evaluator:
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
 
         self.calling_builtin = False
-        if isinstance(callable, StructNode):
-            method = "constructor"
-            func = callable.function_register.resolve(method, finalized_args)
 
         if isinstance(callable, StructMethodCall) and func is None:
             instance = callable.instance
             func = callable.func_object
             identifier = func.statement.target_struct.name.data
             receiver_name = identifier
-
-            # scope_key = f"{func.statement.target_struct.paramtype.data} {func.statement.name.data}"
-            # first_scope = self.find_first_scope_containing(scope_key)
-            # first_scope[identifier] = instance
 
         if isinstance(node.identifier, AnonymousFnExpressionNode):
             func = AnonymousFunction(node.identifier)
@@ -974,8 +969,7 @@ class Evaluator:
 
             identifier = node.identifier.data
             func_scope = self.find_first_scope_containing(identifier)
-            # l = self.function_register.resolve(identifier, [ self.evaluate(x) for x in node.params ])
-            # Check if the scope was found and assign from the function inside.
+
             if func_scope:
                 func = func_scope[identifier]
 

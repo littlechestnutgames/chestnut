@@ -3,12 +3,18 @@ struct Result
     error : Error
 endstruct
 
-fn new_result_from_tuple(tuple : Any) returns Result
+fn (Result) new(success : Any, error : Error) returns Result
+    let result = Result()
+    result.success = success
+    result.error = error
+endfn
+
+fn from_tuple(tuple : Any) returns Result
     if length(tuple) < 2
-        return Result(null, Error("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
+        return Result.new(null, Error.new("new_result_from_tuple called on Tuple {{ tuple }}, but does not have two values"))
     endif
     let success, err = tuple
-    return Result(success, err)
+    return Result.new(success, err)
 endfn
 
 fn (result : Result) unwrap (default_value : Any) returns Any
@@ -25,7 +31,7 @@ fn (result : Result) and_then (func : Function, variadic params : Any) returns R
     if gettype(call_result) == "Result"
         return call_result
     else
-        return Result(call_result, null)
+        return Result.new(call_result, null)
     endif
 endfn
 
@@ -33,22 +39,16 @@ fn (result : Result) tap (func : Function, variadic params : Any) returns Result
     if result.error != null or result.success == null
         return result
     endif
-    let call_result = func(spread params)
-    if gettype(call_result) == "Result"
-        return call_result
-    else
-        return Result(call_result, null)
-    endif
+    func(spread params)
+    return result
 endfn
 
 fn (result: Result) catching (func : Function, variadic params : Any) returns Result
     if result.error != null
         let call_result = func(result.error, spread params)
-        if gettype(call_result) == "Result"
-            return call_result
-        else
-            return Result(null, call_result)
-        endif
+        return use call_result
+               over Result.new(null, call_result)
+               unless gettype(call_result) != "Result"
     else
         return result
     endif

@@ -28,17 +28,29 @@ fn (d_struct : D) print_thing(a : A)
 endfn
 
 fn (D) my_static(a : String, b : Integer, c : Boolean)
-    return D(a, b, c, Result(true, null))
+    let d = D()
+    d.my_prop = a
+    d.my_prop2 = b
+    d.my_prop3 = c
+    d.my_prop4 = Result()
+    d.my_prop4.success = true
+    d.my_prop4.error = null
+    return d
 endfn
 
 fn main()
-    let d = D("Test", 1, false, Result("Cool", null))
+    let d = D()
+    d.my_prop = "Test"
+    d.my_prop2 = 1
+    d.my_prop3 = false
+    d.my_prop4 = Result()
+    d.my_prop4.success = "Cool"
+    d.my_prop4.error = null
     print("
-D my_prop is {{ d.my_prop }}
-D my_prop2 is {{ d.my_prop2 }}
-D my_prop3 is {{ d.my_prop3 }}
-D my_prop4 is {{ d.my_prop4.success }}
-")
+        D my_prop is {{ d.my_prop }}
+        D my_prop2 is {{ d.my_prop2 }}
+        D my_prop3 is {{ d.my_prop3 }}
+        D my_prop4 is {{ d.my_prop4.success }}")
 
 d.print_thing(d)
 d.print_a("Testing")

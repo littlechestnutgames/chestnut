@@ -1,0 +1,31 @@
+struct A
+    properties : List
+endstruct
+
+struct B
+    name : String
+endstruct
+
+fn (A) new(variadic properties : B) returns A
+    let a = A()
+    a.properties = properties
+    return a
+endfn
+
+fn (B) new(name : String, message : String) returns B
+    printline(message)
+    let b = B()
+    b.name = name
+    return b
+endfn
+
+fn (B) new(name : String) returns B
+    let b = B()
+    b.name = name
+    return b
+endfn
+
+fn main ()
+    let b1 = B.new("Test")
+    let b2 = B.new("Test", "Thing")
+endfn

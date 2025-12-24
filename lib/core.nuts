@@ -404,3 +404,7 @@ endfn
 fn contains (l : List, v: Any) returns Boolean
     return index_of(l, v) >= 0
 endfn
+
+fn make_struct(s : StructNode) returns StructNode
+    return s()
+endfn
