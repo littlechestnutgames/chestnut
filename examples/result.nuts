@@ -1,10 +1,10 @@
 fn main(variadic args : String)
     let res = 0
     fn add_one(val : Integer) returns Result
-        return Result(val + 1, null)
+        return Result.new(val + 1, null)
     endfn
 
-    let initial_result = Result(5, null)
+    let initial_result = Result.new(5, null)
 
     let final_result = initial_result
         .and_then(add_one)

@@ -16,7 +16,7 @@ endstruct
 # the default of 7 means that the amount of buckets
 # will be 128. HashMaps won't shrink past the initial
 # size specified.
-fn new_hashmap(initial_size : Integer = 7) returns HashMap
+fn (HashMap) new(initial_size : Integer = 7) returns HashMap
     if initial_size < 0
         halt("HashMap initial size cannot be less than 0.")
     endif
@@ -32,7 +32,7 @@ fn new_hashmap(initial_size : Integer = 7) returns HashMap
 endfn
 
 # Returns a new KV struct instances with key {key} and value {value}.
-fn new_kv(key : String, value : Any) returns KV
+fn (KV) new(key : String, value : Any) returns KV
     let kv = KV()
     kv.key = key
     kv.value = value
@@ -114,7 +114,7 @@ fn (h : HashMap) set(key : String, value : Any)
     if not found
         h.keys = h.keys + 1
         push(h.keys_list, key)
-        push(h.buckets[bucket_index], new_kv(key, value))
+        push(h.buckets[bucket_index], KV.new(key, value))
     endif
 endfn
 
@@ -148,10 +148,10 @@ fn (h : HashMap) unset(key : String) returns Result
         endif
 
         # Return the popped index.
-        return Result(res, null)
+        return Result.new(res, null)
     else
         # Tell them we couldn't find it.
-        return Result(null, Error("Key not found"))
+        return Result.new(null, Error.new("Key not found"))
     endif
 endfn
 

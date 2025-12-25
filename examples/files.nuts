@@ -25,14 +25,14 @@ fn read_line(handle : FileHandle) returns Result
     loop
         let c = read_file_handle(handle, 1)
         if c.error != null
-            return Result(null, c.error)
+            return Result.new(null, c.error)
         endif
         if length(c.value) == 0 or c.value == "\n"
             break
         endif
         str += c.value
     endloop
-    return Result(str, null)
+    return Result.new(str, null)
 endfn
 
 fn main(variadic args: String)

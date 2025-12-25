@@ -3,3 +3,9 @@ struct Error
     error: Error
 endstruct
 
+fn (Error) new(message : String, error : Error = null)
+    let e = Error()
+    e.message = message
+    e.error = error
+    return e
+endfn

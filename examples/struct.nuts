@@ -10,10 +10,7 @@ struct MineralProperty
     value: Any
 endstruct
 
-###
-We currently don't have constructors for structs that take arguments (WIP).
-###
-fn new_mineral(name : String = "No name given", weight : Float = 0.0, variadic properties : MineralProperty) returns Mineral
+fn (Mineral) new(name : String = "No name given", weight : Float = 0.0, variadic properties : MineralProperty) returns Mineral
     let m = Mineral()
     m.name = name
     m.weight = weight
@@ -22,7 +19,7 @@ fn new_mineral(name : String = "No name given", weight : Float = 0.0, variadic p
     return m
 endfn
 
-fn new_property(name : String, value : Any) returns MineralProperty
+fn (MineralProperty) new(name : String, value : Any) returns MineralProperty
     let mp = MineralProperty()
     mp.name = name
     mp.value = value
@@ -37,59 +34,60 @@ fn (mineral : Mineral) get_property_value(name : String) returns (Any, Error)
 	endif
     endfor
 
-    return (null, Error("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
+    return (null, Error.new("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
 endfn
 
 fn (mineral : Mineral) get_property_value2(name : String) returns Result
     for mineral.properties as property
         if property.name == name
-	    return Result(property.value, null)
+            let res = Result.new(property.value, null)
+	    return Result.new(property.value, null)
 	endif
-	return Result(null, Error("Fall through case."))
+	return Result.new(null, Error.new("Fall through case."))
     endfor
 
-    return Result(null, Error("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
+    return Result.new(null, Error.new("Couldn't find property {{ name }} in Mineral {{ mineral.name }}"))
 endfn
 fn main (variadic args : String)
     # Create some minerals.
-    let diamond = new_mineral(
+    let diamond = Mineral.new(
         "Diamond",
         0.5,
-        new_property("Hardness", 10),
-        new_property("Refractive index", "Very High"),
-        new_property("Applications", "Industrial, jewelry")
+        MineralProperty.new("Hardness", 10),
+        MineralProperty.new("Refractive index", "Very High"),
+        MineralProperty.new("Applications", "Industrial, jewelry")
     )
 
-    let ruby = new_mineral(
+    let ruby = Mineral.new(
         "Ruby",
         25.23,
-        new_property("Hardness", 9),
-        new_property("Refractive index", "High"),
-        new_property("Applications", "Jewelry, lasers")
+        MineralProperty.new("Hardness", 9),
+        MineralProperty.new("Refractive index", "High"),
+        MineralProperty.new("Applications", "Jewelry, lasers")
     )
 
-    let emerald = new_mineral(
+    let emerald = Mineral.new(
         "Emerald",
         38.22,
-        new_property("Hardness", 7.5),
-        new_property("Refractive index", "Medium"),
-        new_property("Applications", "Jewelry")
+        MineralProperty.new("Hardness", 7.5),
+        MineralProperty.new("Refractive index", "Medium"),
+        MineralProperty.new("Applications", "Jewelry")
     )
 
-    let quartz = new_mineral(
+    let quartz = Mineral.new(
         "Quartz",
         220.12,
-        new_property("Hardness", 7),
-        new_property("Refractive index", "Low"),
-        new_property("Applications", "Timepieces, glass, electronics")
+        MineralProperty.new("Hardness", 7),
+        MineralProperty.new("Refractive index", "Low"),
+        MineralProperty.new("Applications", "Timepieces, glass, electronics")
     )
 
-    let amethyst = new_mineral(
+    let amethyst = Mineral.new(
         "Amethyst",
         0.1,
-        new_property("Hardness", 7),
-        new_property("Refractive index", "Low"),
-        new_property("Applications", "Jewelry, decorative carvings")
+        MineralProperty.new("Hardness", 7),
+        MineralProperty.new("Refractive index", "Low"),
+        MineralProperty.new("Applications", "Jewelry, decorative carvings")
     )
 
     let minerals = [diamond, ruby, emerald, quartz, amethyst]
@@ -111,7 +109,7 @@ fn main (variadic args : String)
 
     push(
         amethyst.properties,
-        new_property(
+        MineralProperty.new(
             "Special",
 	    fn (factor : Float) brings(amethyst) returns Float
 	        return factor * amethyst.weight

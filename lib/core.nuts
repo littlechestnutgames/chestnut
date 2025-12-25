@@ -185,23 +185,23 @@ fn span (input : String, terminator : String) returns String
 endfn
 
 fn open_file(path : String, mode : String) returns Result
-    return new_result_from_tuple(__internal_open_file__(path, mode))
+    return Result.from_tuple(__internal_open_file__(path, mode))
 endfn
 
 fn read_file_handle(handle : FileHandle, size : Integer) returns Result
-    return new_result_from_tuple(__internal_read_file__(handle, size))
+    return Result.from_tuple(__internal_read_file__(handle, size))
 endfn
 
 fn write_file_handle(handle : FileHandle, data : Any) returns Result
-    return new_result_from_tuple(__internal_write_file__(handle, data))
+    return Result.from_tuple(__internal_write_file__(handle, data))
 endfn
 
 fn delete_file(path: String) returns Result
-    return new_result_from_tuple(__internal_delete_file__(path))
+    return Result.from_tuple(__internal_delete_file__(path))
 endfn
 
 fn close_file(handle : FileHandle) returns Result
-    return new_result_from_tuple(__internal_close_file__(handle))
+    return Result.from_tuple(__internal_close_file__(handle))
 endfn
 
 fn halt(message : Any)
@@ -357,15 +357,6 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns 
     endfor
 
     return working
-endfn
-
-fn assert(condition : Boolean, ctx : Any = null)
-    if not condition
-        if ctx != null
-            halt("Assertion failed: {{ ctx }}")
-        endif
-        halt("Assertion failed.")
-    endif
 endfn
 
 fn get_time() returns Integer

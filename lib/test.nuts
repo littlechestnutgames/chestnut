@@ -23,6 +23,15 @@ struct TestResult
     end_time : Integer
 endstruct
 
+fn assert(condition : Boolean, ctx : Any = null)
+    if not condition
+        if ctx != null
+            halt("Assertion failed: {{ ctx }}")
+        endif
+        halt("Assertion failed.")
+    endif
+endfn
+
 fn new_test(label: String, expect : Any, actual_fn : Any, skip : Boolean = false, iterations : Integer = 1) returns Test
     let test = Test()
     test.label = label

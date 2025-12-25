@@ -126,8 +126,6 @@ class FunctionRegister:
                 best_score = current_score
                 best_match_candidate = candidate
 
-        if best_match_candidate is not None:
-            print(best_match_candidate.get_params())
         return best_match_candidate
 
 class BringVariable:
@@ -284,7 +282,6 @@ class Function(ChestnutAny):
                 has_variadic = True
 
         if (len(evaluated_args) < required_count) or (not has_variadic and len(evaluated_args) > len(statement.parameters)):
-            print(statement)
             raise RuntimeException(f"Required number of parameters for `{name}` is {required_count}, got {len(evaluated_args)}")
 
         values = {}
@@ -916,7 +913,7 @@ class Evaluator:
             instance = callable.instance 
             if isinstance(instance, StructNode):
                 # Static method handling
-                func = instance.function_register.resolve(callable.func_object.statement.name.data)
+                func = instance.function_register.resolve(callable.func_object.statement.name.data, finalized_args)
             else:
                 struct_type = instance.__struct_node__
                 inheritance_mapping = dict(getattr(struct_type,"inheritance_mapping"))

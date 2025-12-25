@@ -3,14 +3,15 @@ struct HttpHeaders
     headers : HashMap
 endstruct
 
-fn new_http_headers() returns HttpHeaders
-     let hh = HttpHeaders()
-     hh.headers = new_hashmap(7)
-     return hh
+fn (HttpHeaders) new() returns HttpHeaders
+    let hh = HttpHeaders()
+    hh.headers = HashMap.new(7)
+    return hh
 endfn
 
-fn (hh : HttpHeaders) set_header(name : String, value : String)
+fn (hh : HttpHeaders) set_header(name : String, value : String) returns HttpHeaders
     hh.headers.set(name, value)
+    return hh
 endfn
 
 fn (hh : HttpHeaders) to_string() returns String
@@ -25,7 +26,7 @@ fn (hh : HttpHeaders) to_string() returns String
 endfn
 
 fn main(variadic args : String)
-    let my_headers = new_http_headers()
+    let my_headers = HttpHeaders.new()
     my_headers.set_header("Content-Type", "text/html")
     my_headers.set_header("Accept", "application/json")
 

@@ -1,7 +1,7 @@
 import "collections"
 
 fn main (variadic args : String)
-    let hm = new_hashmap()
+    let hm = HashMap.new()
     hm.set("Hello", "World")
 
     printline(hm.get("Hello"))
