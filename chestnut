@@ -62,11 +62,11 @@ if __name__ == "__main__":
                         argtokens.append(t)
 
             main_scope = evaluator.find_first_scope_containing("main")
-            if main_scope != None:
-                main = main_scope["main"]
-                identifier = main.statement.name
-                lparen = Token("LParen", "(", 0, 0)
-                rparen = Token("RParen", ")", 0, 0)
+            has_main = "main" in evaluator.function_register.functions
+            if has_main:
+                identifier = Token("Identifier", "main", 0, 1)
+                lparen = Token("LParen", "(", 0, 5)
+                rparen = Token("RParen", ")", 0, 6)
                 tokens = [identifier, lparen]
                 tokens.extend(argtokens)
                 tokens.append(rparen)

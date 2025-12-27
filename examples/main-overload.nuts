@@ -1,0 +1,25 @@
+fn main()
+    printline("Hello, world!")
+endfn
+
+fn main(name : String)
+    printline("Hello, {{ name }}")
+endfn
+
+fn main(op : String, num1 : Integer, num2 : Integer)
+    if op == "add"
+        printline(num1 + num2)
+    elif op == "subtract"
+        printline(num1 - num2)
+    elif op == "multiply"
+        printline(num1 * num2)
+    elif op == "divide"
+        printline(num1 / num2)
+    elif op == "mod"
+        printline(num1 % num2)
+    elif op == "pow"
+        printline(num1 ** num2)
+    else
+        printline("Unsupported operation {{ op }}")
+    endif
+endfn
