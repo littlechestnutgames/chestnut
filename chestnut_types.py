@@ -503,43 +503,43 @@ class ChestnutInteger(ChestnutNumber):
 
 class ChestnutInt8(ChestnutInteger):
     BIT_WIDTH = 8
-    MIN = -2**7
-    MAX = 2**7-1
+    MIN = -(2**7)
+    MAX = (2**7)-1
 
 class ChestnutInt16(ChestnutInteger):
     BIT_WIDTH = 16
-    MIN = -2**15
-    MAX = 2**15-1
+    MIN = -(2**15)
+    MAX = (2**15)-1
 
 class ChestnutInt32(ChestnutInteger):
     BIT_WIDTH = 32
-    MIN = -2**31
-    MAX = 2**31-1
+    MIN = -(2**31)
+    MAX = (2**31)-1
 
 class ChestnutInt64(ChestnutInteger):
     BIT_WIDTH = 64
-    MIN = -2**63
-    MAX = 2**63-1
+    MIN = -(2**63)
+    MAX = (2**63)-1
 
 class ChestnutInt128(ChestnutInteger):
     BIT_WIDTH = 128
-    MIN = -2**128
-    MAX = 2**128-1
+    MIN = -(2**127)
+    MAX = (2**127)-1
 
 class ChestnutInt256(ChestnutInteger):
     BIT_WIDTH = 256
-    MIN = -2**256
-    MAX = 2**256-1
+    MIN = -(2**255)
+    MAX = (2**255)-1
 
 class ChestnutInt512(ChestnutInteger):
     BIT_WIDTH = 512
-    MIN = -2**512
-    MAX = 2**512-1
+    MIN = -(2**511)
+    MAX = (2**511)-1
 
 class ChestnutInt1024(ChestnutInteger):
     BIT_WIDTH = 1024
-    MIN = -2**1024
-    MAX = 2**1024-1
+    MIN = -(2**1023)
+    MAX = (2**1023)-1
 
 class ChestnutUnsignedInteger(ChestnutInteger):
     BIT_WIDTH = -1

@@ -1,0 +1,30 @@
+fn fibonacci(l : Integer) returns UInt1024
+    if l <= 0
+        return uint1024(0)
+    elif l == 1
+        return uint1024(1)
+    endif
+
+    let a, b = (uint1024(0), uint1024(1))
+    while loop_index < l - 1
+        let tmp = a
+        a = b
+        b = tmp + a
+    endwhile
+
+    return b
+endfn
+
+fn main()
+    printline(fibonacci(0))
+    printline(fibonacci(1))
+    printline(fibonacci(2))
+    printline(fibonacci(3))
+    printline(fibonacci(4))
+    printline(fibonacci(5))
+    printline(fibonacci(6))
+    printline(fibonacci(7))
+    printline(fibonacci(8))
+    printline(fibonacci(9))
+endfn
+

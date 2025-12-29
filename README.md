@@ -60,7 +60,6 @@ let my_var2 : String = "Hi!" # This variable has String type.
 let my_var = 1               # This is an illegal shadowing of my_var.
 
 # shadow syntax
-shadow my_var = 1            # This is an illegal shadowing. It took place in the same scope as declaration.
 if condition_expression
     shadow my_var = 1        # This sets my_var in this scope to 1 with an inferred type of Integer.
     shadow my_var2 = false   # This sets my_var2 in this scope to false with an inferred type of Boolean.

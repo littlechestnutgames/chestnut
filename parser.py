@@ -934,7 +934,17 @@ class Parser:
     
     def parse_return_statement(self):
         self.consume() # Consume return
-        return ReturnStatementNode(self.parse_expression())
+        # Parse multiple returns
+        expr = self.parse_expression()
+        if self.check_label("Comma"):
+            items = []
+            items.append(expr)
+            while self.check_label("Comma"):
+                self.consume() # Consume comma
+                new_expr = self.parse_expression()
+                items.append(new_expr)
+            return ReturnStatementNode(TupleLiteralNode(tuple(items)))
+        return ReturnStatementNode(expr)
 
     def parse_assignment_statement(self):
         identifier = self.consume()

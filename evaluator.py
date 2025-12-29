@@ -625,13 +625,19 @@ class Evaluator:
                     inherits.append(new_def)
         collect_inheritance(node)
         props = []
+        prop_names = []
         for inherited_definition in inherits:
             for prop in inherited_definition.properties:
-                if prop not in props:
+                if prop.identifier.data not in prop_names:
+                    prop_names.append(prop.identifier.data)
                     props.append(prop)
+                else:
+                    raise SyntaxException(f"Property \"{prop.identifier.data}\" is already defined via inheritance for struct {node.identifier.data}", node.identifier)
         for prop in node.properties:
-            if prop not in props:
+            if prop.identifier.data not in prop_names:
                 props.append(prop)
+            else:
+                raise SyntaxException(f"Property \"{prop.identifier.data}\" is already defined via inheritance for struct {node.identifier.data}", node.identifier)
         node.properties = props
 
         struct_node = StructNode(node)
@@ -843,9 +849,6 @@ class Evaluator:
             if hasattr(var_scope[l.data], "constant"):
                 raise RuntimeException(f"Cannot shadow constant {l.data}", l)
 
-            if l.data in self.current_scope():
-                raise RuntimeException(f"Cannot shadow {l.data} because it was declared or redeclared  in the same scope.")
-
         expression = self.evaluate(node.expression)
         if not isinstance(expression, tuple):
             expression = [expression]
@@ -959,6 +962,10 @@ class Evaluator:
         if isinstance(node.identifier, AnonymousFnExpressionNode):
             func = AnonymousFunction(node.identifier)
 
+        if isinstance(node.identifier, PropertyAccessNode):
+            prop = self.evaluate(node.identifier)
+            if isinstance(prop, Function):
+                func = prop
         if func is None:
             if not self.exists_in_any_scope(node.identifier.data) and not self.exists_in_any_scope(f"constant {node.identifier.data}"):
                 # The function was found neither in non-constant or constant storage.

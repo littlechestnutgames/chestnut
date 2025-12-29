@@ -55,10 +55,10 @@ fn (result: Result) catching (func : Function, variadic params : Any) returns Re
     endif
 endfn
 
-fn (result : Result) unwrap_or_fallback (func : Function) returns Any
+fn (result : Result) unwrap_or_fallback (func : Function, variadic params : Any) returns Any
    if result.error == null
        return result.success
    endif
-   return func(result.error)
+   return func(result.error, spread params)
 endfn
 
