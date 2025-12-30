@@ -912,6 +912,8 @@ class Evaluator:
         identifier = None
         instance = None
         receiver_name = None
+        if isinstance(callable, StructNode):
+            return callable.constructor()
         if isinstance(callable, StructMethodCall):
             instance = callable.instance 
             if isinstance(instance, StructNode):
