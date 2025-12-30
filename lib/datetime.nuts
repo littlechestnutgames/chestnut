@@ -1,0 +1,102 @@
+struct Date
+    year : Integer
+    month : Integer
+    day : Integer
+endstruct
+
+struct Time
+    hour : Integer
+    minute : Integer
+    second : Integer
+    milliseconds : Integer
+endstruct
+
+struct DateTime inherits (Date, Time)
+endstruct
+
+fn is_leap_year (year : Integer) returns Boolean
+    return (year % 4 == 0 and year % 100 == 0) or (year % 400 == 0)
+endfn
+
+fn (DateTime) from_epoch(seconds : Integer) returns DateTime
+     let dt = DateTime()
+     constant SECONDS_IN_DAY = 86400
+
+     # Time Calculation
+     let day_seconds = seconds % SECONDS_IN_DAY
+     dt.hour = day_seconds / 3600
+     dt.minute = (day_seconds % 3600) / 60
+     dt.second = day_seconds % 60
+
+     # Year calculation
+     let remaining_days = seconds / SECONDS_IN_DAY
+     let y = 1970
+     loop
+         let days_in_year = use 365 over 366 unless is_leap_year(y)
+         if remaining_days < days_in_year
+             break
+         endif
+
+         remaining_days = remaining_days - days_in_year
+         y += 1
+     endloop
+     dt.year = y
+
+     # Month calculation
+     constant MONTH_DAYS = [31, use 28 over 29 unless is_leap_year(dt.year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+     let m = 1
+     for MONTH_DAYS as month_days
+         if remaining_days < month_days
+             break
+         endif
+         remaining_days -= month_days
+         m = m + 1
+     endfor
+     dt.month = m
+     dt.day = remaining_days + 1
+     return dt
+endfn
+
+fn (DateTime) from_epoch(seconds : Float) returns DateTime
+    let whole_seconds = int(seconds)
+    let dt = DateTime.from_epoch(whole_seconds)
+    dt.milliseconds = int((seconds - float(whole_seconds)) * 1000.0)
+    return dt
+endfn
+
+fn (dt : DateTime) to_epoch() returns Float
+    let total_days = 0
+    
+    let y = 1970
+    while y < dt.year
+        total_days += use 365 over 366 unless is_leap_year(y)
+        y += 1
+    endwhile
+
+    constant MONTH_DAYS = [31, use 28 over 29 unless is_leap_year(dt.year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    let m = 1
+    while m < dt.month
+        total_days += MONTH_DAYS[m - 1]
+        m += 1
+    endwhile
+
+    total_days += (dt.day - 1)
+
+    let total_seconds = (total_days * 86400) + (dt.hour * 3600) + (dt.minute * 60) + dt.second
+
+    return float(total_seconds) + (float(dt.milliseconds) / 1000.0)
+endfn
+
+fn (dt : DateTime) to_iso_string() returns String
+    let y = "{{ dt.year }}"
+    let m = pad_left("{{ dt.month }}", "0", 2)
+    let d = pad_left("{{ dt.day }}", "0", 2)
+    let h = pad_left("{{ dt.hour }}", "0", 2)
+    let minute = pad_left("{{ dt.minute }}", "0", 2)
+    let s = pad_left("{{ dt.second }}", "0", 2)
+    return "{{ y }}-{{ m }}-{{ d }}T{{ h }}:{{ minute }}:{{ s }}.{{ dt.milliseconds }}Z"
+endfn
+
+fn date_sub(dt1 : DateTime, dt2 : DateTime) returns Float
+    return dt1.to_epoch() - dt2.to_epoch()
+endfn

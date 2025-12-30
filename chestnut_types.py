@@ -701,7 +701,7 @@ class ChestnutFileHandle(ChestnutAny):
 
         return f"ChestnutFileHandle(name='{name}', mode='{mode}')"
 
-    def gettype(self):
+    def gettype(self=None):
         return "FileHandle"
 
     def close(self):

@@ -1,0 +1,11 @@
+import "datetime"
+fn main()
+    let dt = DateTime.from_epoch(get_time())
+    while loop_index < 1000
+        # Nothing
+    endwhile
+    let dt2 = DateTime.from_epoch(get_time())
+    printline(dt.to_iso_string())
+    printline(dt.to_epoch())
+    printline(date_sub(dt2, dt))
+endfn

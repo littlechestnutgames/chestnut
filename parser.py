@@ -426,6 +426,9 @@ class Parser:
     def parse_statement(self):
         token = self.peek()
         statement = None
+        if self.check_label("Semicolon"):
+            while self.check_label("Semicolon"):
+                self.consume()
         if token and token.label in ["Let", "Shadow", "Constant"]:
             statement = self.parse_let_statement()
         elif token and token.label == "Struct":
@@ -460,7 +463,8 @@ class Parser:
         else:
             statement = ExpressionStatementNode(self.parse_expression())
         if self.check_label("Semicolon"):
-            self.consume()
+            while self.check_label("Semicolon"):
+                self.consume()
         return statement
 
     def parse_let_statement(self):
@@ -784,10 +788,16 @@ class Parser:
             if struct_params[0].default_value is not None:
                 raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
 
+        if self.check_label("Semicolon"):
+            self.consume()
         brings = self.parse_brings()
 
+        if self.check_label("Semicolon"):
+            self.consume()
         return_types = self.parse_returns()
 
+        if self.check_label("Semicolon"):
+            self.consume()
         statements = []
 
         while not self.check_label("Endfn"):
@@ -1175,10 +1185,10 @@ class Parser:
                 while self.check_label("Comma"):
                     self.consume() # Consume ,
                     if self.check_label("RParen"):
-                        raise SyntaxExpression("Expected identifier after comma in call", self.peek())
+                        raise SyntaxException("Expected identifier after comma in call", self.peek())
                     params.append(self.parse_expression())
                 if not self.check_label("RParen"):
-                    raise SyntaxExpression("Expected ')' in inline function call", self.peek())
+                    raise SyntaxException("Expected ')' in inline function call", self.peek())
                 self.consume() # Consume ')'
                 left = CallStatementNode(left, params)
                 continue

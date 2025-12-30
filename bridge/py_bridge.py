@@ -256,7 +256,7 @@ def __internal_get_bit_width__(v):
 
 def __internal_get_time__():
     import time
-    return ChestnutInteger(time.time())
+    return ChestnutFloat(time.time())
 
 def __internal_round__(v, d=CHESTNUT_NULL):
     if d == CHESTNUT_NULL:

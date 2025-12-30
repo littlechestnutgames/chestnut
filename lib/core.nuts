@@ -359,7 +359,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns 
     return working
 endfn
 
-fn get_time() returns Integer
+fn get_time() returns Float
     return __internal_get_time__()
 endfn
 
@@ -398,4 +398,15 @@ endfn
 
 fn make_struct(s : StructNode) returns StructNode
     return s()
+endfn
+
+fn pad_left (s : String, char : String, min_length : Integer = 1)
+    if length(s) >= min_length
+        return s
+    endif
+    let pad_num = min_length - length(s)
+    while loop_index < pad_num
+        s = "{{ char }}{{ s }}"
+    endwhile
+    return s
 endfn

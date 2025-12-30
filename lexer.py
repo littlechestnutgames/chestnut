@@ -385,6 +385,6 @@ def is_identifier(c):
         "*", "%", "^", "(", ")",
         "[", "]", ",", ":", "!",
         "<", ">", "#", '"', "~",
-        "|" ]
+        "|", ";" ]
     return not c.isspace() and c not in symbol_blacklist
 
