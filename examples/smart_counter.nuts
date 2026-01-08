@@ -1,0 +1,14 @@
+fn make_smart_counter(start : Number) returns Tuple
+    let count = start
+    
+    fn inc() brings(count) returns Number count += 1 return count endfn
+    fn dec() brings(count) returns Number count -= 1 return count endfn
+    
+    return (inc, dec)
+endfn
+
+fn main()
+    let inc, dec = make_smart_counter(0)
+    printline(inc())
+    printline(dec())
+endfn

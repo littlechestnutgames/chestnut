@@ -52,6 +52,7 @@ token_trie.insert("constant", "Constant")
 token_trie.insert("continue", "Continue")
 token_trie.insert("endwhile", "Endwhile")
 token_trie.insert("inherits", "Inherits")
+token_trie.insert("unshadow", "Unshadow")
 token_trie.insert("variadic", "Variadic")
 
 # 7 character sequences

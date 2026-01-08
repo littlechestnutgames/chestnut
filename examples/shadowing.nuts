@@ -11,9 +11,30 @@ fn main (variadic args : String)
         endfn
     endfn
 
+    fn new_func2_with_shadow() returns Function
+        return fn (local_val : Integer) brings(capture_target) returns Integer
+            # This shadow should override the brings variable.
+            shadow capture_target = 100 + capture_target
+            unshadow capture_target
+            # This ensures the internal reference to the captured variable is used.
+            return capture_target + local_val
+        endfn
+    endfn
+
     let closed_func = new_func_with_shadow()
     printline("Test 1 (Expected 55): {{ closed_func(5) }}")
     printline("Test 2 (Expected 10): {{ capture_target }}")
     shadow capture_target = "Test"
     printline("Test 3 (expected Test): {{ capture_target }}")
+    
+    shadow capture_target = 10
+    let closed_func2 = new_func2_with_shadow()
+    printline("Test 1 (Expected 115): {{ closed_func2(5) }}")
+
+    let x = 0
+    shadow x = 10
+    shadow x = 20
+    shadow x = 30
+    unshadow x
+    printline("x is {{ x }}")
 endfn

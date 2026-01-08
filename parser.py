@@ -1037,7 +1037,10 @@ class Parser:
         return left
 
     def parse_unary_outer(self):
-        return self.parse_unary_operation(self.parse_unary_spread, "Outer")
+        return self.parse_unary_operation(self.parse_unary_unshadow, "Outer")
+
+    def parse_unary_unshadow(self):
+        return self.parse_unary_operation(self.parse_unary_spread, "Unshadow")
 
     def parse_unary_spread(self):
         return self.parse_unary_operation(self.parse_unary_not, "Spread")

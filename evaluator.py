@@ -537,6 +537,35 @@ class Evaluator:
     def _handle_unary_Spread(self, node):
         return SpreadArgs(self.evaluate(node.right))
 
+    def _handle_unary_Unshadow(self, node):
+        levels = 1
+        ref = node.right
+        while isinstance(ref, UnaryOperationNode) and ref.op.label == "Unshadow":
+            levels = levels + 1
+            ref = ref.right
+        if not isinstance(ref, Token) and hasattr(ref, "label") and not ref.label == "Identifier":
+            raise RuntimeException("Expected identifer after unshadow", ref)
+
+        identifier = None
+        if isinstance(ref, LoopindexExpressionNode):
+            raise RuntimeException("Cannot assign to loop_index")
+        elif isinstance(ref, CallDepthExpressionNode):
+            raise RuntimeException("Cannot assign to call_depth")
+        else:
+            identifier = ref.data
+        closest_scope = self.find_first_scope_containing(identifier)
+        if closest_scope is None:
+            raise RuntimeException(f"{identifier} is undefined")
+        for scope in reversed(self.scopes[:]):
+            if identifier in scope and levels > 0:
+                levels = levels - 1
+            elif identifier in scope:
+                if scope == closest_scope:
+                    return ChestnutBoolean(False)
+                scope[identifier] = closest_scope[identifier]
+                return ChestnutBoolean(True)
+        return ChestnutBoolean(False)
+
     def _handle_unary_Outer(self, node):
         levels = 1
         ref = node.right
@@ -559,7 +588,7 @@ class Evaluator:
             elif identifier in scope:
                 return scope[identifier]
         return ChestnutNull(Token("Null", "null", 0, 0))
-    
+
     def _handle_unary_Subtraction(self, node):
         right = self.evaluate(node.right)
         return ChestnutInteger(-(right.value))

@@ -1,0 +1,14 @@
+fn main()
+    let count = 0
+    fn recurse() brings (count)
+        shadow count = count + 1 # Local shadow!
+        printline("Count is {{ count }}")
+        if call_depth < 5
+            recurse() 
+        endif
+        # The parent's 'count' never actually changed... 
+        # unless you call 'unshadow count' here!
+    endfn
+    recurse()
+    printline("Original count is {{ count }}")
+endfn

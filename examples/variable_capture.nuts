@@ -11,11 +11,19 @@ endfn
 
 fn main (variadic args : String)
     let counter_a = make_counter(10)
+    let counter_b = make_counter(15)
     printline(counter_a()) # Should print 11
+    printline(counter_b()) # 16?
     printline(counter_a())
+    printline(counter_b())
     printline(counter_a())
+    printline(counter_b())
     printline(counter_a())
+    printline(counter_b())
     printline(counter_a())
+    printline(counter_b())
     printline(counter_a())
+    printline(counter_b())
     printline(counter_a()) # 17
+    printline(counter_b()) # 22?
 endfn
