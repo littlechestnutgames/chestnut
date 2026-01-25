@@ -650,7 +650,7 @@ class Parser:
 
         if allow_missing_label and self.check_label("RParen"):
             self.consume()
-            params.append(FnParameter(Token("String", " ", 0, 0), identifier, None, False))
+            params.append(FnParameter(Token("String", " ", 0, 0, "<parser>"), identifier, None, False))
             return params
 
         # Parse type delimiter

@@ -322,6 +322,12 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns 
                 func = uint64
             when 128
                 func = uint128
+            when 256
+                func = uint256
+            when 512
+                func = uint512
+            when 1024
+                func = uint1024
             otherwise
                 halt("Unidentified UnsignedInteger type \"{{ b_type }}\"")
         endcase
@@ -409,4 +415,12 @@ fn pad_left (s : String, char : String, min_length : Integer = 1)
         s = "{{ char }}{{ s }}"
     endwhile
     return s
+endfn
+
+fn may_halt_or_return(func : Function) returns Result
+    return Result.from_tuple(__internal_may_halt_or_return__(func))
+endfn
+
+fn maybe_outer(ident : Any) returns Result
+    return may_halt_or_return(fn () outer ident endfn)
 endfn

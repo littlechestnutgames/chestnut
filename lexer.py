@@ -145,10 +145,11 @@ token_trie.insert("-", "Subtraction")
 token_trie.insert(";", "Semicolon")
 
 class LexerState:
-    def __init__(self):
+    def __init__(self, path=""):
         self.pos = 0
         self.line = 1
         self.column = 1
+        self.filename = path
     
     def advance_line(self):
         self.column = 0
@@ -168,8 +169,8 @@ class LexerState:
 # The ordering of these lex items is by logical grouping.
 # If you're adding new tokens, ensure that they won't get picked
 # up by earlier tokens in a different lexing group.
-def lex(input):
-    state = LexerState()
+def lex(input, path=""):
+    state = LexerState(path)
     state.pos = 0
     while state.pos < len(input):
         start_line = state.line
@@ -197,14 +198,14 @@ def lex(input):
                         val = potential_token_value
                         if token_data.default_value is not None:
                             val = token_data.default_value
-                        found_token = Token(token_data.token_type, val, start_line, start_column)
+                        found_token = Token(token_data.token_type, val, start_line, start_column, path)
                         state.advance_column(length)
                         break
                 else:
                     val = potential_token_value
                     if token_data.default_value is not None:
                         val = token_data.default_value
-                    found_token = Token(token_data.token_type, val, start_line, start_column)
+                    found_token = Token(token_data.token_type, val, start_line, start_column, path)
                     state.advance_column(length)
                     break
         if found_token:
@@ -255,12 +256,12 @@ def lex(input):
 
             # no end quote.
             if end_quote_pos is None:
-                raise SyntaxException("Unterminated string", line=start_line, column=start_column)
+                raise SyntaxException("Unterminated string", line=start_line, column=start_column, filename=path)
 
             capstr = input[state.pos:state.pos+end_quote_pos]
             if not "{{" in capstr:
                 # Normal string
-                yield Token("String", ChestnutString(capstr.encode().decode("unicode-escape")), line=start_line, column=start_column)
+                yield Token("String", ChestnutString(capstr.encode().decode("unicode-escape")), line=start_line, column=start_column, filename=path)
                 for i in range(line_ends):
                     state.advance_line()
                 state.advance_column(len(capstr) - line_ends + 1)
@@ -270,14 +271,14 @@ def lex(input):
                 t = ""
                 while strpos < len(capstr):
                     if capstr[strpos:strpos + 2] == "{{":
-                        strtoken = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column)
+                        strtoken = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column, filename=path)
                         yield strtoken
                         t = ""
 
-                        token = Token("Addition", "{{", start_line, start_column)
+                        token = Token("Addition", "{{", start_line, start_column, filename=path)
                         yield token
 
-                        yield Token("LParen", "(", start_line, start_column)
+                        yield Token("LParen", "(", start_line, start_column, filename=path)
 
                         strpos = strpos + 2 # Move past {{
                         while strpos < len(capstr) and capstr[strpos:strpos + 2] != "}}":
@@ -285,23 +286,23 @@ def lex(input):
                             strpos = strpos + 1
 
                         if strpos == len(capstr) or capstr[strpos:strpos + 2] != "}}":
-                            raise SyntaxException("Unterminated string interpolation", line=start_line, column=start_column)
+                            raise SyntaxException("Unterminated string interpolation", line=start_line, column=start_column, filename=path)
 
-                        expression = lex(t)
+                        expression = lex(t, path)
                         t = ""
                         for ex in expression:
                             yield ex
 
-                        yield Token("RParen", ")", start_line, start_column)
+                        yield Token("RParen", ")", start_line, start_column, path)
 
-                        token = Token("Addition", "}}", start_line, start_column)
+                        token = Token("Addition", "}}", start_line, start_column, path)
                         yield token
 
                         strpos = strpos + 2 # Move past }}
                     else:
                         t = t + capstr[strpos]
                         strpos = strpos + 1
-                token = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column)
+                token = Token("String", ChestnutString(t.encode().decode("unicode-escape")), start_line, start_column, path)
                 yield token
 
                 for i in range(line_ends):
@@ -317,8 +318,8 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0x":
-                raise SyntaxException(f"Unterminated hex digit", line=start_line, column=start_column)
-            yield Token("Integer", ChestnutInteger(int(num, 16)), start_line, start_column)
+                raise SyntaxException(f"Unterminated hex digit", line=start_line, column=start_column, filename=path)
+            yield Token("Integer", ChestnutInteger(int(num, 16)), start_line, start_column, path)
         elif input[state.pos:state.pos+2] == "0o":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -327,8 +328,8 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0o":
-                raise SyntaxException(f"Unterminated octal digit", line=start_line, column=start_column)
-            yield Token("Integer", ChestnutInteger(int(num, 8)), start_line, start_column)
+                raise SyntaxException(f"Unterminated octal digit", line=start_line, column=start_column, filename=path)
+            yield Token("Integer", ChestnutInteger(int(num, 8)), start_line, start_column, filename=path)
         elif input[state.pos:state.pos+2] == "0b":
             num = input[state.pos:state.pos+2]
             state.advance_column(2)
@@ -337,8 +338,8 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num == "0b":
-                raise SyntaxException(f"Unterminated binary digit", line=start_line, column=start_column)
-            yield Token("Integer", ChestnutInteger(int(num, 2)), start_line, start_column)
+                raise SyntaxException(f"Unterminated binary digit", line=start_line, column=start_column, filename=path)
+            yield Token("Integer", ChestnutInteger(int(num, 2)), start_line, start_column, path)
         # Numbers
         elif input[state.pos].isnumeric():
             num = input[state.pos]
@@ -347,11 +348,11 @@ def lex(input):
                 num += input[state.pos]
                 state.advance_column()
             if num.count('.') > 1:
-                raise SyntaxException(f"Invalid floating point number detected", line=start_line, column=start_column)
+                raise SyntaxException(f"Invalid floating point number detected", line=start_line, column=start_column, filename=path)
             elif num.count('.') == 1:
-                yield Token("Float", ChestnutFloat(float(num)), start_line, start_column)
+                yield Token("Float", ChestnutFloat(float(num)), start_line, start_column, path)
             else:
-                yield Token("Integer", ChestnutInteger(int(num)), start_line, start_column)
+                yield Token("Integer", ChestnutInteger(int(num)), start_line, start_column, path)
 
         # Identifiers
         else:
@@ -360,7 +361,7 @@ def lex(input):
             while state.pos < len(input) and is_identifier(input[state.pos]):
                 t += input[state.pos]
                 state.advance_column()
-            yield Token("Identifier", t, start_line, start_column)
+            yield Token("Identifier", t, start_line, start_column, path)
 
 
 def is_token_match(input, pos, expect):

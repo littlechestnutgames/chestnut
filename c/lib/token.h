@@ -15,8 +15,14 @@ typedef enum {
     CHESTNUT_TK_UINT32,
     CHESTNUT_TK_UINT64,
     CHESTNUT_TK_FLOAT,
+    CHESTNUT_TK_FLOAT8,
+    CHESTNUT_TK_FLOAT16,
     CHESTNUT_TK_FLOAT32,
     CHESTNUT_TK_FLOAT64,
+    CHESTNUT_TK_FLOAT128,
+    CHESTNUT_TK_FLOAT256,
+    CHESTNUT_TK_FLOAT512,
+    CHESTNUT_TK_FLOAT1024,
     CHESTNUT_TK_BOOL,
     CHESTNUT_TK_STR,
     CHESTNUT_TK_CALL_DEPTH,
@@ -85,37 +91,49 @@ typedef enum {
 } CHESTNUT_TokenType;
 
 typedef union {
-    // Integer    
-    int8_t i8;
-    int16_t i16;
-    int32_t i32;
-    int64_t i64;
+    // Integer
+    chestnut_int_t integer;
+    chestnut_int8_t i8;
+    chestnut_int16_t i16;
+    chestnut_int32_t i32;
+    chestnut_int64_t i64;
     chestnut_int128_t i128;
     chestnut_int256_t i256;
     chestnut_int512_t i512;
     chestnut_int1024_t i1024;
 
     // UnsignedInteger
-    uint8_t u8;
-    uint16_t u16;
-    uint32_t u32;
-    uint64_t u64;
+    chestnut_uint_t unsigned_integer;
+    chestnut_uint8_t u8;
+    chestnut_uint16_t u16;
+    chestnut_uint32_t u32;
+    chestnut_uint64_t u64;
     chestnut_uint128_t u128;
     chestnut_uint256_t u256;
     chestnut_uint512_t u512;
     chestnut_uint1024_t u1024;
 
+    chestnut_float cfloat;
+    chestnut_float8_t f8;
+    chestnut_float16_t f16;
+    chestnut_float32_t f32;
+    chestnut_float64_t f64;
+    chestnut_float128_t f128;
+    chestnut_float256_t f256;
+    chestnut_float512_t f512;
+    chestnut_float1024_t f1024;
+
     // Boolean
     bool boolean;
 
     // String
-    char[] str;
+    char *str;
 } CHESTNUT_TokenData;
 
 typedef struct {
     uint64_t line;
     uint64_t col;
-    char[] sourcefile;
+    char *sourcefile;
 } CHESTNUT_Location;
 
 typedef struct {
