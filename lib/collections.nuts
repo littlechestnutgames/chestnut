@@ -179,3 +179,46 @@ endfn
 fn (h : HashMap) get_keys() returns List
     return h.keys_list
 endfn
+
+struct ListNode
+    next : ListNode
+    prev : ListNode
+    data : Any
+endstruct
+
+fn (ListNode) new(data : Any = null, prev : ListNode = null, next : ListNode = null) returns ListNode
+    let ln = ListNode()
+    ln.data = data
+    ln.prev = prev
+    ln.next = next
+    return ln
+endfn
+
+struct LinkedList
+    head : ListNode
+    tail : ListNode
+    size : Integer
+endstruct
+
+fn (ll : LinkedList) append(data : Any = null)
+    if ll.tail != null and ll.head != null
+        ll.tail.next = ListNode.new(data, ll.tail, ll.head)
+        ll.tail = ll.tail.next
+        ll.head.prev = ll.tail
+    elif ll.head == null
+        ll.head = ListNode.new(data)
+        ll.head.prev = ll.head
+        ll.head.next = ll.head
+        ll.tail = ll.head
+    endif
+    ll.size += 1
+endfn
+
+fn (LinkedList) new(data : Any = null) returns LinkedList
+    let llist = LinkedList()
+    llist.size = 0
+    if data != null
+        llist.append(data)
+    endif
+    return llist
+endfn

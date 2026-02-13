@@ -19,37 +19,36 @@ typedef uint64_t chestnut_uint64_t;
 
 // Extended primitives.
 typedef struct {
-    _Alignas(16) chestnut_uint64_t limbs[2];
+    chestnut_uint64_t limbs[2] __attribute__((aligned(16)));
 } chestnut_uint128_t;
 
 typedef struct {
-    _Alignas(32) chestnut_uint64_t limbs[4];
+    chestnut_uint64_t limbs[4] __attribute__((aligned(32)));
 } chestnut_uint256_t;
 
 typedef struct {
-    _Alignas(64) chestnut_uint64_t limbs[8];
+    chestnut_uint64_t limbs[8] __attribute__((aligned(64)));
 } chestnut_uint512_t;
 
 typedef struct {
-    _Alignas(64) chestnut_uint64_t limbs[16];
+    chestnut_uint64_t limbs[16] __attribute__((aligned(64)));
 } chestnut_uint1024_t;
-
 
 // Extended int primitives
 typedef struct {
-    _Alignas(16) chestnut_uint64_t limbs[2];
+    chestnut_uint64_t limbs[2] __attribute__((aligned(16)));
 } chestnut_int128_t;
 
 typedef struct {
-    _Alignas(32) chestnut_uint64_t limbs[4];
+    chestnut_uint64_t limbs[4] __attribute__((aligned(32)));
 } chestnut_int256_t;
 
 typedef struct {
-    _Alignas(64) chestnut_uint64_t limbs[8];
+    chestnut_uint64_t limbs[8] __attribute__((aligned(64)));
 } chestnut_int512_t;
 
 typedef struct {
-    _Alignas(64) chestnut_uint64_t limbs[16];
+    chestnut_uint64_t limbs[16] __attribute__((aligned(64)));
 } chestnut_int1024_t;
 
 // Arbitrary

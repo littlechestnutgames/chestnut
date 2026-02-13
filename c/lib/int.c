@@ -3,13 +3,14 @@
 
 #include "./int.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 #ifdef _MSC_VER
         #include <intrin.h>
 #endif
 
-static inline chestnut_uint8_t __chestnut_add_overflow(
+static inline __attribute__((always_inline)) chestnut_uint8_t __chestnut_add_overflow(
     const chestnut_uint8_t carry_in,
     const chestnut_uint64_t a,
     const chestnut_uint64_t b,
@@ -97,7 +98,14 @@ chestnut_uint8_t chestnut_uint1024_t_add(
     return carry;
 }
 
-static inline chestnut_uint8_t __chestnut_sub_overflow(
+void chestnut_uint_t_add(
+    chestnut_uint_t *out,
+    const chestnut_uint_t *a,
+    const chestnut_uint_t *b
+) {
+}
+
+static inline __attribute__((always_inline)) chestnut_uint8_t __chestnut_sub_overflow(
     const chestnut_uint8_t borrow_in,
     const chestnut_uint64_t a,
     const chestnut_uint64_t b,
@@ -633,12 +641,12 @@ chestnut_uint8_t chestnut_uint128_t_negate(
 ) {
     chestnut_uint128_t_not(out, in);
 
-    chestnut_uint8_t carry = 1;
+    chestnut_uint64_t carry = 1;
 
-    carry = __chestnut_add_overflow(0, out->limbs[0], (chestnut_uint64_t)carry, &out->limbs[0]);
-    carry = __chestnut_add_overflow(0, out->limbs[1], (chestnut_uint64_t)carry, &out->limbs[1]);
+    carry = __chestnut_add_overflow(0, out->limbs[0], carry, &out->limbs[0]);
+    carry = __chestnut_add_overflow(0, out->limbs[1], carry, &out->limbs[1]);
 
-    return carry;
+    return (chestnut_uint8_t)carry;
 }
 
 chestnut_uint8_t chestnut_uint256_t_negate(
@@ -649,12 +657,12 @@ chestnut_uint8_t chestnut_uint256_t_negate(
     
     chestnut_uint8_t carry = 1;
 
-    carry = __chestnut_add_overflow(0, out->limbs[0], (chestnut_uint64_t)carry, &out->limbs[0]);
-    carry = __chestnut_add_overflow(0, out->limbs[1], (chestnut_uint64_t)carry, &out->limbs[1]);
-    carry = __chestnut_add_overflow(0, out->limbs[2], (chestnut_uint64_t)carry, &out->limbs[2]);
-    carry = __chestnut_add_overflow(0, out->limbs[3], (chestnut_uint64_t)carry, &out->limbs[3]);
+    carry = __chestnut_add_overflow(0, out->limbs[0], carry, &out->limbs[0]);
+    carry = __chestnut_add_overflow(0, out->limbs[1], carry, &out->limbs[1]);
+    carry = __chestnut_add_overflow(0, out->limbs[2], carry, &out->limbs[2]);
+    carry = __chestnut_add_overflow(0, out->limbs[3], carry, &out->limbs[3]);
 
-    return carry;
+    return (chestnut_uint8_t)carry;
 }
 
 chestnut_uint8_t chestnut_uint512_t_negate(
@@ -663,18 +671,18 @@ chestnut_uint8_t chestnut_uint512_t_negate(
 ) {
     chestnut_uint512_t_not(out, in);
 
-    chestnut_uint8_t carry = 1;
+    chestnut_uint64_t carry = 1;
 
-    carry = __chestnut_add_overflow(0, out->limbs[0], (chestnut_uint64_t)carry, &out->limbs[0]);
-    carry = __chestnut_add_overflow(0, out->limbs[1], (chestnut_uint64_t)carry, &out->limbs[1]);
-    carry = __chestnut_add_overflow(0, out->limbs[2], (chestnut_uint64_t)carry, &out->limbs[2]);
-    carry = __chestnut_add_overflow(0, out->limbs[3], (chestnut_uint64_t)carry, &out->limbs[3]);
-    carry = __chestnut_add_overflow(0, out->limbs[4], (chestnut_uint64_t)carry, &out->limbs[4]);
-    carry = __chestnut_add_overflow(0, out->limbs[5], (chestnut_uint64_t)carry, &out->limbs[5]);
-    carry = __chestnut_add_overflow(0, out->limbs[6], (chestnut_uint64_t)carry, &out->limbs[6]);
-    carry = __chestnut_add_overflow(0, out->limbs[7], (chestnut_uint64_t)carry, &out->limbs[7]);
+    carry = __chestnut_add_overflow(0, out->limbs[0], carry, &out->limbs[0]);
+    carry = __chestnut_add_overflow(0, out->limbs[1], carry, &out->limbs[1]);
+    carry = __chestnut_add_overflow(0, out->limbs[2], carry, &out->limbs[2]);
+    carry = __chestnut_add_overflow(0, out->limbs[3], carry, &out->limbs[3]);
+    carry = __chestnut_add_overflow(0, out->limbs[4], carry, &out->limbs[4]);
+    carry = __chestnut_add_overflow(0, out->limbs[5], carry, &out->limbs[5]);
+    carry = __chestnut_add_overflow(0, out->limbs[6], carry, &out->limbs[6]);
+    carry = __chestnut_add_overflow(0, out->limbs[7], carry, &out->limbs[7]);
 
-    return carry;
+    return (chestnut_uint8_t)carry;
 }
 
 chestnut_uint8_t chestnut_uint1024_t_negate(
@@ -683,36 +691,36 @@ chestnut_uint8_t chestnut_uint1024_t_negate(
 ) {
     chestnut_uint1024_t_not(out, in);
 
-    chestnut_uint8_t carry = 1;
+    chestnut_uint64_t carry = 1;
 
-    carry = __chestnut_add_overflow(0, out->limbs[0], (chestnut_uint64_t)carry, &out->limbs[0]);
-    carry = __chestnut_add_overflow(0, out->limbs[1], (chestnut_uint64_t)carry, &out->limbs[1]);
-    carry = __chestnut_add_overflow(0, out->limbs[2], (chestnut_uint64_t)carry, &out->limbs[2]);
-    carry = __chestnut_add_overflow(0, out->limbs[3], (chestnut_uint64_t)carry, &out->limbs[3]);
-    carry = __chestnut_add_overflow(0, out->limbs[4], (chestnut_uint64_t)carry, &out->limbs[4]);
-    carry = __chestnut_add_overflow(0, out->limbs[5], (chestnut_uint64_t)carry, &out->limbs[5]);
-    carry = __chestnut_add_overflow(0, out->limbs[6], (chestnut_uint64_t)carry, &out->limbs[6]);
-    carry = __chestnut_add_overflow(0, out->limbs[7], (chestnut_uint64_t)carry, &out->limbs[7]);
-    carry = __chestnut_add_overflow(0, out->limbs[8], (chestnut_uint64_t)carry, &out->limbs[8]);
-    carry = __chestnut_add_overflow(0, out->limbs[9], (chestnut_uint64_t)carry, &out->limbs[9]);
-    carry = __chestnut_add_overflow(0, out->limbs[10], (chestnut_uint64_t)carry, &out->limbs[10]);
-    carry = __chestnut_add_overflow(0, out->limbs[11], (chestnut_uint64_t)carry, &out->limbs[11]);
-    carry = __chestnut_add_overflow(0, out->limbs[12], (chestnut_uint64_t)carry, &out->limbs[12]);
-    carry = __chestnut_add_overflow(0, out->limbs[13], (chestnut_uint64_t)carry, &out->limbs[13]);
-    carry = __chestnut_add_overflow(0, out->limbs[14], (chestnut_uint64_t)carry, &out->limbs[14]);
-    carry = __chestnut_add_overflow(0, out->limbs[15], (chestnut_uint64_t)carry, &out->limbs[15]);
+    carry = __chestnut_add_overflow(0, out->limbs[0], carry, &out->limbs[0]);
+    carry = __chestnut_add_overflow(0, out->limbs[1], carry, &out->limbs[1]);
+    carry = __chestnut_add_overflow(0, out->limbs[2], carry, &out->limbs[2]);
+    carry = __chestnut_add_overflow(0, out->limbs[3], carry, &out->limbs[3]);
+    carry = __chestnut_add_overflow(0, out->limbs[4], carry, &out->limbs[4]);
+    carry = __chestnut_add_overflow(0, out->limbs[5], carry, &out->limbs[5]);
+    carry = __chestnut_add_overflow(0, out->limbs[6], carry, &out->limbs[6]);
+    carry = __chestnut_add_overflow(0, out->limbs[7], carry, &out->limbs[7]);
+    carry = __chestnut_add_overflow(0, out->limbs[8], carry, &out->limbs[8]);
+    carry = __chestnut_add_overflow(0, out->limbs[9], carry, &out->limbs[9]);
+    carry = __chestnut_add_overflow(0, out->limbs[10], carry, &out->limbs[10]);
+    carry = __chestnut_add_overflow(0, out->limbs[11], carry, &out->limbs[11]);
+    carry = __chestnut_add_overflow(0, out->limbs[12], carry, &out->limbs[12]);
+    carry = __chestnut_add_overflow(0, out->limbs[13], carry, &out->limbs[13]);
+    carry = __chestnut_add_overflow(0, out->limbs[14], carry, &out->limbs[14]);
+    carry = __chestnut_add_overflow(0, out->limbs[15], carry, &out->limbs[15]);
 
-    return carry;
+    return (chestnut_uint8_t)carry;
 }
 
-static inline void chestnut_uint128_t_clear(
+static inline __attribute__((always_inline)) void chestnut_uint128_t_clear(
     chestnut_uint128_t *in
 ) {
     in->limbs[0] = 0;
     in->limbs[1] = 0;
 }
 
-static inline void chestnut_uint256_t_clear(
+static inline __attribute__((always_inline)) void chestnut_uint256_t_clear(
     chestnut_uint256_t *in
 ) {
     in->limbs[0] = 0;
@@ -721,7 +729,7 @@ static inline void chestnut_uint256_t_clear(
     in->limbs[3] = 0;
 }
 
-static inline void chestnut_uint512_t_clear(
+static inline __attribute__((always_inline)) void chestnut_uint512_t_clear(
     chestnut_uint512_t *in
 ) {
     in->limbs[0] = 0;
@@ -734,7 +742,7 @@ static inline void chestnut_uint512_t_clear(
     in->limbs[7] = 0;
 }
 
-static inline void chestnut_uint1024_t_clear(
+static inline __attribute__((always_inline)) void chestnut_uint1024_t_clear(
     chestnut_uint1024_t *in
 ) {
     in->limbs[0] = 0;
@@ -755,7 +763,7 @@ static inline void chestnut_uint1024_t_clear(
     in->limbs[15] = 0;
 }
 
-static inline chestnut_uint64_t __chestnut_mul(
+static inline __attribute__((always_inline)) chestnut_uint64_t __chestnut_mul(
     chestnut_uint64_t *high,
     const chestnut_uint64_t a,
     const chestnut_uint64_t b
@@ -792,7 +800,7 @@ static inline chestnut_uint64_t __chestnut_mul(
     #endif
 }
 
-static inline chestnut_uint64_t __chestnut_mul_acc(
+static inline __attribute__((always_inline)) chestnut_uint64_t __chestnut_mul_acc(
     chestnut_uint64_t *acc_high,
     chestnut_uint64_t acc_low,
     const chestnut_uint64_t a,
@@ -807,132 +815,414 @@ static inline chestnut_uint64_t __chestnut_mul_acc(
     return acc_low;
 }
 
-chestnut_uint8_t chestnut_uint128_t_mul(
+// Will be used in multiplications with *
+chestnut_uint64_t chestnut_uint128_t_mul(
     chestnut_uint128_t *out,
     chestnut_uint128_t *a,
     chestnut_uint128_t *b
 ) {
-    chestnut_uint64_t carry_in = 0, carry_out = 0;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
     // Limb 0
     out->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
 
     // Limb 1
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[1]);
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, out->limbs[1], a->limbs[1], b->limbs[0]);
+    out->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out->limbs[1] = __chestnut_mul_acc(&overflow, out->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
 
-    return (chestnut_uint8_t)(!!carry_out);
+    return carry_out;
 }
 
-chestnut_uint8_t chestnut_uint256_t_mul(
+// Will be used in multiplications with ×
+chestnut_uint128_t chestnut_uint128_t_mul_full(
+    chestnut_uint128_t *out_low,
+    const chestnut_uint128_t *a,
+    const chestnut_uint128_t *b
+) {
+    chestnut_uint128_t out_high;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
+
+    // Lower limb 0
+    out_low->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
+
+    // Lower limb 1
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, out_low->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
+
+    // High limb 0 & limb 1
+    out_high.limbs[0] = __chestnut_mul_acc(&out_high.limbs[1], carry_out, a->limbs[1], b->limbs[1]);
+
+    return out_high;
+}
+
+chestnut_uint64_t chestnut_uint256_t_mul(
     chestnut_uint256_t *out,
     chestnut_uint256_t *a,
     chestnut_uint256_t *b
 ) {
-    chestnut_uint64_t carry_in = 0, carry_out = 0;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
 
     // Limb 0
     out->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
 
     // Limb 1
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[1]);
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, out->limbs[1], a->limbs[1], b->limbs[0]);
+    out->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out->limbs[1] = __chestnut_mul_acc(&overflow, out->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 2
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[2]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[1], b->limbs[1]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[2], b->limbs[0]);
+    out->limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[2]);
+    carry_out = overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 3
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[3]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[1], b->limbs[2]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[2], b->limbs[1]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[3], b->limbs[0]);
+    out->limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[3]);
+    carry_out = overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
 
-    return (chestnut_uint8_t)(!!carry_out);
+    return carry_out;
 }
 
-chestnut_uint8_t chestnut_uint512_t_mul(
+chestnut_uint256_t chestnut_uint256_t_mul_full(
+    chestnut_uint256_t *out_low,
+    chestnut_uint256_t *a,
+    chestnut_uint256_t *b
+) {
+    chestnut_uint256_t out_high;
+    chestnut_uint64_t carry_in = 0, carry_out = 0, overflow = 0;
+
+    // Low limb 0
+    out_low->limbs[0] = __chestnut_mul(&overflow, a->limbs[0], b->limbs[0]);
+    carry_out += overflow;
+
+    // Low limb 1
+    carry_in = carry_out;
+    carry_out = 0;
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, carry_in, a->limbs[0], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, out_low->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
+
+    // Low limb 2
+    carry_in = carry_out;
+    carry_out = 0;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, carry_in, a->limbs[0], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
+
+    // Low limb 3
+    carry_in = carry_out;
+    carry_out = 0;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, carry_in, a->limbs[0], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
+
+    // High limb 0
+    carry_in = carry_out;
+    carry_out = 0;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, carry_in, a->limbs[1], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[2], b->limbs[2]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[3], b->limbs[1]);
+    carry_out += overflow;
+
+    // High limb 1
+    carry_in = carry_out;
+    carry_out = 0;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, carry_in, a->limbs[2], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[3], b->limbs[2]);
+    carry_out += overflow;
+
+    // High limb 2 & 3.
+    out_high.limbs[2] = __chestnut_mul_acc(&out_high.limbs[3], carry_out, a->limbs[3], b->limbs[3]);
+
+    return out_high;
+}
+
+chestnut_uint64_t chestnut_uint512_t_mul(
     chestnut_uint512_t *out,
     chestnut_uint512_t *a,
     chestnut_uint512_t *b
 ) {
-    chestnut_uint64_t carry_in = 0, carry_out = 0;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
 
     // Limb 0
     out->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
 
     // Limb 1
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[1]);
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, out->limbs[1], a->limbs[1], b->limbs[0]);
+    out->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out->limbs[1] = __chestnut_mul_acc(&overflow, out->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 2
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[2]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[1], b->limbs[1]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[2], b->limbs[0]);
+    out->limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[2]);
+    carry_out = overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 3
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[3]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[1], b->limbs[2]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[2], b->limbs[1]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[3], b->limbs[0]);
+    out->limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[3]);
+    carry_out = overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 4
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[4]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[1], b->limbs[3]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[2], b->limbs[2]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[3], b->limbs[1]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[4], b->limbs[0]);
+    out->limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[4]);
+    carry_out = overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[1], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[2], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[3], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[4], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 5
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[5]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[1], b->limbs[4]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[2], b->limbs[3]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[3], b->limbs[2]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[4], b->limbs[1]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[5], b->limbs[0]);
+    out->limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[5]);
+    carry_out = overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[1], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[2], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[3], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[4], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[5], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 6
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[6]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[1], b->limbs[5]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[2], b->limbs[4]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[3], b->limbs[3]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[4], b->limbs[2]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[5], b->limbs[1]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[6], b->limbs[0]);
+    out->limbs[6] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[6]);
+    carry_out = overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[1], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[2], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[3], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[4], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[5], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[6], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 7
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[7]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[1], b->limbs[6]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[2], b->limbs[5]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[3], b->limbs[4]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[4], b->limbs[3]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[5], b->limbs[2]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[6], b->limbs[1]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[7], b->limbs[0]);
+    out->limbs[7] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[7]);
+    carry_out = overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[1], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[2], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[3], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[4], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[5], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[6], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[7], b->limbs[0]);
+    carry_out += overflow;
 
-    return (chestnut_uint8_t)(!!carry_out);
+    return carry_out;
+}
+
+chestnut_uint512_t chestnut_uint512_t_mul_full(
+    chestnut_uint512_t *out_low,
+    chestnut_uint512_t *a,
+    chestnut_uint512_t *b
+) {
+    chestnut_uint512_t out_high;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
+
+    // Lower limb 0
+    out_low->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
+
+    // Lower limb 1
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, out_low->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 2
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[2]);
+    carry_out = overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 3
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[3]);
+    carry_out = overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 4
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[4]);
+    carry_out = overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[1], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[2], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[3], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[4], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 5
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[5]);
+    carry_out = overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[1], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[2], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[3], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[4], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[5], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 6
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[6]);
+    carry_out = overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[1], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[2], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[3], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[4], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[5], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[6], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 7
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[7]);
+    carry_out = overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[1], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[2], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[3], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[4], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[5], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[6], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[7], b->limbs[0]);
+    carry_out += overflow;
+
+    // Upper limb 0
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[1], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[2], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[3], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[4], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[5], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[6], b->limbs[2]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[7], b->limbs[1]);
+    carry_out += overflow;
+
+    // Upper limb 1
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[2], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[3], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[4], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[5], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[6], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[7], b->limbs[2]);
+    carry_out += overflow;
+
+    // Upper limb 2
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[3], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[4], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[5], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[6], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[7], b->limbs[3]);
+    carry_out += overflow;
+
+    // Upper limb 3
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[4], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[5], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[6], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[7], b->limbs[4]);
+    carry_out += overflow;
+
+    // Upper limb 4
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[5], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[6], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[7], b->limbs[5]);
+    carry_out += overflow;
+
+    // Upper limb 5
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[6], b->limbs[7]);
+    carry_out = overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[7], b->limbs[6]);
+    carry_out += overflow;
+
+    // Upper limb 6 & 7
+    out_high.limbs[6] = __chestnut_mul_acc(&out_high.limbs[7], carry_out, a->limbs[7], b->limbs[7]);
+
+    return out_high;
 }
 
 chestnut_uint8_t chestnut_uint1024_t_mul(
@@ -940,210 +1230,899 @@ chestnut_uint8_t chestnut_uint1024_t_mul(
     chestnut_uint1024_t *a,
     chestnut_uint1024_t *b
 ) {
-    chestnut_uint64_t carry_in = 0, carry_out = 0;
+    chestnut_uint64_t carry_out = 0, overflow = 0;
 
     // Limb 0
-    out->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
+    out->limbs[0] = __chestnut_mul(&overflow, a->limbs[0], b->limbs[0]);
 
     // Limb 1
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[1]);
-    out->limbs[1] = __chestnut_mul_acc(&carry_out, out->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out = overflow;
+    out->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[1] = __chestnut_mul_acc(&overflow, out->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 2
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[2]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[1], b->limbs[1]);
-    out->limbs[2] = __chestnut_mul_acc(&carry_out, out->limbs[2], a->limbs[2], b->limbs[0]);
+    out->limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[2]);
+    carry_out = overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[2] = __chestnut_mul_acc(&overflow, out->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 3
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[3]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[1], b->limbs[2]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[2], b->limbs[1]);
-    out->limbs[3] = __chestnut_mul_acc(&carry_out, out->limbs[3], a->limbs[3], b->limbs[0]);
+    out->limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[3]);
+    carry_out = overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[3] = __chestnut_mul_acc(&overflow, out->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 4
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[4]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[1], b->limbs[3]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[2], b->limbs[2]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[3], b->limbs[1]);
-    out->limbs[4] = __chestnut_mul_acc(&carry_out, out->limbs[4], a->limbs[4], b->limbs[0]);
+    out->limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[4]);
+    carry_out = overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[1], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[2], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[3], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[4] = __chestnut_mul_acc(&overflow, out->limbs[4], a->limbs[4], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 5
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[5]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[1], b->limbs[4]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[2], b->limbs[3]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[3], b->limbs[2]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[4], b->limbs[1]);
-    out->limbs[5] = __chestnut_mul_acc(&carry_out, out->limbs[5], a->limbs[5], b->limbs[0]);
+    out->limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[5]);
+    carry_out = overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[1], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[2], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[3], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[4], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[5] = __chestnut_mul_acc(&overflow, out->limbs[5], a->limbs[5], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 6
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[6]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[1], b->limbs[5]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[2], b->limbs[4]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[3], b->limbs[3]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[4], b->limbs[2]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[5], b->limbs[1]);
-    out->limbs[6] = __chestnut_mul_acc(&carry_out, out->limbs[6], a->limbs[6], b->limbs[0]);
+    out->limbs[6] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[6]);
+    carry_out = overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[1], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[2], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[3], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[4], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[5], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[6] = __chestnut_mul_acc(&overflow, out->limbs[6], a->limbs[6], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 7
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[7]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[1], b->limbs[6]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[2], b->limbs[5]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[3], b->limbs[4]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[4], b->limbs[3]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[5], b->limbs[2]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[6], b->limbs[1]);
-    out->limbs[7] = __chestnut_mul_acc(&carry_out, out->limbs[7], a->limbs[7], b->limbs[0]);
+    out->limbs[7] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[7]);
+    carry_out = overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[1], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[2], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[3], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[4], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[5], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[6], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[7] = __chestnut_mul_acc(&overflow, out->limbs[7], a->limbs[7], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 8
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[8]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[1], b->limbs[7]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[2], b->limbs[6]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[3], b->limbs[5]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[4], b->limbs[4]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[5], b->limbs[3]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[6], b->limbs[2]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[7], b->limbs[1]);
-    out->limbs[8] = __chestnut_mul_acc(&carry_out, out->limbs[8], a->limbs[8], b->limbs[0]);
+    out->limbs[8] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[8]);
+    carry_out = overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[1], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[2], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[3], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[4], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[5], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[6], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[7], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[8] = __chestnut_mul_acc(&overflow, out->limbs[8], a->limbs[8], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 9
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[9]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[1], b->limbs[8]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[2], b->limbs[7]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[3], b->limbs[6]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[4], b->limbs[5]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[5], b->limbs[4]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[6], b->limbs[3]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[7], b->limbs[2]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[8], b->limbs[1]);
-    out->limbs[9] = __chestnut_mul_acc(&carry_out, out->limbs[9], a->limbs[9], b->limbs[0]);
+    out->limbs[9] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[9]);
+    carry_out = overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[1], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[2], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[3], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[4], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[5], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[6], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[7], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[8], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[9] = __chestnut_mul_acc(&overflow, out->limbs[9], a->limbs[9], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 10
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[10]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[1], b->limbs[9]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[2], b->limbs[8]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[3], b->limbs[7]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[4], b->limbs[6]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[5], b->limbs[5]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[6], b->limbs[4]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[7], b->limbs[3]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[8], b->limbs[2]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[9], b->limbs[1]);
-    out->limbs[10] = __chestnut_mul_acc(&carry_out, out->limbs[10], a->limbs[10], b->limbs[0]);
+    out->limbs[10] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[10]);
+    carry_out = overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[1], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[2], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[3], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[4], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[5], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[6], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[7], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[8], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[9], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[10] = __chestnut_mul_acc(&overflow, out->limbs[10], a->limbs[10], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 11
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[11]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[1], b->limbs[10]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[2], b->limbs[9]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[3], b->limbs[8]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[4], b->limbs[7]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[5], b->limbs[6]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[6], b->limbs[5]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[7], b->limbs[4]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[8], b->limbs[3]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[9], b->limbs[2]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[10], b->limbs[1]);
-    out->limbs[11] = __chestnut_mul_acc(&carry_out, out->limbs[11], a->limbs[11], b->limbs[0]);
+    out->limbs[11] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[11]);
+    carry_out = overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[1], b->limbs[10]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[2], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[3], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[4], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[5], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[6], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[7], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[8], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[9], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[10], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[11] = __chestnut_mul_acc(&overflow, out->limbs[11], a->limbs[11], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 12
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[12]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[1], b->limbs[11]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[2], b->limbs[10]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[3], b->limbs[9]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[4], b->limbs[8]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[5], b->limbs[7]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[6], b->limbs[6]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[7], b->limbs[5]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[8], b->limbs[4]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[9], b->limbs[3]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[10], b->limbs[2]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[11], b->limbs[1]);
-    out->limbs[12] = __chestnut_mul_acc(&carry_out, out->limbs[12], a->limbs[12], b->limbs[0]);
+    out->limbs[12] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[12]);
+    carry_out = overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[1], b->limbs[11]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[2], b->limbs[10]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[3], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[4], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[5], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[6], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[7], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[8], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[9], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[10], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[11], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[12] = __chestnut_mul_acc(&overflow, out->limbs[12], a->limbs[12], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 13
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[13]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[1], b->limbs[12]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[2], b->limbs[11]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[3], b->limbs[10]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[4], b->limbs[9]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[5], b->limbs[8]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[6], b->limbs[7]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[7], b->limbs[6]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[8], b->limbs[5]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[9], b->limbs[4]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[10], b->limbs[3]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[11], b->limbs[2]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[12], b->limbs[1]);
-    out->limbs[13] = __chestnut_mul_acc(&carry_out, out->limbs[13], a->limbs[13], b->limbs[0]);
+    out->limbs[13] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[13]);
+    carry_out = overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[1], b->limbs[12]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[2], b->limbs[11]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[3], b->limbs[10]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[4], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[5], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[6], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[7], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[8], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[9], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[10], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[11], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[12], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[13] = __chestnut_mul_acc(&overflow, out->limbs[13], a->limbs[13], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 14
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[14]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[1], b->limbs[13]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[2], b->limbs[12]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[3], b->limbs[11]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[4], b->limbs[10]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[5], b->limbs[9]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[6], b->limbs[8]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[7], b->limbs[7]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[8], b->limbs[6]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[9], b->limbs[5]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[10], b->limbs[4]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[11], b->limbs[3]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[12], b->limbs[2]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[13], b->limbs[1]);
-    out->limbs[14] = __chestnut_mul_acc(&carry_out, out->limbs[14], a->limbs[14], b->limbs[0]);
+    out->limbs[14] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[14]);
+    carry_out = overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[1], b->limbs[13]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[2], b->limbs[12]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[3], b->limbs[11]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[4], b->limbs[10]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[5], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[6], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[7], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[8], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[9], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[10], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[11], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[12], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[13], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[14] = __chestnut_mul_acc(&overflow, out->limbs[14], a->limbs[14], b->limbs[0]);
+    carry_out += overflow;
 
     // Limb 15
-    carry_in = carry_out;
-    carry_out = 0;
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, carry_in, a->limbs[0], b->limbs[15]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[1], b->limbs[14]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[2], b->limbs[13]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[3], b->limbs[12]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[4], b->limbs[11]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[5], b->limbs[10]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[6], b->limbs[9]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[7], b->limbs[8]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[8], b->limbs[7]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[9], b->limbs[6]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[10], b->limbs[5]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[11], b->limbs[4]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[12], b->limbs[3]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[13], b->limbs[2]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[14], b->limbs[1]);
-    out->limbs[15] = __chestnut_mul_acc(&carry_out, out->limbs[15], a->limbs[15], b->limbs[0]);
+    out->limbs[15] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[15]);
+    carry_out = overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[1], b->limbs[14]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[2], b->limbs[13]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[3], b->limbs[12]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[4], b->limbs[11]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[5], b->limbs[10]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[6], b->limbs[9]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[7], b->limbs[8]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[8], b->limbs[7]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[9], b->limbs[6]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[10], b->limbs[5]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[11], b->limbs[4]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[12], b->limbs[3]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[13], b->limbs[2]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[14], b->limbs[1]);
+    carry_out += overflow;
+    out->limbs[15] = __chestnut_mul_acc(&overflow, out->limbs[15], a->limbs[15], b->limbs[0]);
+    carry_out += overflow;
 
     return (chestnut_uint8_t)(!!carry_out);
 }
 
-static inline void __chestnut_uint128_t_select(
+chestnut_uint1024_t chestnut_uint1024_t_mul_full(
+    chestnut_uint1024_t *out_low,
+    chestnut_uint1024_t *a,
+    chestnut_uint1024_t *b
+) {
+    chestnut_uint1024_t out_high;
+    chestnut_uint64_t carry_in = 0, carry_out = 0, overflow = 0;
+
+    // Low limb 0
+    out_low->limbs[0] = __chestnut_mul(&carry_out, a->limbs[0], b->limbs[0]);
+
+    // Lower limb 1
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[1]);
+    carry_out = overflow;
+    out_low->limbs[1] = __chestnut_mul_acc(&overflow, out_low->limbs[1], a->limbs[1], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 2
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[2]);
+    carry_out = overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[1], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[2] = __chestnut_mul_acc(&overflow, out_low->limbs[2], a->limbs[2], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 3
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[3]);
+    carry_out = overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[1], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[2], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[3] = __chestnut_mul_acc(&overflow, out_low->limbs[3], a->limbs[3], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 4
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[4]);
+    carry_out = overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[1], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[2], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[3], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[4] = __chestnut_mul_acc(&overflow, out_low->limbs[4], a->limbs[4], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 5
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[5]);
+    carry_out = overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[1], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[2], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[3], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[4], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[5] = __chestnut_mul_acc(&overflow, out_low->limbs[5], a->limbs[5], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 6
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[6]);
+    carry_out = overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[1], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[2], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[3], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[4], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[5], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[6] = __chestnut_mul_acc(&overflow, out_low->limbs[6], a->limbs[6], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 7
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[7]);
+    carry_out = overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[1], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[2], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[3], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[4], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[5], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[6], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[7] = __chestnut_mul_acc(&overflow, out_low->limbs[7], a->limbs[7], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 8
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[8]);
+    carry_out = overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[1], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[2], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[3], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[4], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[5], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[6], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[7], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[8] = __chestnut_mul_acc(&overflow, out_low->limbs[8], a->limbs[8], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 9
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[9]);
+    carry_out = overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[1], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[2], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[3], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[4], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[5], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[6], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[7], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[8], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[9] = __chestnut_mul_acc(&overflow, out_low->limbs[9], a->limbs[9], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 10
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[10]);
+    carry_out = overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[1], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[2], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[3], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[4], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[5], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[6], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[7], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[8], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[9], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[10] = __chestnut_mul_acc(&overflow, out_low->limbs[10], a->limbs[10], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 11
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[11]);
+    carry_out = overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[1], b->limbs[10]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[2], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[3], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[4], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[5], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[6], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[7], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[8], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[9], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[10], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[11] = __chestnut_mul_acc(&overflow, out_low->limbs[11], a->limbs[11], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 12
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[12]);
+    carry_out = overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[1], b->limbs[11]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[2], b->limbs[10]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[3], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[4], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[5], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[6], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[7], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[8], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[9], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[10], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[11], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[12] = __chestnut_mul_acc(&overflow, out_low->limbs[12], a->limbs[12], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 13
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[13]);
+    carry_out = overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[1], b->limbs[12]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[2], b->limbs[11]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[3], b->limbs[10]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[4], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[5], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[6], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[7], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[8], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[9], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[10], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[11], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[12], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[13] = __chestnut_mul_acc(&overflow, out_low->limbs[13], a->limbs[13], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 14
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[14]);
+    carry_out = overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[1], b->limbs[13]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[2], b->limbs[12]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[3], b->limbs[11]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[4], b->limbs[10]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[5], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[6], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[7], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[8], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[9], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[10], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[11], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[12], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[13], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[14] = __chestnut_mul_acc(&overflow, out_low->limbs[14], a->limbs[14], b->limbs[0]);
+    carry_out += overflow;
+
+    // Lower limb 15
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[0], b->limbs[15]);
+    carry_out = overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[1], b->limbs[14]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[2], b->limbs[13]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[3], b->limbs[12]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[4], b->limbs[11]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[5], b->limbs[10]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[6], b->limbs[9]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[7], b->limbs[8]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[8], b->limbs[7]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[9], b->limbs[6]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[10], b->limbs[5]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[11], b->limbs[4]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[12], b->limbs[3]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[13], b->limbs[2]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[14], b->limbs[1]);
+    carry_out += overflow;
+    out_low->limbs[15] = __chestnut_mul_acc(&overflow, out_low->limbs[15], a->limbs[15], b->limbs[0]);
+    carry_out += overflow;
+
+    // Upper limb 0
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[1], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[2], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[3], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[4], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[5], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[6], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[7], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[8], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[9], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[10], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[11], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[12], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[13], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[14], b->limbs[2]);
+    carry_out += overflow;
+    out_high.limbs[0] = __chestnut_mul_acc(&overflow, out_high.limbs[0], a->limbs[15], b->limbs[1]);
+    carry_out += overflow;
+
+    // Upper limb 1
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[2], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[3], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[4], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[5], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[6], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[7], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[8], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[9], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[10], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[11], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[12], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[13], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[14], b->limbs[3]);
+    carry_out += overflow;
+    out_high.limbs[1] = __chestnut_mul_acc(&overflow, out_high.limbs[1], a->limbs[15], b->limbs[2]);
+    carry_out += overflow;
+
+    // Upper limb 2
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[3], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[4], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[5], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[6], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[7], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[8], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[9], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[10], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[11], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[12], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[13], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[14], b->limbs[4]);
+    carry_out += overflow;
+    out_high.limbs[2] = __chestnut_mul_acc(&overflow, out_high.limbs[2], a->limbs[15], b->limbs[3]);
+    carry_out += overflow;
+
+    // Upper limb 3
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[4], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[5], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[6], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[7], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[8], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[9], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[10], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[11], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[12], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[13], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[14], b->limbs[5]);
+    carry_out += overflow;
+    out_high.limbs[3] = __chestnut_mul_acc(&overflow, out_high.limbs[3], a->limbs[15], b->limbs[4]);
+    carry_out += overflow;
+    
+    // Upper limb 4
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[5], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[6], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[7], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[8], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[9], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[10], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[11], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[12], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[13], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[14], b->limbs[6]);
+    carry_out += overflow;
+    out_high.limbs[4] = __chestnut_mul_acc(&overflow, out_high.limbs[4], a->limbs[15], b->limbs[5]);
+    carry_out += overflow;
+    
+    // Upper limb 5
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[6], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[7], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[8], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[9], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[10], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[11], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[12], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[13], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[14], b->limbs[7]);
+    carry_out += overflow;
+    out_high.limbs[5] = __chestnut_mul_acc(&overflow, out_high.limbs[5], a->limbs[15], b->limbs[6]);
+    carry_out += overflow;
+    
+    // Upper limb 6
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[7], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[8], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[9], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[10], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[11], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[12], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[13], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[14], b->limbs[8]);
+    carry_out += overflow;
+    out_high.limbs[6] = __chestnut_mul_acc(&overflow, out_high.limbs[6], a->limbs[15], b->limbs[7]);
+    carry_out += overflow;
+
+    // Upper limb 7
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[8], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[9], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[10], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[11], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[12], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[13], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[14], b->limbs[9]);
+    carry_out += overflow;
+    out_high.limbs[7] = __chestnut_mul_acc(&overflow, out_high.limbs[7], a->limbs[15], b->limbs[8]);
+    carry_out += overflow;
+
+    // Upper limb 8
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[9], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[10], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[11], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[12], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[13], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[14], b->limbs[10]);
+    carry_out += overflow;
+    out_high.limbs[8] = __chestnut_mul_acc(&overflow, out_high.limbs[8], a->limbs[15], b->limbs[9]);
+    carry_out += overflow;
+
+    // Upper limb 9
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[10], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, out_high.limbs[9], a->limbs[11], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, out_high.limbs[9], a->limbs[12], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, out_high.limbs[9], a->limbs[13], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, out_high.limbs[9], a->limbs[14], b->limbs[11]);
+    carry_out += overflow;
+    out_high.limbs[9] = __chestnut_mul_acc(&overflow, out_high.limbs[9], a->limbs[15], b->limbs[10]);
+    carry_out += overflow;
+
+    // Upper limb 10
+    out_high.limbs[10] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[11], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[10] = __chestnut_mul_acc(&overflow, out_high.limbs[10], a->limbs[12], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[10] = __chestnut_mul_acc(&overflow, out_high.limbs[10], a->limbs[13], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[10] = __chestnut_mul_acc(&overflow, out_high.limbs[10], a->limbs[14], b->limbs[12]);
+    carry_out += overflow;
+    out_high.limbs[10] = __chestnut_mul_acc(&overflow, out_high.limbs[10], a->limbs[15], b->limbs[11]);
+    carry_out += overflow;
+
+    // Upper limb 11
+    out_high.limbs[11] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[12], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[11] = __chestnut_mul_acc(&overflow, out_high.limbs[11], a->limbs[13], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[11] = __chestnut_mul_acc(&overflow, out_high.limbs[11], a->limbs[14], b->limbs[13]);
+    carry_out += overflow;
+    out_high.limbs[11] = __chestnut_mul_acc(&overflow, out_high.limbs[11], a->limbs[15], b->limbs[12]);
+    carry_out += overflow;
+
+    // Upper limb 12
+    out_high.limbs[12] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[13], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[12] = __chestnut_mul_acc(&overflow, out_high.limbs[12], a->limbs[14], b->limbs[14]);
+    carry_out += overflow;
+    out_high.limbs[12] = __chestnut_mul_acc(&overflow, out_high.limbs[12], a->limbs[15], b->limbs[13]);
+    carry_out += overflow;
+
+    // Upper limb 13
+    out_high.limbs[13] = __chestnut_mul_acc(&overflow, carry_out, a->limbs[14], b->limbs[15]);
+    carry_out = overflow;
+    out_high.limbs[13] = __chestnut_mul_acc(&overflow, out_high.limbs[13], a->limbs[15], b->limbs[14]);
+    carry_out += overflow;
+
+    // Upper limb 14 & 15
+    out_high.limbs[14] = __chestnut_mul_acc(&out_high.limbs[15], carry_out, a->limbs[15], b->limbs[15]);
+
+    return out_high;
+}
+
+static inline __attribute__((always_inline)) void __chestnut_uint128_t_select(
     chestnut_uint64_t mask,
     chestnut_uint128_t *out,
     const chestnut_uint128_t *if_true,
@@ -1153,7 +2132,7 @@ static inline void __chestnut_uint128_t_select(
     out->limbs[1] = (if_true->limbs[1] & mask) | (if_false->limbs[1] & ~mask);
 }
 
-static inline void __chestnut_uint256_t_select(
+static inline __attribute__((always_inline)) void __chestnut_uint256_t_select(
     chestnut_uint64_t mask,
     chestnut_uint256_t *out,
     const chestnut_uint256_t *if_true,
@@ -1165,7 +2144,7 @@ static inline void __chestnut_uint256_t_select(
     out->limbs[3] = (if_true->limbs[3] & mask) | (if_false->limbs[3] & ~mask);
 }
 
-static inline void __chestnut_uint512_t_select(
+static inline __attribute__((always_inline)) void __chestnut_uint512_t_select(
     chestnut_uint64_t mask,
     chestnut_uint512_t *out,
     const chestnut_uint512_t *if_true,
@@ -1181,7 +2160,7 @@ static inline void __chestnut_uint512_t_select(
     out->limbs[7] = (if_true->limbs[7] & mask) | (if_false->limbs[7] & ~mask);
 }
 
-static inline void __chestnut_uint1024_t_select(
+static inline __attribute__((always_inline)) void __chestnut_uint1024_t_select(
     chestnut_uint64_t mask,
     chestnut_uint1024_t *out,
     const chestnut_uint1024_t *if_true,
@@ -1211,13 +2190,13 @@ void chestnut_int128_t_mul(
     const chestnut_int128_t *b
 ) {
     // Get the mask for both a and b.
-    chestnut_uint64_t mask_a = (chestnut_int64_t)a->limbs[1] >> 63;
-    chestnut_uint64_t mask_b = (chestnut_int64_t)b->limbs[1] >> 63;
+    chestnut_uint64_t mask_a = a->limbs[1] >> 63;
+    chestnut_uint64_t mask_b = b->limbs[1] >> 63;
 
     // Get the negated versions of a and b.
     chestnut_uint128_t neg_a, neg_b;
-    chestnut_uint128_t_negate(&neg_a, (const chestnut_uint128_t*)a);
-    chestnut_uint128_t_negate(&neg_b, (const chestnut_uint128_t*)b);
+    chestnut_uint128_t_negate(&neg_a, (chestnut_uint128_t*)a);
+    chestnut_uint128_t_negate(&neg_b, (chestnut_uint128_t*)b);
 
     // Get the absolute values of a and b.
     chestnut_uint128_t abs_a, abs_b;
@@ -1225,7 +2204,7 @@ void chestnut_int128_t_mul(
     __chestnut_uint128_t_select(mask_b, &abs_b, &neg_b, (chestnut_uint128_t*)b);
 
     // Do unsigned multiplication
-    chestnut_uint128_t_mul((chestnut_uint128_t*)out, &abs_a, &abs_b);
+    chestnut_uint128_t_mul((chestnut_uint128_t*)out, (chestnut_uint128_t*)&abs_a, (chestnut_uint128_t*)&abs_b);
 
     // Calculate the result mask
     chestnut_uint64_t result_mask = mask_a ^ mask_b;
@@ -1242,25 +2221,25 @@ void chestnut_int256_t_mul(
     const chestnut_int256_t *a,
     const chestnut_int256_t *b
 ) {
-    chestnut_uint64_t mask_a = (chestnut_int64_t)a->limbs[3] >> 63;
-    chestnut_uint64_t mask_b = (chestnut_int64_t)b->limbs[3] >> 63;
+    chestnut_uint64_t mask_a = a->limbs[3] >> 63;
+    chestnut_uint64_t mask_b = b->limbs[3] >> 63;
 
-    chestnut_int256_t neg_a, neg_b;
-    chestnut_uint256_t_negate((chestnut_uint256_t*)&neg_a, (const chestnut_uint256_t*)a);
-    chestnut_uint256_t_negate((chestnut_uint256_t*)&neg_b, (const chestnut_uint256_t*)b);
+    chestnut_uint256_t neg_a, neg_b;
+    chestnut_uint256_t_negate(&neg_a, (chestnut_uint256_t*)a);
+    chestnut_uint256_t_negate(&neg_b, (chestnut_uint256_t*)b);
 
-    chestnut_int256_t abs_a, abs_b;
-    __chestnut_uint256_t_select(mask_a, &abs_a, &neg_a, a);
-    __chestnut_uint256_t_select(mask_b, &abs_b, &neg_b, b);
+    chestnut_uint256_t abs_a, abs_b;
+    __chestnut_uint256_t_select(mask_a, &abs_a, &neg_a, (chestnut_uint256_t*)a);
+    __chestnut_uint256_t_select(mask_b, &abs_b, &neg_b, (chestnut_uint256_t*)b);
 
     chestnut_uint256_t_mul((chestnut_uint256_t*)out, (chestnut_uint256_t*)&abs_a, (chestnut_uint256_t*)&abs_b);
 
     chestnut_uint64_t result_mask = mask_a ^ mask_b;
 
-    chestnut_int256_t neg_out;
-    chestnut_uint256_t_negate(&neg_out, out);
+    chestnut_uint256_t neg_out;
+    chestnut_uint256_t_negate(&neg_out, (chestnut_uint256_t*)out);
 
-    __chestnut_uint256_t_select(result_mask, out, &neg_out, out);
+    __chestnut_uint256_t_select(result_mask, (chestnut_uint256_t*)out, &neg_out, (chestnut_uint256_t*)out);
 }
 
 void chestnut_int512_t_mul(
@@ -1268,25 +2247,25 @@ void chestnut_int512_t_mul(
     const chestnut_int512_t *a,
     const chestnut_int512_t *b
 ) {
-    chestnut_uint64_t mask_a = (chestnut_int64_t)a->limbs[7] >> 63;
-    chestnut_uint64_t mask_b = (chestnut_int64_t)b->limbs[7] >> 63;
+    chestnut_uint64_t mask_a = a->limbs[7] >> 63;
+    chestnut_uint64_t mask_b = b->limbs[7] >> 63;
 
-    chestnut_int512_t neg_a, neg_b;
-    chestnut_uint512_t_negate((chestnut_uint512_t*)&neg_a, (const chestnut_uint512_t*)a);
-    chestnut_uint512_t_negate((chestnut_uint512_t*)&neg_b, (const chestnut_uint512_t*)b);
+    chestnut_uint512_t neg_a, neg_b;
+    chestnut_uint512_t_negate(&neg_a, (chestnut_uint512_t*)a);
+    chestnut_uint512_t_negate(&neg_b, (chestnut_uint512_t*)b);
 
-    chestnut_int512_t abs_a, abs_b;
-    __chestnut_uint512_t_select(mask_a, &abs_a, &neg_a, a);
-    __chestnut_uint512_t_select(mask_b, &abs_b, &neg_b, b);
+    chestnut_uint512_t abs_a, abs_b;
+    __chestnut_uint512_t_select(mask_a, &abs_a, &neg_a, (chestnut_uint512_t*)a);
+    __chestnut_uint512_t_select(mask_b, &abs_b, &neg_b, (chestnut_uint512_t*)b);
 
     chestnut_uint512_t_mul((chestnut_uint512_t*)out, (chestnut_uint512_t*)&abs_a, (chestnut_uint512_t*)&abs_b);
 
     chestnut_uint64_t result_mask = mask_a ^ mask_b;
 
-    chestnut_int512_t neg_out;
-    chestnut_uint512_t_negate(&neg_out, out);
+    chestnut_uint512_t neg_out;
+    chestnut_uint512_t_negate(&neg_out, (chestnut_uint512_t*)out);
 
-    __chestnut_uint512_t_select(result_mask, out, &neg_out, out);
+    __chestnut_uint512_t_select(result_mask, (chestnut_uint512_t*)out, &neg_out, (chestnut_uint512_t*)out);
 }
 
 void chestnut_int1024_t_mul(
@@ -1294,29 +2273,29 @@ void chestnut_int1024_t_mul(
     const chestnut_int1024_t *a,
     const chestnut_int1024_t *b
 ) {
-    chestnut_uint64_t mask_a = (chestnut_int64_t)a->limbs[15] >> 63;
-    chestnut_uint64_t mask_b = (chestnut_int64_t)b->limbs[15] >> 63;
+    chestnut_uint64_t mask_a = a->limbs[15] >> 63;
+    chestnut_uint64_t mask_b = b->limbs[15] >> 63;
 
-    chestnut_int1024_t neg_a, neg_b;;
-    chestnut_uint1024_t_negate((chestnut_uint1024_t*)&neg_a, (const chestnut_uint1024_t*)a);
-    chestnut_uint1024_t_negate((chestnut_uint1024_t*)&neg_b, (const chestnut_uint1024_t*)b);
+    chestnut_uint1024_t neg_a, neg_b;
+    chestnut_uint1024_t_negate(&neg_a, (chestnut_uint1024_t*)a);
+    chestnut_uint1024_t_negate(&neg_b, (chestnut_uint1024_t*)b);
 
-    chestnut_int1024_t abs_a, abs_b;
-    __chestnut_uint1024_t_select(mask_a, &abs_a, &neg_a, a);
-    __chestnut_uint1024_t_select(mask_b, &abs_b, &neg_b, b);
+    chestnut_uint1024_t abs_a, abs_b;
+    __chestnut_uint1024_t_select(mask_a, &abs_a, &neg_a, (chestnut_uint1024_t*)a);
+    __chestnut_uint1024_t_select(mask_b, &abs_b, &neg_b, (chestnut_uint1024_t*)b);
 
     chestnut_uint1024_t_mul((chestnut_uint1024_t*)out, (chestnut_uint1024_t*)&abs_a, (chestnut_uint1024_t*)&abs_b);
 
     chestnut_uint64_t result_mask = mask_a ^ mask_b;
 
-    chestnut_int1024_t neg_out;
-    chestnut_uint1024_t_negate(&neg_out, out);
+    chestnut_uint1024_t neg_out;
+    chestnut_uint1024_t_negate(&neg_out, (chestnut_uint1024_t*)out);
 
-    __chestnut_uint1024_t_select(result_mask, out, &neg_out, out);
+    __chestnut_uint1024_t_select(result_mask, (chestnut_uint1024_t*)out, &neg_out, (chestnut_uint1024_t*)out);
 }
 
 // A helper method to do shift right on uint64 arms
-static inline void _chestnut_uint_shr(
+static inline __attribute__((always_inline)) void _chestnut_uint_shr(
     chestnut_uint64_t *out,
     const chestnut_uint64_t *in,
     chestnut_uint32_t n,
@@ -1387,7 +2366,7 @@ chestnut_uint1024_t chestnut_uint1024_t_shr(
     return out;
 }
 
-static inline void _chestnut_uint_shl(
+static inline __attribute__((always_inline)) void _chestnut_uint_shl(
     chestnut_uint64_t *out,
     const chestnut_uint64_t *in,
     chestnut_uint32_t n,
@@ -1472,4 +2451,342 @@ chestnut_uint64_t chestnut_uint64_t_add(
     return a + b;
 }
 
+static inline __attribute__((always_inline)) chestnut_uint16_t pop(uint64_t x) {
+    // Count the bits in every 2-bit pair.
+    x -= (x >> 1) & 0x5555555555555555ULL;
+
+    // Sum the results of the 2 bit pairs into 4-bit nibbles.
+    x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
+
+    // Sum the result of the 4-bit nibbles into 8-bit bytes.
+    x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
+
+
+    return (chestnut_uint16_t)((x * 0x0101010101010101ULL) >> 56);
+}
+
+static inline __attribute__((always_inline)) chestnut_uint64_t __chestnut_uint64_t_clz_shift(
+    chestnut_uint64_t limb
+) {
+    limb |= limb >> 1;
+    limb |= limb >> 2;
+    limb |= limb >> 4;
+    limb |= limb >> 8;
+    limb |= limb >> 16;
+    limb |= limb >> 32;
+    return limb;
+}
+
+static inline __attribute__((always_inline)) chestnut_uint64_t __chestnut_uint64_t_ctz_shift(
+    chestnut_uint64_t limb
+) {
+    limb |= limb << 1;
+    limb |= limb << 2;
+    limb |= limb << 4;
+    limb |= limb << 8;
+    limb |= limb << 16;
+    limb |= limb << 32;
+    return limb;
+}
+
+chestnut_uint16_t chestnut_uint128_t_clz(
+    const chestnut_uint128_t *a
+) {
+    chestnut_uint16_t r1, r2, count, m;
+    r1 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[0]));
+    r2 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[1]));
+
+    count = r1;
+    m = -(r1 >> 6);
+
+    count += (r2 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint256_t_clz(
+    const chestnut_uint256_t *a
+) {
+    chestnut_uint16_t r1, r2, r3, r4, count, m;
+    r1 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[0]));
+    r2 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[1]));
+    r3 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[2]));
+    r4 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[3]));
+
+    count = r1;
+    m = -(r1 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+
+    count += (r4 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint512_t_clz(
+    const chestnut_uint512_t *a
+) {
+    chestnut_uint16_t r1, r2, r3, r4, r5, r6, r7, r8, count, m;
+    r1 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[0]));
+    r2 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[1]));
+    r3 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[2]));
+    r4 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[3]));
+    r5 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[4]));
+    r6 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[5]));
+    r7 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[6]));
+    r8 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[7]));
+
+    count = r1;
+    m = -(r1 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+    
+    count += (r4 & m);
+    m &= -(r4 >> 6);
+    
+    count += (r5 & m);
+    m &= -(r5 >> 6);
+    
+    count += (r6 & m);
+    m &= -(r6 >> 6);
+    
+    count += (r7 & m);
+    m &= -(r7 >> 6);
+
+    count += (r8 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint1024_t_clz(
+    const chestnut_uint1024_t *a
+) {
+    chestnut_uint16_t r1, r2, r3, r4, r5, r6, r7, r8,
+                      r9, r10, r11, r12, r13, r14, r15,
+                      r16, count, m;
+
+    r1 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[0]));
+    r2 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[1]));
+    r3 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[2]));
+    r4 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[3]));
+    r5 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[4]));
+    r6 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[5]));
+    r7 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[6]));
+    r8 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[7]));
+    r9 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[8]));
+    r10 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[9]));
+    r11 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[10]));
+    r12 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[11]));
+    r13 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[12]));
+    r14 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[13]));
+    r15 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[14]));
+    r16 = pop(~__chestnut_uint64_t_clz_shift(a->limbs[15]));
+
+    count = r1;
+    m = -(r1 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+
+    count += (r4 & m);
+    m &= -(r4 >> 6);
+
+    count += (r5 & m);
+    m &= -(r5 >> 6);
+
+    count += (r6 & m);
+    m &= -(r6 >> 6);
+
+    count += (r7 & m);
+    m &= -(r7 >> 6);
+
+    count += (r8 & m);
+    m &= -(r8 >> 6);
+
+    count += (r9 & m);
+    m &= -(r9 >> 6);
+
+    count += (r10 & m);
+    m &= -(r10 >> 6);
+
+    count += (r11 & m);
+    m &= -(r11 >> 6);
+
+    count += (r12 & m);
+    m &= -(r12 >> 6);
+
+    count += (r13 & m);
+    m &= -(r13 >> 6);
+
+    count += (r14 & m);
+    m &= -(r14 >> 6);
+
+    count += (r15 & m);
+    m &= -(r15 >> 6);
+
+    count += (r16 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint128_t_ctz(
+    const chestnut_uint128_t *a
+) {
+    chestnut_uint16_t r1, r2, count, m;
+    r2 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[1]));
+    r1 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[0]));
+
+    count = r2;
+    m = -(r2 >> 6);
+
+    count += (r1 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint256_t_ctz(
+    const chestnut_uint256_t *a
+) {
+    chestnut_uint16_t r1, r2, r3, r4, count, m;
+    r4 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[3]));
+    r3 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[2]));
+    r2 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[1]));
+    r1 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[0]));
+
+    count = r4;
+    m = -(r4 >> 6);
+
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r1 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint512_t_ctz(
+    const chestnut_uint512_t *a
+) {
+    chestnut_uint16_t r1, r2, r3, r4, r5, r6, r7, r8, count, m;
+    r8 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[7]));
+    r7 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[6]));
+    r6 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[5]));
+    r5 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[4]));
+    r4 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[3]));
+    r3 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[2]));
+    r2 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[1]));
+    r1 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[0]));
+
+    count = r8;
+    m = -(r8 >> 6);
+
+    count += (r7 & m);
+    m &= -(r7 >> 6);
+    
+    count += (r6 & m);
+    m &= -(r6 >> 6);
+    
+    count += (r5 & m);
+    m &= -(r5 >> 6);
+    
+    count += (r4 & m);
+    m &= -(r4 >> 6);
+    
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r1 & m);
+
+    return count;
+}
+
+chestnut_uint16_t chestnut_uint1024_t_ctz(
+    const chestnut_uint1024_t *a
+) {
+    chestnut_uint16_t r0, r1, r2, r3, r4, r5, r6, r7,
+                      r8, r9, r10, r11, r12, r13, r14,
+                      r15, count, m;
+    r0 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[0]));
+    r1 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[1]));
+    r2 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[2]));
+    r3 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[3]));
+    r4 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[4]));
+    r5 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[5]));
+    r6 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[6]));
+    r7 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[7]));
+    r8 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[8]));
+    r9 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[9]));
+    r10 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[10]));
+    r11 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[11]));
+    r12 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[12]));
+    r13 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[13]));
+    r14 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[14]));
+    r15 = pop(~__chestnut_uint64_t_ctz_shift(a->limbs[15]));
+
+    count = r0;
+    m = -(r0 >> 6);
+
+    count += (r1 & m);
+    m &= -(r1 >> 6);
+
+    count += (r2 & m);
+    m &= -(r2 >> 6);
+
+    count += (r3 & m);
+    m &= -(r3 >> 6);
+
+    count += (r4 & m);
+    m &= -(r4 >> 6);
+
+    count += (r5 & m);
+    m &= -(r5 >> 6);
+
+    count += (r6 & m);
+    m &= -(r6 >> 6);
+
+    count += (r7 & m);
+    m &= -(r7 >> 6);
+
+    count += (r8 & m);
+    m &= -(r8 >> 6);
+
+    count += (r9 & m);
+    m &= -(r9 >> 6);
+    
+    count += (r10 & m);
+    m &= -(r10 >> 6);
+    
+    count += (r11 & m);
+    m &= -(r11 >> 6);
+    
+    count += (r12 & m);
+    m &= -(r12 >> 6);
+    
+    count += (r13 & m);
+    m &= -(r13 >> 6);
+
+    count += (r14 & m);
+    m &= -(r14 >> 6);
+
+    count += (r15 & m);
+
+    return count;
+}
 #endif

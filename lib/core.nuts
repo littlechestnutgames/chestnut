@@ -329,7 +329,7 @@ fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns 
             when 1024
                 func = uint1024
             otherwise
-                halt("Unidentified UnsignedInteger type \"{{ b_type }}\"")
+                halt("Unidentified UnsignedInteger type \"{{ bit_width }}\"")
         endcase
 
         return func

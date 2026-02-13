@@ -4,16 +4,20 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdalign.h>
-
-typedef uint8_t chestnut_float8_5e2m_t;
-typedef uint8_t chestnut_float8_4e3m_t;
+#if !defined(chestnut_uint64_t)
+    typedef uint8_t chestnut_uint8_t;
+    typedef uint16_t chestnut_uint16_t;
+    typedef uint64_t chestnut_uint64_t;
+#endif
+typedef chestnut_uint8_t chestnut_float8_5e2m_t;
+typedef chestnut_uint8_t chestnut_float8_4e3m_t;
 typedef chestnut_float8_4e3m_t chestnut_float8_t;
-typedef uint8_t chestnut_float8_3e4m_t;
-typedef uint8_t chestnut_float8_2e5m_t;
+typedef chestnut_uint8_t chestnut_float8_3e4m_t;
+typedef chestnut_uint8_t chestnut_float8_2e5m_t;
 
-typedef uint16_t chestnut_float16_5e10m_t;
+typedef chestnut_uint16_t chestnut_float16_5e10m_t;
 typedef chestnut_float16_5e10m_t chestnut_float16_t;
-typedef uint16_t chestnut_float16_8e7m_t;
+typedef chestnut_uint16_t chestnut_float16_8e7m_t;
 typedef chestnut_float16_8e7m_t chestnut_bfloat16_t;
 
 
@@ -25,9 +29,17 @@ typedef chestnut_float16_8e7m_t chestnut_bfloat16_t;
     typedef double chestnut_float64_t;
 #endif
 
-typedef struct { _Alignas(16) uint64_t limbs[2]; } chestnut_float128_t;
-typedef struct { _Alignas(32) uint64_t limbs[4]; } chestnut_float256_t;
-typedef struct { _Alignas(64) uint64_t limbs[8]; } chestnut_float512_t;
-typedef struct { _Alignas(64) uint64_t limbs[16]; } chestnut_float1024_t;
+typedef struct {
+    chestnut_uint64_t limbs[2] __attribute__((aligned(16)));
+} chestnut_float128_t;
+typedef struct {
+    chestnut_uint64_t limbs[4] __attribute__((aligned(16)));
+} chestnut_float256_t;
+typedef struct {
+    chestnut_uint64_t limbs[8] __attribute__((aligned(16)));
+} chestnut_float512_t;
+typedef struct {
+    chestnut_uint64_t limbs[16]__attribute__((aligned(16)));
+} chestnut_float1024_t;
 
 #endif

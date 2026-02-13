@@ -8,3 +8,6 @@ build/
 *.dylib
 .editorconfig
 *.out
+*.s
+*.o
+chestnut_c_binding.c

@@ -51,6 +51,7 @@ class ChestnutAny:
         if isinstance(other, ChestnutAny):
             other_type = other.gettype()
         if not type(self) == type(other):
+            print(self, other, op)
             raise TypeException(f"Attempted to {op} {self.gettype()} and {other_type}")
 
     def gettype(self):
