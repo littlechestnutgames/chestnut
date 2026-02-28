@@ -421,7 +421,7 @@ class Evaluator:
 
     def eval_library(self, path):
         with open(self.resolve_module_path(path)) as new_import:
-            tokens = lex("".join(new_import.readlines()))
+            tokens = lex("".join(new_import.readlines()), self.resolve_module_path(path))
             parser = Parser(tokens)
             ast = parser.parse_program()
             for node in ast:
@@ -620,7 +620,7 @@ class Evaluator:
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ImportStatementNode", node)
         import_path = self.resolve_module_path(node.location.data)
         with open(import_path) as new_import:
-            tokens = lex("".join(new_import.readlines()))
+            tokens = lex("".join(new_import.readlines()), self.resolve_module_path(node.location.data))
             parser = Parser(tokens)
             ast = parser.parse_program()
             for n in ast:
@@ -730,7 +730,10 @@ class Evaluator:
             if property_name in target_object.function_register.functions:
                 return StructMethodCall(target_object, target_object.function_register.functions[property_name]["candidates"][0])
         if not hasattr(target_object, property_name):
-            struct_node = target_object.__struct_node__
+            if isinstance(target_object, StructNode):
+                struct_node = target_object
+            else:
+                struct_node = target_object.__struct_node__
             function_registers = [struct_node.function_register]
             inheritance_mapping = getattr(struct_node, "inheritance_mapping")
             for sn in inheritance_mapping.keys():
@@ -1097,7 +1100,7 @@ class Evaluator:
         while len(self.scopes) > base_stack_length:
             self.pop_scope()
         self.scopes[0]["call depth"] -= ChestnutInteger(1)
-        return False
+        return CHESTNUT_NULL
 
     def visit_BreakStatementNode(self, node):
         raise BreakLoop(node)

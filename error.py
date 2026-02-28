@@ -1,9 +1,10 @@
 class ChestnutError(BaseException):
-    def __init__(self, message, token=None, line=None, column=None):
+    def __init__(self, message, token=None, line=None, column=None, filename=None):
         self.message=message
         self.token=token
         self.line=line
         self.column=column
+        self.filename=filename
 
     def gettype(self):
         return "Error"

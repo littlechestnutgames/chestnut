@@ -15,7 +15,7 @@ if __name__ == "__main__":
     if file:
         with open(file) as hello:
             # Lexing
-            tokens = lex("".join(hello.readlines()))
+            tokens = lex("".join(hello.readlines()), file)
 
             # Parsing
             parser = Parser(tokens)
@@ -64,9 +64,9 @@ if __name__ == "__main__":
             main_scope = evaluator.find_first_scope_containing("main")
             has_main = "main" in evaluator.function_register.functions
             if has_main:
-                identifier = Token("Identifier", "main", 0, 1)
-                lparen = Token("LParen", "(", 0, 5)
-                rparen = Token("RParen", ")", 0, 6)
+                identifier = Token("Identifier", "main", 0, 1, "<interpreter>")
+                lparen = Token("LParen", "(", 0, 5, "<interpreter>")
+                rparen = Token("RParen", ")", 0, 6, "<interpreter>")
                 tokens = [identifier, lparen]
                 tokens.extend(argtokens)
                 tokens.append(rparen)

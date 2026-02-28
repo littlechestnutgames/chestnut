@@ -278,3 +278,10 @@ def __internal_will_halt__(func, *args):
         return ChestnutBoolean(False)
     except:
         return ChestnutBoolean(True)
+
+def __internal_may_halt_or_return__(func, *args):
+    try:
+        res = func(*args)
+        return ChestnutTuple((res, CHESTNUT_NULL))
+    except:
+        return ChestnutTuple(CHESTNUT_NULL, ChestnutError(f"A call to {func} has failed"))
