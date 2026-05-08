@@ -12,3 +12,8 @@ fn wrap(s : String, string_len : Integer) returns String
         
     endwhile
 endfn
+
+fn replace(str : String, old : String, new : String, occurrences : Integer = -1) returns String
+    return __internal_replace__(str, old, new, occurrences)
+endfn
+

@@ -258,20 +258,6 @@ def __internal_get_time__():
     import time
     return ChestnutFloat(time.time())
 
-def __internal_round__(v, d=CHESTNUT_NULL):
-    if d == CHESTNUT_NULL:
-        return v.__class__(round(v.value))
-    else:
-        return v.__class__(round(v.value, d.value))
-
-def __internal_floor__(v):
-    from math import floor
-    return v.__class__(floor(v.value))
-
-def __internal_ceil__(v):
-    from math import ceil
-    return v.__class__(ceil(v.value))
-
 def __internal_will_halt__(func, *args):
     try:
         func(*args)
@@ -285,3 +271,10 @@ def __internal_may_halt_or_return__(func, *args):
         return ChestnutTuple((res, CHESTNUT_NULL))
     except:
         return ChestnutTuple(CHESTNUT_NULL, ChestnutError(f"A call to {func} has failed"))
+
+def __internal_replace__(str, old, new, occurrences):
+    return ChestnutString(str.value.replace(old.value, new.value, occurrences.value))
+
+def __internal_ord__(ch):
+    return ChestnutInteger(ord(ch.value))
+

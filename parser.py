@@ -1236,6 +1236,12 @@ class Parser:
             return ChestnutString(self.consume())
         elif self.check_label("Null"):
             return ChestnutNull(self.consume())
+        elif self.check_label("NaN"):
+            self.consume()
+            return CHESTNUT_NAN
+        elif self.check_label("Undefined"):
+            return ChestnutUndefined(self.consume())
+
 
         elif token and token.label == "Fn":
             return self.parse_fn_expression()

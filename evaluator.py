@@ -7,6 +7,10 @@ from math import floor
 import copy
 import os
 
+_VMS = []
+def get_current_vm():
+    return _VMS[0]
+
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
         if args:
@@ -197,10 +201,27 @@ class StructNode:
         
     def constructor(self, *args):
         name = self.definition.identifier.data
+        def custom_str(instance):
+            ev = get_current_vm()
+            node = instance.__struct_node__
+
+            func = node.function_register.resolve("to_string", [])
+            if isinstance(func, Function) and isinstance(ev, Evaluator):
+                struct_callable = StructMethodCall(instance, func)
+                inst_name = "inst" + str(id(struct_callable))
+                call_scope = {}
+                call_scope.__setitem__(inst_name, struct_callable)
+                struct_len = len(ev.scopes)
+                ev.scopes.append(call_scope)
+                result = ev.evaluate(CallStatementNode(Token("Identifier", inst_name, 0, 0), []))
+                while len(ev.scopes) > struct_len:
+                    ev.pop_scope()
+                return str(result)
+            return f"[WARN] No 'to_string()' method has been defined for struct '{name}'"
         properties = self.definition.properties
         struct_class = type(name, (ChestnutStruct,), {
             "__repr__": lambda self: name + "(" + str(properties) + ")",
-            "__str__": lambda self: name + "(" + str(properties) + ")",
+            "__str__": lambda self: custom_str(self),
             "__init__": generate_struct_init(properties),
             "gettype": lambda self: name,
             "__struct_node__": self
@@ -385,6 +406,12 @@ class ContinueLoop(BasicControlFlow):
         return "Continue"
 
 class Evaluator:
+    _active_Evaluator = None
+
+    @classmethod
+    def get_current(cls):
+        return cls._active_Evaluator
+
     def get_core_spec(self):
         from bridge import py_bridge as core
         mods = [ x for x in dir(core) if x.startswith("__internal_") ]
@@ -431,6 +458,7 @@ class Evaluator:
     def __init__(self):
         self.function_register = FunctionRegister()
         self.calling_builtin = False
+        self.expression_cache = {}
         core_spec = self.get_core_spec()
         native_funcs = {}
         self.scopes = [{}]
@@ -503,6 +531,16 @@ class Evaluator:
         self.current_scope()[scope_key] = func_object
 
         return 1
+
+    def visit_ChestnutNaN(self, node):
+        if not isinstance(node, ChestnutNaN):
+            raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ChestnutNaN", node)
+        return node
+    
+    def visit_ChestnutUndefined(self, node):
+        if not isinstance(node, ChestnutUndefined):
+            raise InternalException(f"Cannot use {node.__class__.__name__} in visit_ChestnutUndefined", node)
+        return node
     
     def visit_ChestnutNull(self, node):
         if not isinstance(node, ChestnutNull):
@@ -591,7 +629,7 @@ class Evaluator:
 
     def _handle_unary_Subtraction(self, node):
         right = self.evaluate(node.right)
-        return ChestnutInteger(-(right.value))
+        return right.__class__(-(right.value))
 
     def _handle_unary_Not(self, node):
         right = self.evaluate(node.right)
@@ -813,14 +851,17 @@ class Evaluator:
             raise Exception(f"Index out of bounds")
         if isinstance(index, ChestnutInteger):
             index = index.value
+        if isinstance(target_value[index], str):
+            return ChestnutString(target_value[index])
         return target_value[index]
 
     def visit_ExpressionStatementNode(self, node):
+        self.expression_cache = {}
         return self.evaluate(node.expression)
 
     def visit_ReturnStatementNode(self, node):
         return_value = None
-        if node.expression:
+        if node.expression or str(node.expression) in ["NaN", "undefined"]:
             return_value = self.evaluate(node.expression)
         raise ReturnValue(return_value)
 
@@ -1083,7 +1124,6 @@ class Evaluator:
             raise RuntimeException(e.message, node.identifier)
         for p in func.statement.parameters:
             self.current_scope()[p.name.data] = params[p.name.data]
-                
         for s in func.statement.statements:
             try:
                 self.evaluate(s)
@@ -1175,6 +1215,7 @@ class Evaluator:
             self.push_scope()
             try:
                 for statement in node.statements:
+                    # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 self.pop_scope()
@@ -1200,6 +1241,7 @@ class Evaluator:
             self.current_scope()[identifier.data] = elem
             try:
                 for statement in statements:
+                    # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 self.pop_scope()
@@ -1218,6 +1260,7 @@ class Evaluator:
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
         while self.evaluate(node.condition):
+            # self.expression_cache = {}
             self.push_scope()
             try:
                 for statement in node.statements:
@@ -1242,6 +1285,7 @@ class Evaluator:
             self.push_scope()
             try:
                 for statement in node.statements:
+                    # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 self.pop_scope()
@@ -1403,8 +1447,15 @@ class Evaluator:
             raise RuntimeException(f"Cannot use visit_BinaryOperationNode with operation {op.label}", op)
 
     def evaluate(self, node):
+        _VMS.clear()
+        _VMS.append(self)
+        if id(node) in self.expression_cache and isinstance(node, PropertyAccessNode):
+            return self.expression_cache[id(node)]
         visitor_method = f"visit_{node.__class__.__name__}"
         if hasattr(self, visitor_method):
-            return getattr(self, visitor_method)(node) 
+            result = getattr(self, visitor_method)(node)
+            self.expression_cache[id(node)] = result
+
+            return result 
         else:
             raise RuntimeException(f"Can't evaluate unknown node type {type(node)}")

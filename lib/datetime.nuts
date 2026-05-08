@@ -15,7 +15,7 @@ struct DateTime inherits (Date, Time)
 endstruct
 
 fn is_leap_year (year : Integer) returns Boolean
-    return (year % 4 == 0 and year % 100 == 0) or (year % 400 == 0)
+    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
 endfn
 
 fn (DateTime) from_epoch(seconds : Integer) returns DateTime

@@ -9,7 +9,7 @@ fn make_counter (start_value : Number) returns Function
     return increment
 endfn
 
-fn main (variadic args : String)
+fn my_func ()
     let counter_a = make_counter(10)
     let counter_b = make_counter(15)
     printline(counter_a()) # Should print 11
@@ -26,4 +26,11 @@ fn main (variadic args : String)
     printline(counter_b())
     printline(counter_a()) # 17
     printline(counter_b()) # 22?
+endfn
+
+fn main (variadic args : String)
+    printline("one")
+    my_func()
+    printline("two")
+    my_func()
 endfn

@@ -4,6 +4,15 @@ endfn
 
 import "result"
 import "error"
+
+fn is_nan(a : Any) returns Boolean
+    return gettype(a) == "NaN"
+endfn
+
+fn to_string(i : Integer) returns String
+    return "{{ i }}"
+endfn
+
 fn xor(left : Any, right : Any) returns Boolean
     return (left or right) and not (left and right)
 endfn
@@ -106,15 +115,15 @@ endfn
 fn range (start : Integer, end : Integer) returns List
     let r = []
 
-    if start < end
+    if start <= end
         let i = start
-        while i < end
+        while i <= end
             push(r, i)
             i += 1
         endwhile
-    elif start > end
+    elif start >= end
         let i = start
-        while i > end
+        while i >= end
             push(r, i)
             i -= 1
         endwhile
@@ -309,6 +318,7 @@ fn get_bit_width(v : Integer) returns Integer
 endfn
 
 fn pack_bits(target_bit_width : Integer, variadic original_bytes : Any) returns UnsignedInteger
+    #let b_type = gettype(original_bytes[0])
     let get_cast_fn = fn (bit_width : Integer) returns Function
         let func = null
         case bit_width
@@ -369,22 +379,6 @@ fn get_time() returns Float
     return __internal_get_time__()
 endfn
 
-fn round(v : Float, d : Integer = null) returns Float
-    return __internal_round__(v, d)
-endfn
-
-fn ceil(v : Number) returns Float
-    return __internal_ceil__(v)
-endfn
-
-fn ceil(v : Float) returns Float
-    return __internal_ceil__(v)
-endfn
-
-fn floor(v : Float) returns Float
-    return __internal_floor__(v)
-endfn
-
 fn average (variadic numbers : Number)
     let sum = 0
     for numbers as num
@@ -423,4 +417,12 @@ endfn
 
 fn maybe_outer(ident : Any) returns Result
     return may_halt_or_return(fn () outer ident endfn)
+endfn
+
+fn ord(s : String) returns Result # Result<Integer,Error> when generics.
+    let l = length(s)
+    if l != 1
+        return Result.new(null, Error.new(`ord expects a String of length 1, got "{{ s }}"`))
+    endif
+    return Result.new(__internal_ord__(s), null)
 endfn

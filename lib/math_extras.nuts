@@ -1,0 +1,151 @@
+fn calc_e_approx(tolerance : Float) returns Float
+    if tolerance < 0.0
+        tolerance *= -1.0
+    endif
+    let e = 1.0
+    let term = 1.0
+    while term > tolerance
+        term /= float(loop_index + 1)
+        e += term
+    endwhile
+    return e
+endfn
+
+
+fn calc_e(iterations : Integer) returns Float
+    import "math" (truncate)
+    let e = 0.0
+    let factorial = 1.0
+    while loop_index <= iterations
+        if loop_index > 0
+            factorial *= float(loop_index)
+        endif
+        e += (1.0 / factorial)
+    endwhile
+    return truncate(e, 15)
+endfn
+
+struct Rational
+    numerator : Integer
+    denominator : Integer
+endstruct
+
+fn (Rational) new(
+    num : Integer,
+    den : Integer,
+    do_simplify : Boolean = false
+) returns Rational
+    let r = Rational()
+    r.numerator = use num over -num unless den < 0 and num >= 0
+    r.denominator = use den over -den unless den < 0
+    if do_simplify
+        r.simplify()
+    endif
+    return r
+endfn
+
+fn (r : Rational) to_string() returns String()
+    if r.numerator == 0
+        return "0"
+    endif
+
+    let sign = use ""
+               over "-"
+               unless r.numerator < 0
+                   or r.denominator < 0
+    import "math" (abs)
+    let abs_num = abs(r.numerator)
+    let abs_den = abs(r.denominator)
+    if abs_num >= abs_den
+        let whole = abs_num / abs_den
+        let modulos = abs_num % abs_den
+        if modulos == 0
+            return "{{ sign }}{{ whole }}"
+        endif
+        return "{{ sign }}{{ whole }} {{ modulos }}/{{ abs_den }}"
+    endif
+    return "{{ sign }}{{ abs_num }}/{{ abs_den }}"
+endfn
+
+fn (r : Rational) simplify() returns Rational
+    if gettype(r.numerator) == "NaN"
+        return r
+    endif
+    let common = gcd(r.numerator, r.denominator)
+    r.numerator = r.numerator / common
+    r.denominator = r.denominator / common
+    return r
+endfn
+
+fn gcd(a : Integer, b : Integer) returns Integer
+    import "math" (abs)
+    let tmp_a = abs(a)
+    let tmp_b = abs(b)
+    while tmp_b != 0
+        let remainder = tmp_a % tmp_b
+        tmp_a = tmp_b
+        tmp_b = remainder
+    endwhile
+    return tmp_a
+endfn
+
+fn (r1 : Rational) add(i : Integer) returns Rational
+    let r2 = Rational.new(i, 1)
+    return r1.add(r2)
+endfn
+
+fn (r1 : Rational) add(r2 : Rational) returns Rational
+    let numerator = r1.numerator * r2.denominator
+                  + r2.numerator * r1.denominator
+    let denominator = r1.denominator * r2.denominator
+
+    return Rational.new(numerator, denominator)
+endfn
+
+fn (r1 : Rational) sub(i : Integer) returns Rational
+    let r2 = Rational.new(i, 1)
+    return r1.sub(r2)
+endfn
+
+fn (r1 : Rational) sub(r2 : Rational) returns Rational
+    let r3 = Rational.new(-r2.numerator, r2.denominator)
+    return r1.add(r3)
+endfn
+
+fn (r1 : Rational) mul(r2 : Rational) returns Rational
+    return Rational.new(
+        r1.numerator * r2.numerator,
+        r1.denominator * r2.denominator
+    )
+endfn
+
+fn (r1 : Rational) div(r2 : Rational) returns Rational
+    if r2.numerator == 0
+        return Rational.new(NaN, NaN)
+    endif
+    return Rational.new(
+        r1.numerator * r2.denominator,
+        r2.numerator * r1.denominator
+    )
+endfn
+
+fn (r1 : Rational) mod(r2 : Rational) returns Rational
+    let res = r1.div(r2)
+    let whole = res.numerator / res.denominator
+    let count = Rational.new(whole, 1)
+    return r1.sub(r2.mul(count))
+endfn
+
+fn (r1 : Rational) pow(p : Integer) returns Rational
+    let n = use r1.numerator over r1.denominator unless p < 0
+    let d = use r1.denominator over r1.numerator unless p < 0
+
+    import "math" (abs)
+    let abs_p = abs(p)
+
+    return Rational.new(n**abs_p, d**abs_p)
+endfn
+
+fn (r : Rational) to_float() returns Float
+    return float(r.numerator) / float(r.denominator)
+endfn

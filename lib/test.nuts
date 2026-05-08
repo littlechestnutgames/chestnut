@@ -1,3 +1,5 @@
+import "math" (round, ceil)
+import "string" (repeat)
 struct Test
     label : String
     expect : Any
@@ -138,10 +140,8 @@ fn (ts : TestSuite) display_simple()
     endif
 endfn
 
-import "string" (repeat)
-
 fn make_header(str : String)
-    let slen = int(ceil(length(str) / 2))
+    let slen = int(ceil(float(length(str) / 2)))
     let left_len = 40 - slen - 2
     let right_len = 40 - slen - 1
 

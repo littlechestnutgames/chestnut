@@ -6,6 +6,11 @@ def comparison_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
         def wrapper(self, other):
+            self_str = self.__str__()
+            other_str = other.__str__()
+            values = ["NaN", "undefined"]
+            if self_str in values or other_str in values:
+                return ChestnutBoolean(False)
             self.__typecheck__(other, op_name)
             left = self.value if not reverse else other.value
             right = other.value if not reverse else self.value
@@ -17,6 +22,11 @@ def numeric_operation(op_symbol, op_name, reverse=False):
     def decorator(func):
         @wraps(func)
         def wrapper(self, other):
+            self_str = self.__str__()
+            other_str = other.__str__()
+            values = ["NaN", "undefined"]
+            if self_str in values or other_str in values:
+                return CHESTNUT_NAN
             if not isinstance(other, ChestnutAny):
                 other = self.__class__(other)
             if func.__name__ == "__add__" and isinstance(other, ChestnutString):
@@ -25,7 +35,7 @@ def numeric_operation(op_symbol, op_name, reverse=False):
             if func.__name__.endswith("div__") or func.__name__.endswith("mod__"):
                 divisor = self if reverse else other
                 if divisor.value == 0:
-                    raise RuntimeException("Cannot divide by 0")
+                    return CHESTNUT_NAN
             left = self.value if not reverse else other.value
             right = other.value if not reverse else self.value
             return type(self)(left.__getattribute__(op_symbol)(right))
@@ -35,6 +45,10 @@ def numeric_operation(op_symbol, op_name, reverse=False):
 class ChestnutAny:
     def __bool__(self):
         return False
+
+    def is_nan(self):
+        return False
+
     def __init__(self,token=None):
         if hasattr(token, "data"):
             self.value = token.data
@@ -47,6 +61,8 @@ class ChestnutAny:
         return str(self.value)
 
     def __typecheck__(self, other, op):
+        if isinstance(other, ChestnutNaN):
+            return
         other_type = type(other).__name__
         if isinstance(other, ChestnutAny):
             other_type = other.gettype()
@@ -109,7 +125,10 @@ class ChestnutAny:
         return ChestnutBoolean(self.value == other.value)
 
     def __ne__(self, other):
-        return ChestnutBoolean(not self.__eq__(other))
+        eq = self.__eq__(other)
+        if isinstance(eq, ChestnutBoolean):
+            eq = eq.value
+        return ChestnutBoolean(not eq)
 
     def __or__(self, other):
         return self.value or other.value
@@ -163,7 +182,11 @@ class ChestnutString(ChestnutAny):
     def __add__(self, other):
         value = other
 
-        if isinstance(other, ChestnutAny):
+        if isinstance(other, ChestnutBoolean):
+            value = other.__str__()
+        elif isinstance(other, ChestnutStruct):
+            value = other.__str__()
+        elif isinstance(other, ChestnutAny):
             value = other.value
 
         return ChestnutString(Token("String", self.value + str(value), None, None))
@@ -171,10 +194,14 @@ class ChestnutString(ChestnutAny):
     def __radd__(self, other):
         value = other
         
-        if isinstance(other, ChestnutAny):
+        if isinstance(other, ChestnutBoolean):
+            value = other.__str__()
+        elif isinstance(other, ChestnutStruct):
+            value = other.__str__()
+        elif isinstance(other, ChestnutAny):
             value = other.value
 
-        return ChestnutString(Token("String", self.value + str(value), None, None))
+        return ChestnutString(Token("String", str(value) + self.value, None, None))
 
     def __eq__(self, other):
         other_value = str(other)
@@ -209,6 +236,8 @@ class ChestnutBoolean(ChestnutAny):
         return True
 
     def __bool__(self):
+        if self.value.__class__.__name__ == "ChestnutBoolean":
+            return self.value.__str__() == "true"
         return self.value
 
     def __repr__(self):
@@ -500,7 +529,33 @@ class ChestnutInteger(ChestnutNumber):
     def __bool__(self):
         return self.value != 0
 
+class ChestnutNaN(ChestnutNumber):
+    def is_nan(self):
+        return True
+    def __eq__(self, other):
+        return ChestnutBoolean(False)
+    def __str__(self):
+        return "NaN"
+    def __truediv__(self, other):
+        return self
+    def __rtruediv__(self,other):
+        return self
 
+CHESTNUT_NAN = ChestnutNaN("NaN")
+
+class ChestnutUndefined(ChestnutNumber):
+    def is_undefined(self):
+        return True
+    def __eq__(self, other):
+        return ChestnutBoolean(True)
+    def __str__(self):
+        return "undefined"
+    def __truediv__(self, other):
+        return self
+    def __rtruediv__(self, other):
+        return self
+
+CHESTNUT_UNDEFINED = ChestnutUndefined("undefined")
 
 class ChestnutInt8(ChestnutInteger):
     BIT_WIDTH = 8

@@ -1,0 +1,85 @@
+import "collections"
+
+struct Json
+endstruct 
+
+struct JsonString
+    value : String
+endstruct
+
+struct JsonInteger
+    value : Integer 
+endstruct
+
+struct JsonFloat
+    value : Float
+endstruct
+
+struct JsonBoolean
+    value : Boolean
+endstruct
+
+struct JsonList
+    values : List # List<Json> when we have generics.
+endstruct
+
+struct JsonObject inherits(Json, HashMap)
+endstruct
+
+fn (JsonString) from_string(str : String) returns JsonString
+    let js = JsonString()
+    js.value = str
+    return js
+endfn
+
+fn (JsonString) encode(str : String) returns String
+    let result = ""
+    for str as char
+        let o = ord("{{ char }}").unwrap(32)
+        case char
+            when "\b" result += "\\b"
+            when "\t" result += "\\t"
+            when "\n" result += "\\n"
+            when "\f" result += "\\f"
+            when "\r" result += "\\r"
+            when `"` result += `\\"`
+            when "\\" result += "\\\\"
+            when "\/" result += "\\/"
+            otherwise
+                if o < 32
+                    result += `\\u{{ pad_left(to_string(o), "0", 4) }}`
+                else
+                    result += char
+                endif
+        endcase
+    endfor
+    return `"{{ result }}"`
+endfn
+
+fn (JsonString) decode(str : String) returns Result
+    constant lstr = length(str)
+    let result = ""
+    let sequence = ""
+    let ch = ""
+    while loop_index < lstr
+        ch = str[loop_index]
+        if loop_index == 0
+            if ch != `"`
+                return Result.new(null, Error.new("JSON strings must start with a double quote"))
+            endif
+            continue
+        elif loop_index + 1 == lstr
+            if ch != `"`
+                return Result.new(null, Error.new("JSON strings must end with a double quote"))
+            endif
+            continue
+        endif
+        result += ch
+    endwhile
+    return Result.new(result, null)
+endfn
+
+fn (js : JsonString) to_string() returns String
+    return JsonString.decode(js.value)
+endfn
+

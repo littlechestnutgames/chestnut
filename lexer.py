@@ -46,6 +46,7 @@ token_trie.insert("call_depth", "Calldepth")
 # 9 character sequences
 token_trie.insert("endstruct", "Endstruct")
 token_trie.insert("otherwise", "Otherwise")
+token_trie.insert("undefined", "Undefined")
 
 # 8 character sequences
 token_trie.insert("constant", "Constant")
@@ -94,6 +95,7 @@ token_trie.insert(">>>", "BitwiseRotateRight")
 token_trie.insert("and", "And")
 token_trie.insert("for", "For")
 token_trie.insert("let", "Let")
+token_trie.insert("NaN", "NaN", CHESTNUT_NAN)
 token_trie.insert("not", "Not")
 token_trie.insert("null", "Null", CHESTNUT_NULL)
 token_trie.insert("use", "Use")
@@ -380,13 +382,19 @@ def is_token_match(input, pos, expect):
     # The next character can't be an identifier character.
     return not is_identifier(input[pos+len(expect)])
 
-
 def is_identifier(c):
     symbol_blacklist = [
-        ".", "=", "+", "-", "/",
-        "*", "%", "^", "(", ")",
-        "[", "]", ",", ":", "!",
-        "<", ">", "#", '"', "~",
-        "|", ";" ]
-    return not c.isspace() and c not in symbol_blacklist
+        ord("."), ord("="), ord("+"), ord("-"), ord("/"),
+        ord("*"), ord("%"), ord("^"), ord("("), ord(")"),
+        ord("["), ord("]"), ord(","), ord(":"), ord("!"),
+        ord("<"), ord(">"), ord("#"), ord('"'), ord("~"),
+        ord("|"), ord(";"),
+        ord("\u200b"), ord("\u200c"), ord("\u200d"), ord("\u2060"),
+        ord("\u200e"), ord("\u200f"), ord("\u202a"), ord("\u202b"),
+        ord("\u202c"), ord("\u202d"), ord("\u202e"), ord("\u00a0"),
+        ord("\u3000"), ord("\u2009"), ord("\u2005"), ord("\u2004"),
+        ord("\u00ad"), ord("\ufffc"), ord("\ufeff")
+    ]
+
+    return not c.isspace() and ord(c) not in symbol_blacklist
 

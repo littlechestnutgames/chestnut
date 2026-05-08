@@ -1,0 +1,241 @@
+constant E = 2.718281828459045
+constant PI = 3.141592653589793
+constant HALF_PI = PI / 2.0
+constant INV_PI = 1.0 / PI
+constant TAU = PI * 2.0
+constant LN2 = 0.6931471805599453
+constant LN10 = 2.302585092994046
+constant DEG_TO_RAD = PI / 180.0
+constant RAD_TO_DEG = 180.0 / PI
+
+fn sqrt(n : Integer) returns Float
+    return float(n) ** 0.5
+endfn
+
+fn sqrt(n : Float) returns Float
+    return n ** 0.5
+endfn
+
+fn cbrt(n : Float) returns Float
+    if n > 0.0
+        return n ** (1.0 / 3.0)
+    else
+        return -((-n) ** (1.0 / 3.0))
+    endif
+endfn
+
+fn nroot(f : Float, n : Integer) returns Float
+    import "math" (abs)
+    n = abs(n)
+    if f > 0.0
+        return f ** (1.0 / float(n))
+    else
+        return -((-f) ** (1.0 / float(n)))
+    endif
+endfn
+
+fn log(x : Float, iterations : Integer = 50) returns Float
+    let y = (x - 1.0) / (x + 1.0)
+    let sum = 0.0
+    while loop_index < iterations
+        let exponent = float(2 * loop_index + 1)
+        sum += y**exponent / exponent
+    endwhile
+    return 2.0 * sum
+endfn
+
+fn log(x : Integer, iterations : Integer) returns Float
+    return log(float(x), iterations)
+endfn
+
+fn abs (i : Integer) returns Integer
+    let num = 1
+    if i < 0
+        num = -1
+    endif
+    return i * num
+endfn
+
+fn abs (f : Float) returns Float
+    return f * (use 1.0 over -1.0 unless f < 0.0)
+endfn
+
+fn truncate(v : Float, decimals : Integer) returns Float
+    let multiplier = 10.0 ** float(decimals)
+    let shifted = int64(v * multiplier)
+    return float(shifted) / multiplier
+endfn
+
+fn exp(i : Integer) returns Float
+    return exp(float(i))
+endfn
+
+fn exp(f : Float) returns Float
+    import "math" (E)
+    return E**f
+endfn
+
+fn min(variadic numbers : Integer) returns Integer
+    let selected : Integer = null
+    for numbers as number
+        if selected == null
+            selected = number
+        elif number < selected
+            selected = number
+        endif
+    endfor
+    return selected
+endfn
+
+fn max(variadic numbers : Integer) returns Integer
+    let selected : Integer = null
+    for numbers as number
+        if selected == null
+            selected = number
+        elif number > selected
+            selected = number
+        endif
+    endfor
+    return selected
+endfn
+
+fn fact(i : Integer) returns Integer
+    if i < 0 return null endif
+    let result = 1
+    for range(i, 1) as d
+        if d == 0 continue endif
+        result *= d
+    endfor
+    return result
+endfn
+
+fn sin(f : Float) returns Float
+    import "math" (PI, TAU)
+    let angle = f % TAU
+    if angle > PI
+        angle -= TAU
+    elif angle < (0.0 - PI)
+        angle += TAU
+    endif
+
+    let result = angle
+    let f2 = angle * angle
+    let term = angle
+
+    for range(1, 15) as i
+        let n = float(i * 2)
+        term *= float(-f2) / (n * (n + 1.0))
+        result += term
+    endfor
+
+    return result
+endfn
+
+fn cos(f : Float) returns Float
+    import "math" (TAU, PI)
+    let angle = f % TAU
+    if angle > PI
+        angle -= TAU
+    elif angle < (0.0 - PI)
+        angle += TAU
+    endif
+
+    let result = 1.0
+    let f2 = angle * angle
+    let term = 1.0
+
+    for range(1, 10) as i
+        let n = float(i * 2)
+        term *= (0.0 - f2) / (n * (n - 1.0))
+        result += term
+    endfor
+
+    return result
+endfn
+
+fn cosh(f : Float) returns Float
+    import "math" (E)
+    return (E**f + E**-f) / 2.0
+endfn
+
+fn asin(x : Float, iterations : Integer = 100) returns Float
+    if -1.0 > x or x > 1.0
+        return NaN
+    endif
+
+    let result = x
+    let n = 1.0
+    let d = 2.0
+
+    for range(1, iterations) as int_i
+        let i = float(int_i)
+        let term = (n / d) * (x**(2.0*i + 1.0) / (2.0*i + 1.0))
+        result += term
+
+        n *= (2.0 * i + 1.0)
+        d *= (2.0 * i + 2.0)
+    endfor
+    return result
+endfn
+
+fn acos(x : Float, iterations : Integer = 100) returns Float
+    import "math" (HALF_PI, asin)
+    let res = asin(x, iterations)
+    return HALF_PI - res
+endfn
+
+fn tan(f : Float) returns Float
+    import "math" (sin, cos)
+    let s = sin(f)
+    let c = cos(f)
+
+    if c == 0.0
+        return 0.0
+    endif
+
+    return s / c
+endfn
+
+fn round(f : Float, p : Integer = 0) returns Float
+    let multiplier = 10.0 ** float(p)
+    let shifted = int(f * multiplier + 0.5)
+    return float(shifted) / multiplier
+endfn
+
+fn floor(f : Float) returns Float
+    let i = int(f)
+    if f < 0.0 and f != float(i)
+        return float(i - 1)
+    endif
+    return float(i)
+endfn
+
+fn ceil(f : Float) returns Float
+    let i = int(f)
+    if f > 0.0 and f != float(i)
+        return float(i + 1)
+    endif
+    return float(i)
+endfn
+
+fn pow(num : Number, exponent : Number, mod : Number = null) returns Number
+    let res = float(num) ** float(exponent)
+    if mod != null
+        return res % float(mod)
+    endif
+    return res
+endfn
+
+fn hypot(a : Float, b : Float) returns Float
+    import "math" (abs, min, max, sqrt)
+    let ta = abs(a)
+    let tb = abs(b)
+    if ta == 0.0 and tb == 0.0
+        return 0.0
+    endif
+
+    let x = max(ta, tb)
+    let ratio = min(ta, tb) / x
+    return x * sqrt(1.0 + ratio * ratio)
+endfn
+

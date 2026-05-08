@@ -47,6 +47,9 @@ endfn
 fn (result: Result) catching (func : Function, variadic params : Any) returns Result
     if result.error != null
         let call_result = func(result.error, spread params)
+        if call_result == null
+            return result
+        endif
         return use call_result
                over Result.new(null, call_result)
                unless gettype(call_result) != "Result"
