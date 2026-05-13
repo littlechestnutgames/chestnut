@@ -59,12 +59,14 @@ token_trie.insert("variadic", "Variadic")
 # 7 character sequences
 token_trie.insert("endcase", "Endcase")
 token_trie.insert("endloop", "Endloop")
+token_trie.insert("private", "Private")
 token_trie.insert("returns", "Returns")
 
 # 6 character sequences
 token_trie.insert("brings", "Brings")
 token_trie.insert("endfor", "Endfor")
 token_trie.insert("import", "Import")
+token_trie.insert("public", "Public")
 token_trie.insert("return", "Return")
 token_trie.insert("shadow", "Shadow")
 token_trie.insert("spread", "Spread")

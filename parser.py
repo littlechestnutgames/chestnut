@@ -368,12 +368,13 @@ class StructDefinitionNode():
         return self.identifier.data
 
 class StructPropertyNode():
-    def __init__(self, identifier, value_type):
+    def __init__(self, identifier, value_type, attributes={}):
         self.identifier = identifier
         self.value_type = value_type
+        self.attributes = attributes
 
     def __repr__(self):
-        return f"StructPropertyNode(<{self.identifier}>, <{self.value_type}>)"
+        return f"StructPropertyNode(<{self.identifier}>, <{self.value_type}>, <{self.attributes}>)"
 
 class PropertyAccessNode():
     def __init__(self, identifier, property_identifier):
@@ -514,6 +515,8 @@ class Parser:
             raise SyntaxException(f"Expected identifier after struct", self.peek())
         identifier = self.consume()
 
+        self.execution_scope_level += 1
+
         inherits = []
         if self.check_label("Inherits"):
             self.consume() # Consume inherits
@@ -533,6 +536,11 @@ class Parser:
             self.consume() # Consume )
         properties = []
         while not self.check_label("Endstruct"):
+            attributes = {}
+            if self.check_labels(["Private", "Public"]):
+                attributes.__setitem__("visibility", self.consume())
+            if self.check_label("Constant"):
+                attributes.__setitem__("constant", self.consume())
             if not self.check_label("Identifier"):
                 raise SyntaxException(f"Expected identifier for property, got {self.peek().label}", self.peek())
             property_identifier = self.consume()
@@ -546,11 +554,15 @@ class Parser:
 
             type_identifier = self.consume()
 
-            properties.append(StructPropertyNode(property_identifier, type_identifier))
+            if self.check_label("Assignment"):
+                self.consume()
+                attributes.__setitem__("default", self.parse_expression())
+            properties.append(StructPropertyNode(property_identifier, type_identifier, attributes))
         if not self.check_label("Endstruct"):
             raise SyntaxException(f"Expected endstruct after struct definition", self.peek())
 
         self.consume()
+        self.execution_scope_level -= 1
 
         return StructDefinitionNode(identifier, properties, inherits)
 

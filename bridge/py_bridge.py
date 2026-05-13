@@ -58,8 +58,13 @@ def __internal_read_file__(handle, size):
 
     try:
         data = file_object.read(size.value)
-        
-        return ChestnutTuple((ChestnutString(data), CHESTNUT_NULL))
+        if "b" in file_object.mode:
+            d = []
+            for c in data:
+                d.append(ChestnutUInt8(int(c)))
+            return ChestnutTuple(ChestnutList(d), CHESTNUT_NULL)
+        else:
+            return ChestnutTuple((ChestnutString(data), CHESTNUT_NULL))
     except Exception as e:
         return ChestnutTuple((CHESTNUT_NULL, ChestnutError(f"File I/O error during read: {e}")))
 

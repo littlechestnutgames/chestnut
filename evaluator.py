@@ -14,11 +14,27 @@ def get_current_vm():
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
         if args:
-            raise TypeError(f"Struct constructor takes 0 positional arguments. Use static 'new' function instead")
+            raise TypeError(f"Struct constructor takes 0 positional arguments.")
         ChestnutStruct.__init__(self, CHESTNUT_NULL)
         i = 0
+        constants = []
+        publics = []
+        privates = []
         for i, prop in enumerate(properties):
-            setattr(self, prop.identifier.data, CHESTNUT_NULL)
+            keys = prop.attributes.keys()
+            default_value = CHESTNUT_NULL
+            if "default" in keys:
+                default_value = prop.attributes.get("default")
+            if "visibility" in keys and prop.attributes.get("visibility").data == "private":
+                privates.append(prop.identifier.data)
+            else:
+                publics.append(prop.identifier.data)
+            if "constant" in keys:
+                constants.append(prop.identifier.data)
+            setattr(self, prop.identifier.data, default_value)
+        setattr(self, "constant", constants)
+        setattr(self, "publics", publics)
+        setattr(self, "privates", privates)
     return struct_instance_init
 
 class FunctionRegister:
@@ -520,7 +536,8 @@ class Evaluator:
         struct_name = node.target_struct.paramtype.data
         struct_type_scope = self.find_first_scope_containing(struct_name)
         if struct_type_scope is None:
-            raise TypeException("Struct {struct_name} could not be found", node)
+            struct_name = node.target_struct.paramtype.data
+            raise TypeException(f"Struct {struct_name} could not be found", node.name)
         struct_type_object = struct_type_scope[struct_name]
 
         method_name = node.name.data
@@ -758,6 +775,8 @@ class Evaluator:
         if target_object is None:
             raise RuntimeException(f"Attempt to access property on null object at line...", node)
         property_name = node.property_identifier.data
+        # if property_name in target_object.constants:
+        #     raise RuntimeException(f"Can't assign to constant property {property_name} on struct {node.identifier.data}", node.identifier)
         if hasattr(target_object, "gettype"):
             scope_key = f"{target_object.gettype()} {node.property_identifier.data}"
             scope = self.find_first_scope_containing(scope_key)
@@ -782,7 +801,10 @@ class Evaluator:
                     func_object = fr.functions[property_name]["candidates"][0]
             if func_object is not None:
                 return StructMethodCall(target_object, func_object)
-        return getattr(target_object, property_name)
+        val = getattr(target_object, property_name)
+        if isinstance(val, CallStatementNode):
+            return self.evaluate(val)
+        return val
 
     def visit_ListLiteralNode(self, node):
         if not isinstance(node, ListLiteralNode):
