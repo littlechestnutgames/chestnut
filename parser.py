@@ -143,14 +143,20 @@ class ElseStatementNode:
         return "else"
 
 class BaseFn:
-    def __init__(self, parameters, statements, return_types=None, brings=[]):
+    def __init__(self, parameters, statements, return_types=None, brings=[], alias=None, shape=[]):
         self.parameters = parameters
         self.statements = statements
         self.return_types = return_types
         self.brings = brings
+        self.alias = alias
+        self.shape = shape
 
     def mangle(self, identifier=""):
-        return f"{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
+        shape_mangle = ""
+        if self.alias is not None and len(self.shape) > 0:
+            shape_mangle = f"shape {shape_mangle}{"_".join(list(map(lambda x: x.value_type.data, self.shape)))} ".strip()
+
+        return f"{shape_mangle}{"_".join(list(map(lambda x: x.paramtype.data, self.parameters)))} {identifier}".strip()
 
     def __repr__(self):
         if hasattr(self, "name"):
@@ -159,8 +165,8 @@ class BaseFn:
             return f"({self.parameters}, {self.statements}, {self.return_types}, {self.brings})"
 
 class FnStatementNode(BaseFn):
-    def __init__(self, name, parameters, statements, return_types=None, brings=[]):
-        super().__init__(parameters, statements, return_types, brings)
+    def __init__(self, name, parameters, statements, return_types=None, brings=[], alias=None, shape=[]):
+        super().__init__(parameters, statements, return_types, brings, alias, shape)
         self.name = name
         self.mangled_key = self.mangle(self.name.data)
 
@@ -340,6 +346,14 @@ class UseExpressionNode():
     def __repr__(self):
         return f"UseExpressionNode(<{self.left}>, <{self.right}>, <{self.condition}>)"
 
+class TernaryExpressionNode():
+    def __init__(self, condition, left, right):
+        self.left = left
+        self.right = right
+        self.condition = condition
+    def __repr__(self):
+        return f"TernaryExpressionNode(<{self.condition}>, <{self.left}>, <{self.right}>)"
+
 class CallStatementNode:
     def __init__(self, identifier, params):
         self.identifier = identifier
@@ -466,6 +480,7 @@ class Parser:
         if self.check_label("Semicolon"):
             while self.check_label("Semicolon"):
                 self.consume()
+
         return statement
 
     def parse_let_statement(self):
@@ -539,8 +554,8 @@ class Parser:
             attributes = {}
             if self.check_labels(["Private", "Public"]):
                 attributes.__setitem__("visibility", self.consume())
-            if self.check_label("Constant"):
-                attributes.__setitem__("constant", self.consume())
+            if self.check_label("Static"):
+                attributes.__setitem__("static", self.consume())
             if not self.check_label("Identifier"):
                 raise SyntaxException(f"Expected identifier for property, got {self.peek().label}", self.peek())
             property_identifier = self.consume()
@@ -732,6 +747,39 @@ class Parser:
         self.consume() # Consume )
         return params
 
+    def parse_on(self):
+        alias, fields = None, []
+        if self.check_label("On"):
+            self.consume() # Consume On token
+            if not self.check_label("Identifier"):
+                raise SyntaxException("Expected identifier after 'on' token", self.peek())
+            alias = self.consume()
+            if not self.check_label("With"):
+                raise SyntaxException("Expected 'with' after target in 'on' clause", self.peek())
+            self.consume() # Consume With token
+            if not self.check_label("LParen"):
+                raise SyntaxException("Expected '(' after with in 'on' clause", self.peek())
+            self.consume() # Consume LParen token
+            if not self.check_label("Identifier"):
+                raise SyntaxException(f"At least 1 identifier is expected in 'on' clause, got {self.peek().label}", self.peek())
+            while not self.check_label("RParen"):
+                if len(fields) > 0:
+                    if not self.check_label("Comma"):
+                        raise SyntaxException("Expected comma after field in 'on' clause", self.peek())
+                    self.consume() # Consume comma
+                if not self.check_label("Identifier"):
+                    raise SyntaxException("Expected identifer in field listing of 'on' clause", self.peek())
+                id = self.consume()
+                if not self.check_label("Colon"):
+                    raise SyntaxException(f"Expected ':' to delimit type in 'on' clause after identifier {id.data}", self.peek())
+                self.consume() # Consume ':'
+                if not self.check_label("Identifier"):
+                    raise SyntaxException(f"Expected type identifier after colon in 'on' clause", self.peek())
+                t = self.consume()
+                fields.append(StructPropertyNode(id, t))
+            self.consume() # Consume ')'
+        return alias, fields
+
     def parse_brings(self):
         brings = []
         if self.check_label("Brings"):
@@ -799,7 +847,7 @@ class Parser:
                 raise SyntaxException("A struct method parameter cannot be variadic", struct_params[0])
             if struct_params[0].default_value is not None:
                 raise SyntaxException("A struct method parameter may not have a default value", struct_params[0])
-
+        alias, fields = self.parse_on()
         if self.check_label("Semicolon"):
             self.consume()
         brings = self.parse_brings()
@@ -828,7 +876,7 @@ class Parser:
         if name is None:
             raise SyntaxException("Validly defined anonymous function not associated to label will be unrefencable", self.peek())
 
-        return FnStatementNode(name, fn_params, statements, return_types, brings)
+        return FnStatementNode(name, fn_params, statements, return_types, brings, alias, fields)
     
     def parse_case_statement(self):
         if self.execution_scope_level < 1:
@@ -975,12 +1023,24 @@ class Parser:
         return AssignStatementNode(identifier, op, expression)
     
     def parse_expression(self):
-        return self.parse_ternary()
+        return self.parse_reverse_ternary()
  
-    def parse_ternary(self):
+    def parse_reverse_ternary(self):
         if self.check_label("Use"):
             return self.parse_use_expression()
-        return self.parse_logical_ors()
+        return self.parse_ternary()
+
+    def parse_ternary(self):
+        condition = self.parse_logical_ors()
+        if self.check_label("Ternary"):
+            self.consume() # Consume ?
+            left = self.parse_expression()
+            if not self.check_label("Colon"):
+                raise SyntaxError("", self.peek())
+            self.consume() # Consume :
+            right = self.parse_expression()
+            return TernaryExpressionNode(condition, left, right)
+        return condition
 
     def parse_use_expression(self):
         self.consume() # Consume Use

@@ -70,6 +70,7 @@ token_trie.insert("public", "Public")
 token_trie.insert("return", "Return")
 token_trie.insert("shadow", "Shadow")
 token_trie.insert("spread", "Spread")
+token_trie.insert("static", "Static")
 token_trie.insert("struct", "Struct")
 token_trie.insert("unless", "Unless")
 
@@ -89,6 +90,7 @@ token_trie.insert("else", "Else")
 token_trie.insert("loop", "Loop")
 token_trie.insert("over", "Over")
 token_trie.insert("true", "Boolean", ChestnutBoolean(True))
+token_trie.insert("with", "With")
 token_trie.insert("when", "When")
 
 # 3 character sequences
@@ -122,6 +124,7 @@ token_trie.insert("<=", "Lte")
 token_trie.insert("%", "Modulo")
 token_trie.insert("*=", "Mulassign")
 token_trie.insert("!=", "Neq")
+token_trie.insert("on", "On")
 token_trie.insert("or", "Or")
 token_trie.insert("||", "Or")
 token_trie.insert("-=", "Subassign")
@@ -147,6 +150,7 @@ token_trie.insert("]", "RBrace")
 token_trie.insert(")", "RParen")
 token_trie.insert("-", "Subtraction")
 token_trie.insert(";", "Semicolon")
+token_trie.insert("?", "Ternary")
 
 class LexerState:
     def __init__(self, path=""):
