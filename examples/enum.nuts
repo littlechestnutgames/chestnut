@@ -1,0 +1,10 @@
+enum Test
+    TESTING
+    ONE
+    TWO
+    THREE
+endenum
+
+fn main()
+    printline(Test.TESTING == 0)
+endfn

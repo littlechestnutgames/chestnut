@@ -64,6 +64,16 @@ class ContinueStatementNode(SimpleTokenStatement):
     def get_name(self):
         return "continue"
 
+class EnumStatementNode:
+    def __init__(self, identifier, items={}):
+        self.identifier = identifier
+        self.items = items
+    def __repr__(self):
+        return f"EnumStatementNode({self.identifier}, {self.items})"
+
+    def get_name(self):
+        return self.identifier.data
+
 class LetStatementNode:
     def __init__(self, label, expression, explicit_type=None):
         self.label = label
@@ -446,6 +456,8 @@ class Parser:
                 self.consume()
         if token and token.label in ["Let", "Shadow", "Constant"]:
             statement = self.parse_let_statement()
+        elif token and token.label == "Enum":
+            statement = self.parse_enum_definition()
         elif token and token.label == "Struct":
             statement = self.parse_struct_definition()
         elif token and token.label == "Import":
@@ -523,6 +535,20 @@ class Parser:
         elif let_token.label == "Constant":
             return ConstantStatementNode(name_token, expression, explicit_type)
         return LetStatementNode(name_token, expression, explicit_type)
+
+    def parse_enum_definition(self):
+        self.consume() # Consume enum
+        if not self.check_label("Identifier"):
+            raise SyntaxError("Expected identifier after enum", self.peek())
+        label = self.consume()
+        items = {}
+        while not self.check_label("Endenum"):
+            if not self.check_label("Identifier"):
+                raise SyntaxError("Expected identifier in enum definition", self.peek())
+            item = self.consume()
+            items[item.data] = ChestnutInteger(len(items.keys()))
+        self.consume() # Consume endenum
+        return EnumStatementNode(label, items)
 
     def parse_struct_definition(self):
         self.consume()

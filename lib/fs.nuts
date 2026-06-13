@@ -1,0 +1,41 @@
+struct File
+	fd : Integer
+	filename : String
+	is_open : Boolean
+endstruct
+
+fn (File) open(filename : String, mode : String) returns Result
+    let f = File()
+    let fd = Result.from_tuple(__internal_fopen__(filename, mode))
+    if fd.error != null
+        return fd
+    endif
+    f.fd = fd.success
+    f.is_open = true
+    f.filename = filename
+    return f
+endfn
+
+fn (f : File) close()
+    if !f.is_open
+        return null
+    endif
+    __internal_fclose__(f.fd)
+    f.fd = null
+    f.is_open = false
+endfn
+
+fn (f : File) read(size : Integer) returns Result # Should output a Result(Bytes?, Error?)
+    if f.fd == null or !f.is_open
+        return Result.new(null, Error.new("File must be open to read"))
+    endif
+    let res = Result.from_tuple(__internal_fread__(f.fd, size))
+    if res.error != null
+        return res
+    endif
+    return Result.new(Bytes.from_uint8_list(res.success), null)
+endfn
+
+fn (f : File) to_string() returns String
+    return "#{{ f.fd }}"
+endfn

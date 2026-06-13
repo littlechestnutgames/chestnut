@@ -1,0 +1,14 @@
+import "fs"
+
+fn main()
+    let file = File.open("./examples/libc_files.nuts", "r")
+    if file.is_open
+        let contents = file.read(1024).unwrap(null)
+        if contents != null
+            let decoded = contents.decode("utf8")
+            printline("Decoded length: " + length(decoded))
+            printline(decoded)
+        endif
+        file.close()
+    endif
+endfn

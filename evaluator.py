@@ -694,6 +694,17 @@ class Evaluator:
                 if len(node.imports) == 0 or n.get_name() in [ x.data for x in node.imports ]:
                     self.evaluate(n)
 
+    def visit_EnumStatementNode(self, node):
+        if not isinstance(node, EnumStatementNode):
+            raise InternalException(f"Cannot use {node.__class__.__name__} in visit_EnumStatementNode", node)
+        label = node.identifier.data
+
+        scope = self.find_first_scope_containing(label)
+        if not scope is None:
+            raise Exception(f"Cannot redefine {node.identifier.data} at line {node.identifier.line}, column {node.identifierl.column} in {node.identifier.filename}")
+
+        self.current_scope()[label] = node
+
     def visit_StructDefinitionNode(self, node):
         if not isinstance(node, StructDefinitionNode):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructDefinitionNode", node)
@@ -818,6 +829,10 @@ class Evaluator:
         if not hasattr(target_object, property_name):
             if isinstance(target_object, StructNode):
                 struct_node = target_object
+            elif isinstance(target_object, EnumStatementNode):
+                if not property_name in target_object.items.keys():
+                    raise RuntimeError(f"{property_name} does not exist on enum {target_object.identifier.data}", target_object)
+                return target_object.items.get(property_name)
             else:
                 struct_node = target_object.__struct_node__
             function_registers = [struct_node.function_register]
@@ -1267,6 +1282,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while True:
             self.push_scope()
             try:
@@ -1274,11 +1290,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1292,6 +1310,7 @@ class Evaluator:
         statements = node.statements
         root_loop_scope = self.current_scope()
         root_loop_scope["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         for elem in subject:
             self.push_scope()
             self.current_scope()[identifier.data] = elem
@@ -1300,11 +1319,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1315,6 +1336,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while self.evaluate(node.condition):
             # self.expression_cache = {}
             self.push_scope()
@@ -1322,11 +1344,13 @@ class Evaluator:
                 for statement in node.statements:
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1337,6 +1361,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while self.current_scope()["loop index"].value == 0 or not self.evaluate(node.condition):
             self.push_scope()
             try:
@@ -1344,11 +1369,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
