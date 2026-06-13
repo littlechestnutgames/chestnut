@@ -188,7 +188,6 @@ class ChestnutString(ChestnutAny):
             value = other.__str__()
         elif isinstance(other, ChestnutAny):
             value = other.value
-
         return ChestnutString(Token("String", self.value + str(value), None, None))
 
     def __radd__(self, other):
@@ -214,7 +213,7 @@ class ChestnutString(ChestnutAny):
         return len(self.value)
 
     def __repr__(self):
-        return '"' + self.value + '"'
+        return '"' + str(self.value) + '"'
 
     def __bool__(self):
         return len(self.value) > 0

@@ -14,11 +14,29 @@ def get_current_vm():
 def generate_struct_init(properties):
     def struct_instance_init(self, *args):
         if args:
-            raise TypeError(f"Struct constructor takes 0 positional arguments. Use static 'new' function instead")
+            raise TypeError(f"Struct constructor takes 0 positional arguments.")
         ChestnutStruct.__init__(self, CHESTNUT_NULL)
         i = 0
+        statics = []
+        publics = []
+        privates = []
         for i, prop in enumerate(properties):
-            setattr(self, prop.identifier.data, CHESTNUT_NULL)
+            keys = prop.attributes.keys()
+            default_value = CHESTNUT_NULL
+            if "default" in keys:
+                default_value = prop.attributes.get("default")
+            if "visibility" in keys and prop.attributes.get("visibility").data == "private":
+                privates.append(prop.identifier.data)
+            else:
+                publics.append(prop.identifier.data)
+            if "static" in keys:
+                statics.append(prop.identifier.data)
+                setattr(self.__struct_node__, "__static__" + prop.identifier.data, default_value)
+                continue
+            setattr(self, prop.identifier.data, default_value)
+        setattr(self, "static", statics)
+        setattr(self, "publics", publics)
+        setattr(self, "privates", privates)
     return struct_instance_init
 
 class FunctionRegister:
@@ -45,25 +63,35 @@ class FunctionRegister:
 
         registry["candidates"].insert(0, func)
 
-    def resolve(self, name, call_parameters=[]):
+    def resolve(self, name, call_parameters=[], inst=None):
         if name not in self.functions:
             return None
 
         call_params = call_parameters
         num_call_params = len(call_params)
-        
+
         best_match_candidate = None
-        best_score = -1 
+        best_score = -1
 
         registry = self.functions[name]
-        
+
         for candidate in registry["candidates"]:
             candidate_params = candidate.get_params()
+            shape_bonus = 0
+            if inst is not None:
+                if candidate.statement.alias is None:
+                    # candidate doesn't have a named alias
+                    # but a named alias is required because
+                    # inst is defined.
+                    continue
+                else:
+                    mapped_props = [(n.identifier.data, n.value_type.data) for n in candidate.statement.shape]
+                    mapped_inst_props = [(n.identifier.data, n.value_type.data) for n in inst.definition.properties]
             is_variadic_func = False
             if len(candidate_params) > 0 and candidate_params[-1].variadic:
                 is_variadic_func = True
             num_candidate_params = len(candidate_params)
-            current_score = 0
+            current_score = shape_bonus
             is_feasible = True
             
             required_count = 0
@@ -436,7 +464,7 @@ class Evaluator:
                 raise InternalException(f"Module at path {script_name} does not exist")
             return script_name
         elif os.path.exists("." + os.sep + "packages" + os.sep + script_name):
-            return f".{os.sep}vendor{os.sep}{script_name}"
+            return f".{os.sep}packages{os.sep}{script_name}"
             
         dir_path = os.path.dirname(os.path.realpath(__file__))
         # Resolve Chestnut library files first
@@ -520,7 +548,8 @@ class Evaluator:
         struct_name = node.target_struct.paramtype.data
         struct_type_scope = self.find_first_scope_containing(struct_name)
         if struct_type_scope is None:
-            raise TypeException("Struct {struct_name} could not be found", node)
+            struct_name = node.target_struct.paramtype.data
+            raise TypeException(f"Struct {struct_name} could not be found", node.name)
         struct_type_object = struct_type_scope[struct_name]
 
         method_name = node.name.data
@@ -665,6 +694,17 @@ class Evaluator:
                 if len(node.imports) == 0 or n.get_name() in [ x.data for x in node.imports ]:
                     self.evaluate(n)
 
+    def visit_EnumStatementNode(self, node):
+        if not isinstance(node, EnumStatementNode):
+            raise InternalException(f"Cannot use {node.__class__.__name__} in visit_EnumStatementNode", node)
+        label = node.identifier.data
+
+        scope = self.find_first_scope_containing(label)
+        if not scope is None:
+            raise Exception(f"Cannot redefine {node.identifier.data} at line {node.identifier.line}, column {node.identifierl.column} in {node.identifier.filename}")
+
+        self.current_scope()[label] = node
+
     def visit_StructDefinitionNode(self, node):
         if not isinstance(node, StructDefinitionNode):
             raise InternalException(f"Cannot use {node.__class__.__name__} in visit_StructDefinitionNode", node)
@@ -672,7 +712,7 @@ class Evaluator:
         
         scope = self.find_first_scope_containing(label)
         if not scope is None:
-            raise Exception(f"Cannot redefine struct {label} at line {node.target.line}, column {node.target.column}")
+            raise Exception(f"Cannot redefine struct {node.identifier.data} at line {node.identifier.line}, column {node.identifier.column} in {node.identifier.filename}")
 
         inherits = []
         inserted = []
@@ -682,7 +722,7 @@ class Evaluator:
                 struct_label = struct_label_tk.data 
                 inheritor_scope = self.find_first_scope_containing(struct_label)
                 if inheritor_scope is None:
-                    raise TypeException(f"Struct {struct_label} does not exist", node)
+                    raise TypeException(f"Struct {struct_label} does not exist", node.identifier)
                 struct_node = inheritor_scope[struct_label]
                 new_def = struct_node.definition
                 collect_inheritance(new_def)
@@ -693,11 +733,16 @@ class Evaluator:
         collect_inheritance(node)
         props = []
         prop_names = []
+        inherited_prop_names = []
         for inherited_definition in inherits:
+            ipn = getattr(inherited_definition, "inherited_prop_names", [])
             for prop in inherited_definition.properties:
+                inherited_prop_names.append(prop.identifier.data)
                 if prop.identifier.data not in prop_names:
                     prop_names.append(prop.identifier.data)
                     props.append(prop)
+                elif prop.identifier.data in prop_names and prop.identifier.data in ipn:
+                    pass
                 else:
                     raise SyntaxException(f"Property \"{prop.identifier.data}\" is already defined via inheritance for struct {node.identifier.data}", node.identifier)
         for prop in node.properties:
@@ -706,6 +751,7 @@ class Evaluator:
             else:
                 raise SyntaxException(f"Property \"{prop.identifier.data}\" is already defined via inheritance for struct {node.identifier.data}", node.identifier)
         node.properties = props
+        setattr(node, "inherited_prop_names", inherited_prop_names)
 
         struct_node = StructNode(node)
         setattr(struct_node, "inheritance_mapping", inheritance_mapping)
@@ -758,6 +804,8 @@ class Evaluator:
         if target_object is None:
             raise RuntimeException(f"Attempt to access property on null object at line...", node)
         property_name = node.property_identifier.data
+        # if property_name in target_object.statics:
+        #     raise RuntimeException(f"Can't assign to static property {property_name} on struct {node.identifier.data}", node.identifier)
         if hasattr(target_object, "gettype"):
             scope_key = f"{target_object.gettype()} {node.property_identifier.data}"
             scope = self.find_first_scope_containing(scope_key)
@@ -767,9 +815,24 @@ class Evaluator:
         if isinstance(target_object, StructNode):
             if property_name in target_object.function_register.functions:
                 return StructMethodCall(target_object, target_object.function_register.functions[property_name]["candidates"][0])
+        if property_name in self.function_register.functions:
+            for func in self.function_register.functions[property_name]["candidates"]:
+                if func.statement.alias is not None:
+                    shape = func.statement.shape
+                    matches = 0
+                    for p in shape:
+                        if hasattr(target_object, p.identifier.data):
+                            matches = matches + 1
+                    if matches == len(shape):
+                        self.current_scope()[func.statement.alias.data] = target_object
+                        return StructMethodCall(target_object, func)
         if not hasattr(target_object, property_name):
             if isinstance(target_object, StructNode):
                 struct_node = target_object
+            elif isinstance(target_object, EnumStatementNode):
+                if not property_name in target_object.items.keys():
+                    raise RuntimeError(f"{property_name} does not exist on enum {target_object.identifier.data}", target_object)
+                return target_object.items.get(property_name)
             else:
                 struct_node = target_object.__struct_node__
             function_registers = [struct_node.function_register]
@@ -782,7 +845,13 @@ class Evaluator:
                     func_object = fr.functions[property_name]["candidates"][0]
             if func_object is not None:
                 return StructMethodCall(target_object, func_object)
-        return getattr(target_object, property_name)
+        if hasattr(target_object, "__static__" + property_name):
+            val = getattr(target_object, "__static__" + property_name)
+        else:
+            val = getattr(target_object, property_name)
+        if isinstance(val, CallStatementNode):
+            return self.evaluate(val)
+        return val
 
     def visit_ListLiteralNode(self, node):
         if not isinstance(node, ListLiteralNode):
@@ -1022,6 +1091,8 @@ class Evaluator:
                         break
 
                     bfs.extend(current_struct_node.definition.inherits)
+                    if func is None:
+                        func = self.function_register.resolve(fname, finalized_args, current_struct_node)
 
         if not isinstance(callable, (Function, AnonymousFunction, BridgeFunction, StructNode, StructMethodCall)):
             raise RuntimeException(f"Attempt to call non-callable type {str(callable)}")
@@ -1211,6 +1282,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while True:
             self.push_scope()
             try:
@@ -1218,11 +1290,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1236,6 +1310,7 @@ class Evaluator:
         statements = node.statements
         root_loop_scope = self.current_scope()
         root_loop_scope["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         for elem in subject:
             self.push_scope()
             self.current_scope()[identifier.data] = elem
@@ -1244,11 +1319,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1259,6 +1336,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while self.evaluate(node.condition):
             # self.expression_cache = {}
             self.push_scope()
@@ -1266,11 +1344,13 @@ class Evaluator:
                 for statement in node.statements:
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1281,6 +1361,7 @@ class Evaluator:
         self.push_scope()
         root_loop_scope = self.current_scope()
         self.current_scope()["loop index"] = ChestnutInteger(0)
+        base_loop_scopes = len(self.scopes)
         while self.current_scope()["loop index"].value == 0 or not self.evaluate(node.condition):
             self.push_scope()
             try:
@@ -1288,11 +1369,13 @@ class Evaluator:
                     # self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 break
             except ContinueLoop:
                 root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
-                self.pop_scope()
+                while len(self.scopes) > base_loop_scopes:
+                    self.pop_scope()
                 continue
             self.pop_scope()
             root_loop_scope["loop index"] = root_loop_scope["loop index"] + ChestnutInteger(1)
@@ -1318,6 +1401,11 @@ class Evaluator:
             if isinstance(left, ChestnutNull):
                 return self.evaluate(node.right)
             return left
+
+    def visit_TernaryExpressionNode(self, node):
+        if self.evaluate(node.condition):
+            return self.evaluate(node.left)
+        return self.evaluate(node.right)
 
     def _handle_assign_Assignment(self, scope, label, expression):
         if isinstance(scope[label], BringVariable):

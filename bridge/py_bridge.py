@@ -1,5 +1,7 @@
 from chestnut_types import *
 from error import *
+import ctypes
+libc = ctypes.CDLL(None)
 
 def __internal_print__(*args):
     print(*args, end='', flush=True)
@@ -33,6 +35,28 @@ def __internal_type__(o):
         return f"{o.gettype()}"
     return str("Python " + str(type(o)))
 
+def __internal_fopen__(path, mode):
+    if not isinstance(path, ChestnutString) or not isinstance(mode, ChestnutString):
+        return (CHESTNUT_NULL, ChestnutError("File path and mode must be strings"))
+
+    handle = libc.fopen(path.value.encode(), mode.value.encode())
+    if not handle:
+        raise (CHESTNUT_NULL, ChestnutError(f"fopen failed to open {path} in mode {mode}"))
+    return (ChestnutInteger(handle), CHESTNUT_NULL)
+
+def __internal_fclose__(handle):
+    if not isinstance(handle, ChestnutInteger):
+        return;
+    libc.fclose(handle.value)
+
+def __internal_fread__(handle, size):
+    if not isinstance(handle, ChestnutInteger) or not isinstance(size, ChestnutInteger):
+        return (CHESTNUT_NULL, ChestnutError("fread requires handle and size to be Integer"))
+    buf = ctypes.create_string_buffer(size.value)
+    read = libc.fread(ctypes.byref(buf), 1, size.value, handle.value)
+    data = buf.raw[:read]
+    return (ChestnutList([ChestnutUInt8(d) for d in data]), CHESTNUT_NULL)
+
 def __internal_open_file__(path, mode):
     if not isinstance(path, ChestnutString) or not isinstance(mode, ChestnutString):
         return (CHESTNUT_NULL, ChestnutError("File path and mode must be strings"))
@@ -58,8 +82,13 @@ def __internal_read_file__(handle, size):
 
     try:
         data = file_object.read(size.value)
-        
-        return ChestnutTuple((ChestnutString(data), CHESTNUT_NULL))
+        if "b" in file_object.mode:
+            d = []
+            for c in data:
+                d.append(ChestnutUInt8(int(c)))
+            return ChestnutTuple(ChestnutList(d), CHESTNUT_NULL)
+        else:
+            return ChestnutTuple((ChestnutString(data), CHESTNUT_NULL))
     except Exception as e:
         return ChestnutTuple((CHESTNUT_NULL, ChestnutError(f"File I/O error during read: {e}")))
 
@@ -274,6 +303,9 @@ def __internal_may_halt_or_return__(func, *args):
 
 def __internal_replace__(str, old, new, occurrences):
     return ChestnutString(str.value.replace(old.value, new.value, occurrences.value))
+
+def __internal_chr__(i):
+    return ChestnutString(chr(i.value))
 
 def __internal_ord__(ch):
     return ChestnutInteger(ord(ch.value))

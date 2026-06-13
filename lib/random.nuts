@@ -1,0 +1,50 @@
+struct Random
+endstruct
+
+fn (r : Random) next() returns Integer
+    return NaN
+endfn
+
+struct PRNG inherits (Random)
+endstruct
+
+struct CSRNG inherits (Random)
+endstruct
+
+struct LinearCongruential inherits (PRNG)
+    state : Integer
+    static a : UInt64 = uint64(6364136223846793005)
+    static c : UInt64 = uint64(9754186451795953191)
+    static m : UInt64 = uint64(2**63)
+endstruct
+
+fn (lcg : LinearCongruential) to_string() returns String
+    return "LinearCongruential {{ lcg.state }}"
+endfn
+
+fn (LinearCongruential) new(
+    seed : Integer
+) returns LinearCongruential
+    let lcg = LinearCongruential()
+    lcg.state = seed
+    return lcg
+endfn
+
+fn (lcg : LinearCongruential) next() returns Integer
+    let state, a, c, m = (
+        uint64(lcg.state),
+        LinearCongruential.a,
+        LinearCongruential.c,
+        LinearCongruential.m
+    )
+    lcg.state = int((state * a + c) % m)
+    return lcg.state >> 32
+endfn
+
+fn sample_urandom(num_bytes : Integer) returns List
+   printline(env_get("platform"))
+   let l = open_file("/dev/urandom", "rb")
+       .and_then(read_file_handle, num_bytes)
+       .unwrap([NaN])
+    return l
+endfn

@@ -112,11 +112,19 @@ fn (r1 : Rational) sub(r2 : Rational) returns Rational
     return r1.add(r3)
 endfn
 
+fn (r1 : Rational) mul(i : Integer) returns Rational
+    return r1.mul(Rational.new(i, 1))
+endfn
+
 fn (r1 : Rational) mul(r2 : Rational) returns Rational
     return Rational.new(
         r1.numerator * r2.numerator,
         r1.denominator * r2.denominator
     )
+endfn
+
+fn (r1 : Rational) div(i : Integer) returns Rational
+    return r1.div(Rational.new(i, 1))
 endfn
 
 fn (r1 : Rational) div(r2 : Rational) returns Rational
@@ -127,6 +135,10 @@ fn (r1 : Rational) div(r2 : Rational) returns Rational
         r1.numerator * r2.denominator,
         r2.numerator * r1.denominator
     )
+endfn
+
+fn (r1 : Rational) mod(i : Integer) returns Rational
+    return r1.mod(Rational(i, 1))
 endfn
 
 fn (r1 : Rational) mod(r2 : Rational) returns Rational
@@ -144,6 +156,39 @@ fn (r1 : Rational) pow(p : Integer) returns Rational
     let abs_p = abs(p)
 
     return Rational.new(n**abs_p, d**abs_p)
+endfn
+
+fn (Rational) from_float(f : Float, max_iterations : Integer = 10) returns Rational
+    import "math" (floor, abs)
+    
+    let x = f
+    let a = int(floor(x))
+    let h_prev = 1
+    let h = a
+    let k_prev = 0
+    let k = 1
+    
+    let remaining = x - float(a)
+    while abs(remaining) > 0.0000001 and loop_index < max_iterations
+        x = 1.0 / remaining
+        a = int(floor(x))
+        
+        let h_next = a * h + h_prev
+        let k_next = a * k + k_prev
+        
+        h_prev = h
+        h = h_next
+        k_prev = k
+        k = k_next
+        
+        remaining = x - float(a)
+    endwhile
+    
+    return Rational.new(h, k, true)
+endfn
+
+fn (r : Rational) to_int() returns Integer
+    return r.numerator / r.denominator
 endfn
 
 fn (r : Rational) to_float() returns Float

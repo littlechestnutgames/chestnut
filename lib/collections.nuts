@@ -6,10 +6,18 @@ struct HashMap
     keys_list : List
 endstruct
 
+fn (h : HashMap) to_string() returns String
+    return "HashMap: {{ length(h.keys_list) }} item(s)"
+endfn
+
 struct KV
     key : String
     value : Any
 endstruct
+
+fn (k : KV) to_string() returns String
+    return "{{ k.key }}: {{ k. value }}"
+endfn
 
 # Initializes a new bucket of size {initial_size}
 # Note: Bucket sizes are powers of 2. For example, 

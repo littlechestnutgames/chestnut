@@ -5,6 +5,122 @@ endfn
 import "result"
 import "error"
 
+struct Bytes
+    raw : List
+endstruct
+
+fn (Bytes) from_uint8_list(l : List) returns Bytes
+    let valid = true
+    for l as b
+        if gettype(b) != "UInt8"
+            return null
+        endif
+    endfor
+    let b = Bytes()
+    b.raw = l
+    return b
+endfn
+
+fn (b : Bytes) to_string() returns String
+    return "{{ b.raw }}"
+endfn
+
+fn (bytes : Bytes) decode(fmt : String) returns String
+    if fmt == "utf8"
+        return bytes.decode_utf8()
+    else
+        halt("Unknown encoding format '{{ fmt }}'")
+    endif
+endfn
+
+fn (bytes : Bytes) decode_utf8() returns String
+    let res = ""
+    let raw = bytes.raw
+    let blen = length(raw)
+    let i = 0
+
+    let is_surrogate = fn (cp : UnsignedInteger) returns Boolean
+        return uint32(cp) >= uint32(0xD800) and uint32(cp) <= uint32(0xDFFF)
+    endfn
+
+    while i < blen
+        constant b1 = raw[i]
+        constant b2 = use raw[i+1] over null unless i + 1 >= blen
+        constant b3 = use raw[i+2] over null unless i + 2 >= blen
+        constant b4 = use raw[i+3] over null unless i + 3 >= blen
+        if (b1 & uint8(0x80)) == uint8(0)
+            # One byte
+            res += chr(b1)
+
+            i = i + 1
+            continue
+        elif b2 and uint8(b1 & uint8(0xE0)) == uint8(0xC0)
+                and uint8(b2 & uint8(0xC0)) == uint8(0x80)
+            # Two bytes
+            let codepoint = (uint16(b1 & uint8(0x1F)) << 6) | (uint16(b2 & uint8(0x3F)))
+
+            res +=  use chr(codepoint)
+                    over chr(0XFFFD)
+                    unless codepoint < uint16(0x80)
+
+            i = i + 2
+            continue
+        elif b3 and uint8(b1 & uint8(0xF0)) == uint8(0xE0)
+                and uint8(b2 & uint8(0xC0)) == uint8(0x80)
+                and uint8(b3 & uint8(0xC0)) == uint8(0x80)
+            # Three bytes
+            let is_overlong = fn (cp : UInt16) returns Boolean
+                return cp < uint16(0x0800)
+            endfn
+
+            let codepoint = (uint16(b1 & uint8(0x0F)) << 12)
+                          | (uint16(b2 & uint8(0x3F)) << 6)
+                          | (uint16(b3 & uint8(0x3F)))
+
+            res +=  use chr(codepoint)
+                    over chr(0xFFFD)
+                    unless is_overlong(codepoint) or is_surrogate(codepoint)
+
+            i = i + 3
+            continue
+        elif b4 and uint8(b1 & uint8(0xF8)) == uint8(0xF0)
+                and uint8(b2 & uint8(0xC0)) == uint8(0x80)
+                and uint8(b3 & uint8(0xC0)) == uint8(0x80)
+                and uint8(b4 & uint8(0xC0)) == uint8(0x80)
+            # Four bytes
+            let is_overlong = fn (cp : UInt32) returns Boolean
+                return cp < uint32(0x10000) or cp > uint32(0x10FFFF)
+            endfn
+
+            let codepoint   = (uint32(b1 & uint8(0x07)) << 18)
+                            | (uint32(b2 & uint8(0x3F)) << 12)
+                            | (uint32(b3 & uint8(0x3F)) << 6)
+                            | (uint32(b4 & uint8(0x3F)))
+
+            res +=  use chr(codepoint)
+                    over chr(0xFFFD)
+                    unless is_overlong(codepoint) or is_surrogate(codepoint)
+
+            i = i + 4
+            continue
+        else
+            res += chr(0xFFFD)
+            i = i + 1
+        endif
+    endwhile
+    return  res
+endfn
+
+fn utf8_code_point_to_string(arg1 : UInt32, arg2 : UInt32 = null) returns String
+    let code = int_list_to_hex_string([arg1])
+    let out = "\\u{{ code }}"
+    if arg2
+        code = int_list_to_hex_string([arg2])
+        out += "\\u{{ code }}"
+    endif
+    return code
+endfn
+
 fn is_nan(a : Any) returns Boolean
     return gettype(a) == "NaN"
 endfn
@@ -417,6 +533,10 @@ endfn
 
 fn maybe_outer(ident : Any) returns Result
     return may_halt_or_return(fn () outer ident endfn)
+endfn
+
+fn chr(i : UnsignedInteger) returns String
+    return __internal_chr__(i)
 endfn
 
 fn ord(s : String) returns Result # Result<Integer,Error> when generics.

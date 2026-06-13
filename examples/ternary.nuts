@@ -1,0 +1,13 @@
+fn main()
+    let a = 10 > 1 ? "SUCCEED 1" : "FAIL 1"
+    let b = 10 < 1 ? "FAIL 2" : "SUCCEED 2"
+    let c = use "SUCCEED 3" over "FAIL 3" unless 10 < 1
+    let d = use "FAIL 4" over "SUCCEED 4" unless 10 > 1
+    printline("a: {{ a }}")
+    printline("b: {{ b }}")
+    printline("c: {{ c }}")
+    printline("d: {{ d }}")
+    printline("Interpolation: {{ 10 > 10 ? "FAIL 5" : "SUCCEED 5" }}")
+    print("Inline: ")
+    printline(10 == 10 ? "SUCCEED 6" : "FAIL 6")
+endfn
