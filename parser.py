@@ -542,11 +542,34 @@ class Parser:
             raise SyntaxError("Expected identifier after enum", self.peek())
         label = self.consume()
         items = {}
+        values_used = []
         while not self.check_label("Endenum"):
             if not self.check_label("Identifier"):
-                raise SyntaxError("Expected identifier in enum definition", self.peek())
+                raise SyntaxError("Expected identifier in enum definition", label)
             item = self.consume()
-            items[item.data] = ChestnutInteger(len(items.keys()))
+            last_used = -1
+            if self.check_label("Assignment"):
+                self.consume()
+                if not self.check_label("Integer") and not self.check_label("Subtraction"):
+                    raise SyntaxException("Expected Integer value after equals", self.peek())
+                negative = 1
+                if self.check_label("Subtraction"):
+                    self.consume() # Negative number
+                    negative = -1
+                val = self.consume()
+                val.data.value = val.data.value * negative
+                if val.data.value in values_used:
+                    raise SyntaxException(f"Cannot reuse Integer for enum value {val.data}", item)
+                values_used.append(val.data.value)
+                last_used = val.data.value
+                items[item.data] = ChestnutInteger(val.data.value)
+            else:
+                use_index = last_used + 1
+                while use_index in values_used:
+                    use_index = use_index + 1
+                items[item.data] = ChestnutInteger(use_index)
+                values_used.append(use_index)
+                last_used = use_index
         self.consume() # Consume endenum
         return EnumStatementNode(label, items)
 

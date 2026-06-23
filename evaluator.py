@@ -701,7 +701,7 @@ class Evaluator:
 
         scope = self.find_first_scope_containing(label)
         if not scope is None:
-            raise Exception(f"Cannot redefine {node.identifier.data} at line {node.identifier.line}, column {node.identifierl.column} in {node.identifier.filename}")
+            raise Exception(f"Cannot redefine {node.identifier.data} at line {node.identifier.line}, column {node.identifier.column} in {node.identifier.filename}")
 
         self.current_scope()[label] = node
 
@@ -1192,7 +1192,7 @@ class Evaluator:
         try:
             params = func.reconcile_parameters(self, finalized_args)
         except RuntimeException as e:
-            raise RuntimeException(e.message, node.identifier)
+            raise RuntimeException(e.message)
         for p in func.statement.parameters:
             self.current_scope()[p.name.data] = params[p.name.data]
         for s in func.statement.statements:
@@ -1287,7 +1287,7 @@ class Evaluator:
             self.push_scope()
             try:
                 for statement in node.statements:
-                    # self.expression_cache = {}
+                    self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 while len(self.scopes) > base_loop_scopes:
@@ -1316,7 +1316,7 @@ class Evaluator:
             self.current_scope()[identifier.data] = elem
             try:
                 for statement in statements:
-                    # self.expression_cache = {}
+                    self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 while len(self.scopes) > base_loop_scopes:
@@ -1342,6 +1342,7 @@ class Evaluator:
             self.push_scope()
             try:
                 for statement in node.statements:
+                    self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 while len(self.scopes) > base_loop_scopes:
@@ -1366,7 +1367,7 @@ class Evaluator:
             self.push_scope()
             try:
                 for statement in node.statements:
-                    # self.expression_cache = {}
+                    self.expression_cache = {}
                     self.evaluate(statement)
             except BreakLoop:
                 while len(self.scopes) > base_loop_scopes:

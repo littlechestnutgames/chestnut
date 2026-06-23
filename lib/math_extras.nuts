@@ -1,3 +1,13 @@
+fn clamp(i : Integer, mn : Integer, mx : Integer) returns Integer
+    return
+        use i
+        over
+            use mn
+            over mx
+            unless i > mx
+        unless i < mn
+endfn
+
 fn calc_e_approx(tolerance : Float) returns Float
     if tolerance < 0.0
         tolerance *= -1.0

@@ -21,6 +21,12 @@ fn (Bytes) from_uint8_list(l : List) returns Bytes
     return b
 endfn
 
+fn (b : Bytes) extend(l : List)
+    for l as item
+        extend(b.raw, item)
+    endfor
+endfn
+
 fn (b : Bytes) to_string() returns String
     return "{{ b.raw }}"
 endfn
@@ -165,6 +171,12 @@ fn shift(l : List) returns (Any, Error)
         return (null, Error("Attempt to shift an empty list"))
     endif
     return (remove(l, 0), null)
+endfn
+
+fn extend(l1 : List, l2 : List)
+    for l2 as item
+        push(l1, item)
+    endfor
 endfn
 
 fn reverse_string(s : String) returns String

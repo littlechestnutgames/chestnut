@@ -13,7 +13,7 @@ fn (File) open(filename : String, mode : String) returns Result
     f.fd = fd.success
     f.is_open = true
     f.filename = filename
-    return f
+    return Result.new(f, null)
 endfn
 
 fn (f : File) close()

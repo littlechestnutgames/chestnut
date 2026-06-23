@@ -41,7 +41,7 @@ def __internal_fopen__(path, mode):
 
     handle = libc.fopen(path.value.encode(), mode.value.encode())
     if not handle:
-        raise (CHESTNUT_NULL, ChestnutError(f"fopen failed to open {path} in mode {mode}"))
+        return (CHESTNUT_NULL, ChestnutError(f"fopen failed to open {path} in mode {mode}"))
     return (ChestnutInteger(handle), CHESTNUT_NULL)
 
 def __internal_fclose__(handle):
