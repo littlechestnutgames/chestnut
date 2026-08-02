@@ -1,3 +1,5 @@
+# This project is archived. Follow it at [https://codeberg.org/chestnut/chestnut](https://codeberg.org/chestnut/chestnut).
+
 # Chestnut Reference
 
 ## I. Core Design Philosophy
